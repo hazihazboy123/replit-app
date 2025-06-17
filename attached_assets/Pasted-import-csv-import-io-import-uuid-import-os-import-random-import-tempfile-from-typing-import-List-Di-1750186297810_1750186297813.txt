@@ -1,0 +1,527 @@
+import csv
+import io
+import uuid
+import os
+import random
+import tempfile
+from typing import List, Dict, Optional
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response, status
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.background import BackgroundTasks
+
+import genanki
+from replit.object_storage import Client as ObjectStorageClient
+
+app = FastAPI()
+
+# Configure CORS to allow requests from your frontend (if hosted separately, e.g., on a different Replit URL)
+# For development, you might allow all origins. For production, restrict to your frontend's domain.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins for development. Be specific in production.
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize Replit Object Storage Client
+object_storage_client = ObjectStorageClient()
+
+# --- Anki Model and Deck IDs (Hardcoded for consistency across imports) ---
+# IMPORTANT: Generate your own unique IDs for your application.
+# You can run `python -c "import random; print(random.randrange(1 << 30, 1 << 31))"` in your Repl's shell to get new ones.
+ANKI_MODEL_ID = 1234567890 # Replace with your own generated ID
+ANKI_DECK_ID = 9876543210  # Replace with your own generated ID
+
+ANKI_MODEL_NAME = "Medical High-Yield Cards"
+ANKI_DECK_NAME = "Generated Medical Deck"
+
+# --- Anki Model Definition ---
+def create_anki_model():
+    """
+    Defines the Anki model with custom fields and card templates for medical students.
+    Includes styling for high-yield, images, notes, and cloze deletions.
+    """
+    model_css = """
+       .card {
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            text-align: left;
+            color: black;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            line-height: 1.5;
+            max-width: 650px; /* Limit line length for readability */
+            margin: auto; /* Center the card */
+        }
+       .card.nightMode {
+            color: white;
+            background-color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+       .high-yield {
+            color: red;
+            font-weight: bold;
+        }
+       .card.nightMode.high-yield {
+            color: #FF6666; /* Lighter red for night mode */
+        }
+       .notes-section {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+       .card.nightMode.notes-section {
+            color: #999;
+            border-top-color: #444;
+        }
+        img {
+            max-width: 100%; /* Ensure images fit within card width */
+            height: auto;
+            display: block; /* Remove extra space below images */
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+       .cloze {
+            font-weight: bold;
+            color: blue;
+        }
+       .card.nightMode.cloze {
+            color: lightblue;
+        }
+        hr {
+            border: none;
+            border-top: 1px dashed #ccc;
+            margin: 20px 0;
+        }
+    """
+
+    # Fields for the custom model
+    fields =
+
+    # Templates for the cards
+    # We define two card types within one model.
+    # The logic will populate fields based on CSV, and Anki will render based on templates.
+    # If ClozeText is provided, the Cloze Card template will display it correctly.
+    # If Question/Answer are provided, the Basic Card template will display them.
+    # If a field is empty, it simply won't display.
+    templates =
+
+    return genanki.Model(
+        ANKI_MODEL_ID,
+        ANKI_MODEL_NAME,
+        fields=fields,
+        templates=templates,
+        css=model_css
+    )
+
+# --- CSV Processing and APKG Generation ---
+async def process_csv_and_generate_apkg(
+    csv_file_content: str,
+    deck_name: str,
+    media_files_dict: Dict[str, bytes]
+) -> str:
+    """
+    Parses CSV content, generates Anki notes, and creates an APKG file.
+    Returns the path to the generated APKG file.
+    """
+    anki_model = create_anki_model()
+    anki_deck = genanki.Deck(ANKI_DECK_ID, deck_name)
+    
+    # Use a temporary directory for media files during package creation
+    temp_media_dir = tempfile.mkdtemp()
+    media_paths =
+
+    # Save uploaded images to the temporary media directory
+    for filename, content in media_files_dict.items():
+        temp_path = os.path.join(temp_media_dir, filename)
+        with open(temp_path, "wb") as f:
+            f.write(content)
+        media_paths.append(temp_path)
+
+    # Read CSV data
+    csv_reader = csv.DictReader(io.StringIO(csv_file_content))
+    
+    # Expected CSV columns (case-insensitive for flexibility)
+    # Map these to the Anki model fields
+    # Note: 'question' and 'answer' are for basic Q&A. 'cloze_text' is for cloze.
+    # A card should ideally use one or the other for its primary content.
+    # The templates are designed to handle both, but if both are provided,
+    # the basic card will show both, and the cloze card will show the cloze.
+    # For best results, use either 'Question'/'Answer' OR 'Cloze_Text' for a given row.
+
+    for row_num, row in enumerate(csv_reader):
+        # Normalize column names to lowercase for lookup
+        normalized_row = {k.lower(): v for k, v in row.items()}
+
+        # Prepare fields for the Anki note, defaulting to empty string if not found
+        fields_data = {
+            'Question': normalized_row.get('question', '').strip(),
+            'Answer': normalized_row.get('answer', '').strip(),
+            'HighYieldFlag': normalized_row.get('high_yield_flag', '').strip().lower(),
+            'Image': normalized_row.get('image_filename', '').strip(),
+            'Notes': normalized_row.get('notes', '').strip(),
+            'Tags': normalized_row.get('tags', '').strip(),
+            'ClozeText': normalized_row.get('cloze_text', '').strip()
+        }
+
+        # Basic validation: ensure at least one primary content field is present
+        if not (fields_data['Question'] and fields_data['Answer']) and not fields_data:
+            raise HTTPException(status_code=400, detail=f"Row {row_num + 2}: Each row must contain either 'Question' and 'Answer' or 'Cloze_Text'.")
+        
+        # Ensure HighYieldFlag is 'high-yield' or empty
+        if fields_data['HighYieldFlag'] not in ['', 'high-yield']:
+            fields_data['HighYieldFlag'] = '' # Default to empty if invalid value
+
+        # Generate GUID for stable note updates in Anki
+        # Using a combination of fields for GUID to ensure uniqueness and stability
+        # This helps Anki update existing notes rather than creating duplicates on re-import
+        guid_fields = [
+            fields_data['Question'],
+            fields_data['Answer'],
+            fields_data
+        note_guid = genanki.guid_for(*guid_fields)
+
+        # Create the Anki Note
+        note = genanki.Note(
+            model=anki_model,
+            fields=[
+                fields_data['Question'],
+                fields_data['Answer'],
+                fields_data['HighYieldFlag'],
+                fields_data['Image'],
+                fields_data['Notes'],
+                fields_data, # This field is actually handled by note.tags below, but needs to be in fields list
+                fields_data,
+            guid=note_guid,
+        )
+        
+        # Add tags to the note if provided
+        if fields_data:
+            # Split by '::' for hierarchical tags, then strip whitespace from each tag
+            note.tags =.split('::')]
+
+        anki_deck.add_note(note)
+
+    # Create the Anki package
+    anki_package = genanki.Package(anki_deck)
+    anki_package.media_files = media_paths # Add all collected media files
+
+    # Write the package to a temporary file
+    apkg_filename = f"{uuid.uuid4()}.apkg"
+    apkg_filepath = os.path.join(tempfile.gettempdir(), apkg_filename)
+    anki_package.write_to_file(apkg_filepath)
+
+    # Clean up temporary media directory
+    for f in media_paths:
+        os.remove(f)
+    os.rmdir(temp_media_dir)
+
+    return apkg_filepath
+
+# --- API Endpoints ---
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    """Serves the HTML frontend for file upload."""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>CSV to Anki APKG Converter</title>
+        <style>
+            body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+           .container { max-width: 800px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #0056b3; text-align: center; margin-bottom: 30px; }
+            h2 { color: #0056b3; margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+            label { display: block; margin-bottom: 8px; font-weight: bold; }
+            input[type="file"], input[type="text"] {
+                width: calc(100% - 22px);
+                padding: 10px;
+                margin-bottom: 15px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
+            input[type="submit"] {
+                background-color: #007bff;
+                color: white;
+                padding: 12px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                width: 100%;
+                box-sizing: border-box;
+                transition: background-color 0.3s ease;
+            }
+            input[type="submit"]:hover {
+                background-color: #0056b3;
+            }
+           .message {
+                margin-top: 20px;
+                padding: 10px;
+                border-radius: 4px;
+                background-color: #e9ecef;
+                color: #333;
+                text-align: center;
+            }
+           .error {
+                background-color: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+           .success {
+                background-color: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+           .download-link {
+                display: block;
+                text-align: center;
+                margin-top: 20px;
+                font-size: 1.1em;
+            }
+           .download-link a {
+                color: #007bff;
+                text-decoration: none;
+                font-weight: bold;
+            }
+           .download-link a:hover {
+                text-decoration: underline;
+            }
+           .info-box {
+                background-color: #e0f7fa;
+                border-left: 5px solid #00bcd4;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 4px;
+                font-size: 0.9em;
+            }
+           .info-box ul {
+                list-style-type: disc;
+                margin-left: 20px;
+                padding-left: 0;
+            }
+           .info-box li {
+                margin-bottom: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>CSV to Anki APKG Converter for Medical Students</h1>
+
+            <div class="info-box">
+                <p><strong>How to prepare your CSV file:</strong></p>
+                <ul>
+                    <li>Your CSV should have the following column headers (case-insensitive):
+                        <ul>
+                            <li><code>Question</code>: The front of your basic Q&A card.</li>
+                            <li><code>Answer</code>: The back of your basic Q&A card.</li>
+                            <li><code>Cloze_Text</code>: For cloze deletion cards (e.g., <code>{{c1::text}} is...</code>). If this field is present and has content, it will create a cloze card. Otherwise, it defaults to a basic Q&A card.</li>
+                            <li><code>High_Yield_Flag</code>: Enter <code>high-yield</code> to color-code the card as high-yield. Leave empty for normal.</li>
+                            <li><code>Image_Filename</code>: The filename of an image to embed (e.g., <code>diagram.png</code>). Upload the image file(s) separately using the "Upload Image Files" section.</li>
+                            <li><code>Notes</code>: Supplementary notes, mnemonics, or clinical pearls (displayed on the back of the card).</li>
+                            <li><code>Tags</code>: Hierarchical tags separated by <code>::</code> (e.g., <code>Medicine::Cardio::Pharm</code>).</li>
+                        </ul>
+                    </li>
+                    <li>Each row in your CSV should represent one atomic fact or concept.</li>
+                    <li>For cloze cards, ensure the <code>Cloze_Text</code> field contains the Anki cloze syntax (e.g., <code>{{c1::your text}}</code>).</li>
+                    <li>For images, make sure the <code>Image_Filename</code> in your CSV exactly matches the name of the image file you upload.</li>
+                    <li><strong>Note on Image Occlusion:</strong> This tool supports embedding images. For interactive "Image Occlusion" (masking parts of an image), you would typically use Anki's built-in Image Occlusion note type or a specialized Anki add-on, as programmatic generation of this specific interactive behavior is more complex.</li>
+                    <li><strong>Note on LaTeX:</strong> If your CSV contains LaTeX syntax (e.g., <code>[$]\sum_{k = 1}^{\infty}\frac{1}{k}[/$]</code>), the tool will pass it through. Anki desktop will render it as an image if you have a LaTeX distribution installed and "Generate LaTeX images" enabled in Anki preferences.</li>
+                </ul>
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data">
+                <h2>1. Upload your CSV File</h2>
+                <label for="csvFile">Select CSV File:</label>
+                <input type="file" id="csvFile" name="csvFile" accept=".csv" required>
+
+                <h2>2. Upload Image Files (Optional)</h2>
+                <p>Select all image files referenced in your CSV (e.g., <code>diagram.png</code>). You can select multiple files.</p>
+                <label for="imageFiles">Select Image Files:</label>
+                <input type="file" id="imageFiles" name="imageFiles" accept="image/*" multiple>
+
+                <h2>3. Deck Name</h2>
+                <label for="deckName">Enter Desired Anki Deck Name:</label>
+                <input type="text" id="deckName" name="deckName" value="My Medical Deck" required>
+
+                <input type="submit" value="Generate Anki Deck">
+            </form>
+
+            <div id="message" class="message" style="display: none;"></div>
+            <div id="downloadLink" class="download-link" style="display: none;"></div>
+        </div>
+
+        <script>
+            document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const messageDiv = document.getElementById('message');
+                const downloadLinkDiv = document.getElementById('downloadLink');
+                messageDiv.style.display = 'none';
+                downloadLinkDiv.style.display = 'none';
+                messageDiv.className = 'message'; // Reset classes
+
+                const csvFile = document.getElementById('csvFile').files;
+                const imageFiles = document.getElementById('imageFiles').files;
+                const deckName = document.getElementById('deckName').value;
+
+                if (!csvFile) {
+                    messageDiv.textContent = 'Please select a CSV file.';
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('csv_file', csvFile);
+                formData.append('deck_name', deckName);
+
+                for (let i = 0; i < imageFiles.length; i++) {
+                    formData.append('image_files', imageFiles[i]);
+                }
+
+                messageDiv.textContent = 'Generating Anki deck... This may take a moment.';
+                messageDiv.className = 'message';
+                messageDiv.style.display = 'block';
+
+                try {
+                    const response = await fetch('/convert-csv-to-apkg', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail |
+| 'Failed to generate Anki deck.');
+                    }
+
+                    const data = await response.json();
+                    messageDiv.textContent = 'Anki deck generated successfully!';
+                    messageDiv.className = 'message success';
+                    messageDiv.style.display = 'block';
+
+                    // Trigger download directly using the returned URL
+                    const downloadResponse = await fetch(data.download_url);
+                    if (!downloadResponse.ok) {
+                        throw new Error('Failed to download the generated APKG file.');
+                    }
+                    const blob = await downloadResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    // Sanitize filename for download
+                    const sanitizedDeckName = deckName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+                    a.download = `${sanitizedDeckName}.apkg`; 
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url); // Clean up the object URL
+
+                    downloadLinkDiv.innerHTML = `Your deck should be downloading automatically. If not, <a href="${data.download_url}" target="_blank">click here to download</a>.`;
+                    downloadLinkDiv.style.display = 'block';
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    messageDiv.textContent = `Error: ${error.message}`;
+                    messageDiv.className = 'message error';
+                    messageDiv.style.display = 'block';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+
+@app.post("/convert-csv-to-apkg")
+async def convert_csv_to_apkg(
+    csv_file: UploadFile = File(...),
+    deck_name: str = "Generated Medical Deck",
+    image_files: Optional[List[UploadFile]] = File(None),
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    """
+    Receives a CSV file and optional image files, converts them into an Anki APKG,
+    stores it in Object Storage, and returns a download URL.
+    """
+    try:
+        # Read CSV content
+        csv_content = (await csv_file.read()).decode('utf-8')
+
+        # Read image files into a dictionary (filename: bytes_content)
+        media_files_dict = {}
+        if image_files:
+            for img_file in image_files:
+                media_files_dict[img_file.filename] = await img_file.read()
+
+        # Generate APKG and get its temporary path
+        apkg_filepath = await process_csv_and_generate_apkg(csv_content, deck_name, media_files_dict)
+        
+        # Generate a unique job ID for the APKG file in Object Storage
+        job_id = str(uuid.uuid4())
+        object_name = f"apkg_decks/{job_id}.apkg"
+
+        # Upload the generated APKG to Replit Object Storage
+        with open(apkg_filepath, "rb") as f:
+            apkg_bytes = f.read()
+        
+        object_storage_client.upload_from_bytes(object_name, apkg_bytes)
+        
+        # Add a background task to clean up the local temporary APKG file
+        background_tasks.add_task(os.remove, apkg_filepath)
+
+        # Return the download URL, which points to our own FastAPI endpoint
+        download_url = f"/download-apkg/{job_id}"
+
+        return {"job_id": job_id, "download_url": download_url}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        # Log the full error for debugging in Replit logs
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An internal server error occurred: {str(e)}")
+
+
+@app.get("/download-apkg/{job_id}")
+async def download_apkg(job_id: str, background_tasks: BackgroundTasks):
+    """
+    Retrieves a generated APKG file from Object Storage and serves it for download.
+    """
+    object_name = f"apkg_decks/{job_id}.apkg"
+    
+    try:
+        # Download the file from Object Storage as bytes
+        apkg_bytes = object_storage_client.download_as_bytes(object_name)
+        
+        # Add a background task to delete the file from Object Storage after it's served
+        # This ensures temporary files are cleaned up from your Object Storage bucket
+        background_tasks.add_task(object_storage_client.delete, object_name)
+
+        # Return the file as a Response with appropriate headers for download
+        return Response(
+            content=apkg_bytes,
+            media_type="application/apkg", # Standard MIME type for Anki packages
+            headers={"Content-Disposition": f"attachment; filename=anki_deck_{job_id}.apkg"}
+        )
+    except Exception as e:
+        # Log the error for debugging
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=404, detail=f"APKG file not found or error retrieving: {str(e)}")

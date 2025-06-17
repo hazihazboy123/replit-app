@@ -2,6 +2,8 @@ import os
 import json
 import tempfile
 import logging
+import random
+import uuid
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for
 import genanki
 
@@ -13,27 +15,157 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
 class FlashcardProcessor:
-    """Handles processing of JSON flashcard data and Anki deck generation"""
+    """Handles processing of JSON flashcard data and Anki deck generation for medical students"""
     
     def __init__(self):
-        # Create a model for the flashcards
-        self.model = genanki.Model(
-            1607392319,
-            'Simple Model',
-            fields=[
-                {'name': 'Question'},
-                {'name': 'Answer'},
-            ],
-            templates=[
-                {
-                    'name': 'Card 1',
-                    'qfmt': '{{Question}}',
-                    'afmt': '{{FrontSide}}<hr id="answer">{{Answer}}',
-                },
-            ])
+        # Generate unique IDs for model and deck (recommended by genanki for proper Anki tracking)
+        self.model_id = random.randrange(1 << 30, 1 << 31)
+        self.deck_id = random.randrange(1 << 30, 1 << 31)
+        
+        # Create advanced model for medical flashcards
+        self.model = self._create_medical_model()
+    
+    def _create_medical_model(self):
+        """Create advanced Anki model for medical students with styling and multiple card types"""
+        
+        model_css = """
+        .card {
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            text-align: left;
+            color: black;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            line-height: 1.5;
+            max-width: 650px;
+            margin: auto;
+        }
+        .card.nightMode {
+            color: white;
+            background-color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .high-yield {
+            color: red;
+            font-weight: bold;
+        }
+        .card.nightMode .high-yield {
+            color: #FF6666;
+        }
+        .notes-section {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .card.nightMode .notes-section {
+            color: #999;
+            border-top-color: #444;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto;
+            border-radius: 4px;
+        }
+        .cloze {
+            font-weight: bold;
+            color: blue;
+        }
+        .card.nightMode .cloze {
+            color: lightblue;
+        }
+        hr {
+            border: none;
+            border-top: 1px dashed #ccc;
+            margin: 20px 0;
+        }
+        .tags {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 10px;
+        }
+        """
+        
+        fields = [
+            {'name': 'Question'},
+            {'name': 'Answer'},
+            {'name': 'HighYieldFlag'},
+            {'name': 'Image'},
+            {'name': 'Notes'},
+            {'name': 'Tags'},
+            {'name': 'ClozeText'}
+        ]
+        
+        templates = [
+            {
+                'name': 'Basic Card',
+                'qfmt': '''
+                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{Question}}
+                </div>
+                {{#Image}}<img src="{{Image}}">{{/Image}}
+                ''',
+                'afmt': '''
+                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{Question}}
+                </div>
+                {{#Image}}<img src="{{Image}}">{{/Image}}
+                <hr id="answer">
+                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{Answer}}
+                </div>
+                {{#Notes}}
+                <div class="notes-section">
+                    <strong>Notes:</strong> {{Notes}}
+                </div>
+                {{/Notes}}
+                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
+                '''
+            },
+            {
+                'name': 'Cloze Card',
+                'qfmt': '''
+                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{cloze:ClozeText}}
+                </div>
+                {{#Image}}<img src="{{Image}}">{{/Image}}
+                {{#Notes}}
+                <div class="notes-section">
+                    <strong>Notes:</strong> {{Notes}}
+                </div>
+                {{/Notes}}
+                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
+                ''',
+                'afmt': '''
+                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{cloze:ClozeText}}
+                </div>
+                {{#Image}}<img src="{{Image}}">{{/Image}}
+                {{#Notes}}
+                <div class="notes-section">
+                    <strong>Notes:</strong> {{Notes}}
+                </div>
+                {{/Notes}}
+                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
+                '''
+            }
+        ]
+        
+        return genanki.Model(
+            self.model_id,
+            'Medical High-Yield Cards',
+            fields=fields,
+            templates=templates,
+            css=model_css
+        )
     
     def validate_json_structure(self, data):
-        """Validate the JSON structure for flashcards"""
+        """Validate the JSON structure for medical flashcards"""
         if not isinstance(data, dict):
             raise ValueError("JSON must be an object")
         
@@ -53,29 +185,72 @@ class FlashcardProcessor:
             if not isinstance(card, dict):
                 raise ValueError(f"Card {i+1} must be an object")
             
-            if 'question' not in card or 'answer' not in card:
-                raise ValueError(f"Card {i+1} must have 'question' and 'answer' fields")
+            # Check for either basic Q&A or cloze text
+            has_qa = 'question' in card and 'answer' in card
+            has_cloze = 'cloze_text' in card and card.get('cloze_text', '').strip()
             
-            if not card['question'].strip() or not card['answer'].strip():
-                raise ValueError(f"Card {i+1} question and answer cannot be empty")
+            if not has_qa and not has_cloze:
+                raise ValueError(f"Card {i+1} must have either 'question'/'answer' fields or 'cloze_text' field")
+            
+            if has_qa:
+                if not card['question'].strip() or not card['answer'].strip():
+                    raise ValueError(f"Card {i+1} question and answer cannot be empty")
+            
+            # Validate high_yield_flag if present
+            high_yield = card.get('high_yield_flag', '').strip().lower()
+            if high_yield and high_yield not in ['true', 'high-yield', 'yes']:
+                raise ValueError(f"Card {i+1} high_yield_flag must be 'true', 'high-yield', 'yes', or empty")
     
     def create_anki_deck(self, data):
-        """Create an Anki deck from validated JSON data"""
+        """Create an Anki deck from validated JSON data with advanced medical card features"""
         deck_name = data['deck_name']
         cards_data = data['cards']
         
-        # Create deck
+        # Create deck with unique ID
         deck = genanki.Deck(
-            2059400110,
+            self.deck_id,
             deck_name
         )
         
         # Add cards to deck
         for card_data in cards_data:
+            # Extract and normalize field data
+            question = card_data.get('question', '').strip()
+            answer = card_data.get('answer', '').strip()
+            cloze_text = card_data.get('cloze_text', '').strip()
+            high_yield = card_data.get('high_yield_flag', '').strip().lower()
+            image = card_data.get('image', '').strip()
+            notes = card_data.get('notes', '').strip()
+            tags = card_data.get('tags', '').strip()
+            
+            # Process high yield flag
+            high_yield_flag = 'high-yield' if high_yield in ['true', 'high-yield', 'yes'] else ''
+            
+            # Create note with all fields
+            fields_data = [
+                question,           # Question
+                answer,            # Answer
+                high_yield_flag,   # HighYieldFlag
+                image,             # Image
+                notes,             # Notes
+                tags,              # Tags
+                cloze_text         # ClozeText
+            ]
+            
+            # Generate stable GUID for note updates
+            guid_components = [question, answer, cloze_text, deck_name]
+            note_guid = genanki.guid_for(*[comp for comp in guid_components if comp])
+            
             note = genanki.Note(
                 model=self.model,
-                fields=[card_data['question'], card_data['answer']]
+                fields=fields_data,
+                guid=note_guid
             )
+            
+            # Add hierarchical tags if provided
+            if tags:
+                note.tags = [tag.strip() for tag in tags.replace('::', '::').split('::') if tag.strip()]
+            
             deck.add_note(note)
         
         return deck
@@ -95,14 +270,19 @@ def process_flashcards():
         if 'json_file' in request.files and request.files['json_file'].filename:
             # File upload
             file = request.files['json_file']
-            if not file.filename.endswith('.json'):
+            if not file.filename or not str(file.filename).endswith('.json'):
                 flash('Please upload a JSON file (.json extension)', 'error')
                 return redirect(url_for('index'))
             
             try:
-                json_data = json.load(file)
+                # Read file content and parse JSON
+                file_content = file.read().decode('utf-8')
+                json_data = json.loads(file_content)
             except json.JSONDecodeError as e:
                 flash(f'Invalid JSON file: {str(e)}', 'error')
+                return redirect(url_for('index'))
+            except UnicodeDecodeError:
+                flash('File encoding error. Please ensure your JSON file is UTF-8 encoded.', 'error')
                 return redirect(url_for('index'))
         
         elif 'json_text' in request.form and request.form['json_text'].strip():

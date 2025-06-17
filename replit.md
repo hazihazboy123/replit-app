@@ -1,8 +1,8 @@
-# JSON to Anki Converter
+# Medical JSON to Anki Converter
 
 ## Overview
 
-This is a Flask-based web application that converts JSON-formatted flashcard data into Anki deck files (.apkg). Users can either upload a JSON file or paste JSON data directly into a web form to generate downloadable Anki flashcard decks.
+This is a Flask-based web application that converts JSON-formatted medical flashcard data into advanced Anki deck files (.apkg). Designed specifically for medical students, it supports high-yield card highlighting, cloze deletions, hierarchical tags, image embedding, and notes sections. Users can either upload a JSON file or paste JSON data directly into a web form to generate downloadable Anki flashcard decks optimized for medical education.
 
 ## System Architecture
 
@@ -22,17 +22,20 @@ This is a Flask-based web application that converts JSON-formatted flashcard dat
   - `FlashcardProcessor`: Class handling JSON validation and Anki deck generation
 
 ### Data Processing
-- **JSON Validation**: Custom validation for required fields (deck_name, cards)
-- **Anki Generation**: Uses the `genanki` library to create .apkg files
-- **File Handling**: Temporary file creation for deck downloads
+- **Enhanced JSON Validation**: Validates medical card structure supporting Q&A or cloze formats
+- **Advanced Anki Generation**: Uses `genanki` with unique model/deck IDs and medical-focused templates
+- **Medical Card Features**: High-yield highlighting, cloze deletions, hierarchical tags, notes sections
+- **File Handling**: Secure temporary file creation for deck downloads with stable GUID generation
 
 ## Key Components
 
 ### FlashcardProcessor Class
-- Validates JSON structure for flashcard data
-- Creates Anki models and templates
-- Generates downloadable .apkg files
-- Handles error cases and validation failures
+- Validates enhanced JSON structure for medical flashcard data
+- Creates advanced Anki models with medical-focused styling and templates
+- Supports both basic Q&A and cloze deletion card types
+- Generates downloadable .apkg files with unique IDs for proper Anki tracking
+- Handles high-yield flagging, hierarchical tags, and notes sections
+- Implements stable GUID generation for consistent card updates
 
 ### Web Interface
 - Single-page application with file upload and text input options
@@ -58,15 +61,34 @@ This is a Flask-based web application that converts JSON-formatted flashcard dat
 ### Expected JSON Structure
 ```json
 {
-  "deck_name": "Deck Name",
+  "deck_name": "Medical Terminology Deck",
   "cards": [
     {
-      "question": "Front of card",
-      "answer": "Back of card"
+      "question": "What is the mechanism of action of Aspirin?",
+      "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes",
+      "high_yield_flag": "high-yield",
+      "notes": "Important for cardiology and pain management",
+      "tags": "Pharmacology::NSAIDs::Aspirin",
+      "image": ""
+    },
+    {
+      "cloze_text": "{{c1::Myocardial infarction}} is caused by {{c2::coronary artery occlusion}}",
+      "high_yield_flag": "high-yield",
+      "notes": "Key concept for USMLE Step 1",
+      "tags": "Cardiology::Pathophysiology"
     }
   ]
 }
 ```
+
+#### Enhanced Field Options:
+- **deck_name**: Name of the Anki deck (required)
+- **question/answer**: For basic Q&A cards
+- **cloze_text**: For cloze deletion cards using {{c1::text}} format
+- **high_yield_flag**: Set to "high-yield" for red highlighting
+- **notes**: Additional context information
+- **tags**: Hierarchical tags using :: separator
+- **image**: Image filename for embedding (future enhancement)
 
 ## External Dependencies
 
@@ -105,7 +127,16 @@ This is a Flask-based web application that converts JSON-formatted flashcard dat
 
 ```
 Changelog:
-- June 17, 2025. Initial setup
+- June 17, 2025: Initial setup with basic JSON to Anki conversion
+- June 17, 2025: Enhanced for medical students with advanced features:
+  * Added unique model/deck ID generation using random.randrange()
+  * Implemented medical-focused card templates with CSS styling
+  * Added support for high-yield flagging with red highlighting
+  * Integrated cloze deletion card support
+  * Added hierarchical tag system with :: separators
+  * Enhanced validation for medical card structures
+  * Implemented stable GUID generation for card updates
+  * Updated UI with medical-specific examples and documentation
 ```
 
 ## User Preferences
@@ -116,9 +147,15 @@ Preferred communication style: Simple, everyday language.
 
 ### Notes for Development
 
-- The application currently processes flashcards in memory without persistent storage
-- Database integration (PostgreSQL/SQLAlchemy) is configured but not implemented
-- The FlashcardProcessor class is partially implemented and needs completion
-- Error handling and flash messaging system is in place
-- The application uses a simple card model with Question/Answer fields
-- Future enhancements could include user accounts, deck management, and more card types
+- The application processes medical flashcards in memory without persistent storage
+- Database integration (PostgreSQL/SQLAlchemy) is configured but not currently used
+- The FlashcardProcessor class implements advanced medical card generation with genanki
+- Comprehensive error handling and flash messaging system is in place
+- Uses sophisticated card models with medical-focused fields and styling
+- Implements unique ID generation following genanki best practices
+- Future enhancements could include:
+  * Image file upload and embedding support
+  * User accounts and deck management
+  * Integration with n8n automation workflows
+  * Additional card types and medical specialty templates
+  * Bulk CSV import functionality

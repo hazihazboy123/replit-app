@@ -74,19 +74,26 @@ document.addEventListener('DOMContentLoaded', function() {
     sampleBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Load Sample Data';
     sampleBtn.addEventListener('click', function() {
         const sampleData = {
-            "deck_name": "Sample Vocabulary Deck",
+            "deck_name": "Medical Sample Deck",
             "cards": [
                 {
-                    "question": "What does 'ubiquitous' mean?",
-                    "answer": "Present, appearing, or found everywhere"
+                    "question": "What is the mechanism of action of Aspirin?",
+                    "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes, preventing prostaglandin synthesis",
+                    "high_yield_flag": "high-yield",
+                    "notes": "Key drug for cardiovascular protection and pain management",
+                    "tags": "Pharmacology::NSAIDs::Aspirin"
                 },
                 {
-                    "question": "Define 'ephemeral'",
-                    "answer": "Lasting for a very short time"
+                    "cloze_text": "{{c1::Myocardial infarction}} occurs when {{c2::coronary artery}} becomes {{c3::occluded}}",
+                    "high_yield_flag": "high-yield",
+                    "notes": "Essential pathophysiology concept for USMLE",
+                    "tags": "Cardiology::Pathophysiology::MI"
                 },
                 {
-                    "question": "What is 'serendipity'?",
-                    "answer": "The occurrence of events by chance in a happy or beneficial way"
+                    "question": "What are the signs of diabetic ketoacidosis?",
+                    "answer": "Hyperglycemia, ketosis, metabolic acidosis, dehydration",
+                    "notes": "Emergency condition requiring immediate treatment",
+                    "tags": "Endocrinology::Diabetes::DKA"
                 }
             ]
         };

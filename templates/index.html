@@ -7,12 +7,12 @@
             <div class="card-header">
                 <h1 class="card-title mb-0">
                     <i class="bi bi-file-earmark-code me-2"></i>
-                    Convert JSON Flashcards to Anki Deck
+                    Convert Medical JSON Flashcards to Anki Deck
                 </h1>
             </div>
             <div class="card-body">
                 <p class="card-text">
-                    Upload a JSON file or paste JSON data containing your flashcards to generate a downloadable Anki deck (.apkg file).
+                    Upload a JSON file or paste JSON data containing your medical flashcards to generate a downloadable Anki deck (.apkg file) with advanced features like high-yield highlighting, cloze deletions, and hierarchical tags.
                 </p>
 
                 <form method="POST" action="{{ url_for('process_flashcards') }}" enctype="multipart/form-data" id="flashcard-form">
@@ -56,29 +56,38 @@
                 </h2>
             </div>
             <div class="card-body">
-                <p>Your JSON data should follow this structure:</p>
+                <p>Your JSON data should follow this structure for medical flashcards:</p>
                 <pre class="bg-dark p-3 rounded"><code>{
-  "deck_name": "My Flashcard Deck",
+  "deck_name": "Medical Terminology Deck",
   "cards": [
     {
-      "question": "What is the capital of France?",
-      "answer": "Paris"
+      "question": "What is the mechanism of action of Aspirin?",
+      "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes",
+      "high_yield_flag": "high-yield",
+      "notes": "Important for cardiology and pain management",
+      "tags": "Pharmacology::NSAIDs::Aspirin",
+      "image": ""
     },
     {
-      "question": "What is 2 + 2?",
-      "answer": "4"
+      "cloze_text": "{{c1::Myocardial infarction}} is caused by {{c2::coronary artery occlusion}}",
+      "high_yield_flag": "high-yield",
+      "notes": "Key concept for USMLE Step 1",
+      "tags": "Cardiology::Pathophysiology"
     }
   ]
 }</code></pre>
                 <div class="mt-3">
-                    <h6>Requirements:</h6>
+                    <h6>Field Options:</h6>
                     <ul class="mb-0">
-                        <li><code>deck_name</code>: A string representing the name of your Anki deck</li>
-                        <li><code>cards</code>: An array of flashcard objects</li>
-                        <li>Each card must have <code>question</code> and <code>answer</code> fields</li>
-                        <li>Questions and answers cannot be empty</li>
-                        <li>At least one card is required</li>
+                        <li><code>deck_name</code>: Name of your Anki deck (required)</li>
+                        <li><code>question</code> & <code>answer</code>: For basic Q&A cards</li>
+                        <li><code>cloze_text</code>: For cloze deletion cards (use {{c1::text}} format)</li>
+                        <li><code>high_yield_flag</code>: "high-yield" for red highlighting (optional)</li>
+                        <li><code>notes</code>: Additional context information (optional)</li>
+                        <li><code>tags</code>: Hierarchical tags using :: separator (optional)</li>
+                        <li><code>image</code>: Image filename if uploading separately (optional)</li>
                     </ul>
+                    <p class="mt-2"><strong>Note:</strong> Each card needs either question/answer OR cloze_text</p>
                 </div>
             </div>
         </div>
