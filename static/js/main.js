@@ -77,20 +77,19 @@ document.addEventListener('DOMContentLoaded', function() {
             "deck_name": "Medical Sample Deck",
             "cards": [
                 {
-                    "question": "What is the mechanism of action of Aspirin?",
+                    "question": "What is the mechanism of action of <span class='highlight-red'>Aspirin</span>?",
                     "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes, preventing prostaglandin synthesis",
-                    "high_yield_flag": "high-yield",
                     "notes": "Key drug for cardiovascular protection and pain management",
                     "tags": "Pharmacology::NSAIDs::Aspirin"
                 },
                 {
                     "cloze_text": "{{c1::Myocardial infarction}} occurs when {{c2::coronary artery}} becomes {{c3::occluded}}",
-                    "high_yield_flag": "high-yield",
                     "notes": "Essential pathophysiology concept for USMLE",
-                    "tags": "Cardiology::Pathophysiology::MI"
+                    "tags": "Cardiology::Pathophysiology::MI",
+                    "high_yield_flag": "high-yield"
                 },
                 {
-                    "question": "What are the signs of diabetic ketoacidosis?",
+                    "question": "What are the signs of <span class='highlight-red'>diabetic ketoacidosis</span>?",
                     "answer": "Hyperglycemia, ketosis, metabolic acidosis, dehydration",
                     "notes": "Emergency condition requiring immediate treatment",
                     "tags": "Endocrinology::Diabetes::DKA"

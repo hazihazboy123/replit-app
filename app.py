@@ -41,25 +41,29 @@ class FlashcardProcessor:
             line-height: 1.5;
             max-width: 650px;
             margin: auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
         .card.nightMode {
             color: white;
             background-color: #333;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
-        .high-yield {
+        .highlight-red {
             color: red;
             font-weight: bold;
         }
-        .card.nightMode .high-yield {
+        .card.nightMode .highlight-red {
             color: #FF6666;
         }
         .notes-section {
             font-size: 0.9em;
             color: #666;
-            margin-top: 15px;
-            padding-top: 10px;
+            margin-top: auto;
+            padding-top: 15px;
             border-top: 1px solid #eee;
+            text-align: left;
         }
         .card.nightMode .notes-section {
             color: #999;
@@ -84,39 +88,40 @@ class FlashcardProcessor:
             border-top: 1px dashed #ccc;
             margin: 20px 0;
         }
-        .tags {
-            font-size: 0.8em;
-            color: #888;
-            margin-top: 10px;
+        .main-content {
+            flex-grow: 1;
         }
         """
         
         fields = [
             {'name': 'Question'},
             {'name': 'Answer'},
-            {'name': 'HighYieldFlag'},
             {'name': 'Image'},
             {'name': 'Notes'},
-            {'name': 'Tags'},
-            {'name': 'ClozeText'}
+            {'name': 'ClozeText'},
+            {'name': 'HighYieldFlag'},
+            {'name': 'Tags'}
         ]
         
         templates = [
             {
                 'name': 'Basic Card',
                 'qfmt': '''
-                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                <div class="main-content">
                     {{Question}}
+                    {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Image}}<img src="{{Image}}">{{/Image}}
+                {{#Notes}}
+                <div class="notes-section">
+                    <strong>Notes:</strong> {{Notes}}
+                </div>
+                {{/Notes}}
                 ''',
                 'afmt': '''
-                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                <div class="main-content">
                     {{Question}}
-                </div>
-                {{#Image}}<img src="{{Image}}">{{/Image}}
-                <hr id="answer">
-                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                    {{#Image}}<img src="{{Image}}">{{/Image}}
+                    <hr id="answer">
                     {{Answer}}
                 </div>
                 {{#Notes}}
@@ -124,34 +129,31 @@ class FlashcardProcessor:
                     <strong>Notes:</strong> {{Notes}}
                 </div>
                 {{/Notes}}
-                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
                 '''
             },
             {
                 'name': 'Cloze Card',
                 'qfmt': '''
-                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                <div class="main-content">
                     {{cloze:ClozeText}}
+                    {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Image}}<img src="{{Image}}">{{/Image}}
                 {{#Notes}}
                 <div class="notes-section">
                     <strong>Notes:</strong> {{Notes}}
                 </div>
                 {{/Notes}}
-                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
                 ''',
                 'afmt': '''
-                <div class="{{#HighYieldFlag}}high-yield{{/HighYieldFlag}}">
+                <div class="main-content">
                     {{cloze:ClozeText}}
+                    {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Image}}<img src="{{Image}}">{{/Image}}
                 {{#Notes}}
                 <div class="notes-section">
                     <strong>Notes:</strong> {{Notes}}
                 </div>
                 {{/Notes}}
-                {{#Tags}}<div class="tags">Tags: {{Tags}}</div>{{/Tags}}
                 '''
             }
         ]
@@ -196,10 +198,10 @@ class FlashcardProcessor:
                 if not card['question'].strip() or not card['answer'].strip():
                     raise ValueError(f"Card {i+1} question and answer cannot be empty")
             
-            # Validate high_yield_flag if present
+            # Validate high_yield_flag if present (for internal flagging, not automatic coloring)
             high_yield = card.get('high_yield_flag', '').strip().lower()
-            if high_yield and high_yield not in ['true', 'high-yield', 'yes']:
-                raise ValueError(f"Card {i+1} high_yield_flag must be 'true', 'high-yield', 'yes', or empty")
+            if high_yield and high_yield not in ['', 'high-yield']:
+                raise ValueError(f"Card {i+1} high_yield_flag must be 'high-yield' or empty")
     
     def create_anki_deck(self, data):
         """Create an Anki deck from validated JSON data with advanced medical card features"""
@@ -217,28 +219,25 @@ class FlashcardProcessor:
             # Extract and normalize field data
             question = card_data.get('question', '').strip()
             answer = card_data.get('answer', '').strip()
-            cloze_text = card_data.get('cloze_text', '').strip()
-            high_yield = card_data.get('high_yield_flag', '').strip().lower()
             image = card_data.get('image', '').strip()
             notes = card_data.get('notes', '').strip()
+            cloze_text = card_data.get('cloze_text', '').strip()
+            high_yield_flag = card_data.get('high_yield_flag', '').strip().lower()
             tags = card_data.get('tags', '').strip()
             
-            # Process high yield flag
-            high_yield_flag = 'high-yield' if high_yield in ['true', 'high-yield', 'yes'] else ''
-            
-            # Create note with all fields
+            # Create note with fields in correct order matching the model
             fields_data = [
                 question,           # Question
                 answer,            # Answer
-                high_yield_flag,   # HighYieldFlag
                 image,             # Image
                 notes,             # Notes
-                tags,              # Tags
-                cloze_text         # ClozeText
+                cloze_text,        # ClozeText
+                high_yield_flag,   # HighYieldFlag (for internal use, not automatic styling)
+                tags               # Tags
             ]
             
             # Generate stable GUID for note updates
-            guid_components = [question, answer, cloze_text, deck_name]
+            guid_components = [question, answer, cloze_text, image]
             note_guid = genanki.guid_for(*[comp for comp in guid_components if comp])
             
             note = genanki.Note(
@@ -249,7 +248,7 @@ class FlashcardProcessor:
             
             # Add hierarchical tags if provided
             if tags:
-                note.tags = [tag.strip() for tag in tags.replace('::', '::').split('::') if tag.strip()]
+                note.tags = [tag.strip() for tag in tags.split('::') if tag.strip()]
             
             deck.add_note(note)
         

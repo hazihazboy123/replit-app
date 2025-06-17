@@ -137,6 +137,13 @@ Changelog:
   * Enhanced validation for medical card structures
   * Implemented stable GUID generation for card updates
   * Updated UI with medical-specific examples and documentation
+- June 17, 2025: Refined medical card implementation:
+  * Improved CSS with flexbox layout and footer positioning for notes
+  * Removed automatic high-yield coloring - users control HTML formatting
+  * Enhanced field structure with better template organization
+  * Added highlight-red CSS class for manual text highlighting
+  * Improved card templates with main-content div structure
+  * Fixed Jinja2 template syntax conflicts with cloze deletion format
 ```
 
 ## User Preferences
