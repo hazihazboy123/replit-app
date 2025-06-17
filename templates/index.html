@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-code me-2"></i>
+                    Convert JSON Flashcards to Anki Deck
+                </h1>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Upload a JSON file or paste JSON data containing your flashcards to generate a downloadable Anki deck (.apkg file).
+                </p>
+
+                <form method="POST" action="{{ url_for('process_flashcards') }}" enctype="multipart/form-data" id="flashcard-form">
+                    <div class="mb-4">
+                        <label for="json_file" class="form-label">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                            Upload JSON File
+                        </label>
+                        <input type="file" class="form-control" id="json_file" name="json_file" accept=".json">
+                        <div class="form-text">Select a .json file containing your flashcard data</div>
+                    </div>
+
+                    <div class="text-center my-3">
+                        <span class="badge bg-secondary">OR</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="json_text" class="form-label">
+                            <i class="bi bi-code-square me-1"></i>
+                            Paste JSON Data
+                        </label>
+                        <textarea class="form-control" id="json_text" name="json_text" rows="10" placeholder="Paste your JSON flashcard data here..."></textarea>
+                        <div class="form-text">Enter your flashcard data in JSON format</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-download me-2"></i>
+                            Generate Anki Deck
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    JSON Format Guide
+                </h2>
+            </div>
+            <div class="card-body">
+                <p>Your JSON data should follow this structure:</p>
+                <pre class="bg-dark p-3 rounded"><code>{
+  "deck_name": "My Flashcard Deck",
+  "cards": [
+    {
+      "question": "What is the capital of France?",
+      "answer": "Paris"
+    },
+    {
+      "question": "What is 2 + 2?",
+      "answer": "4"
+    }
+  ]
+}</code></pre>
+                <div class="mt-3">
+                    <h6>Requirements:</h6>
+                    <ul class="mb-0">
+                        <li><code>deck_name</code>: A string representing the name of your Anki deck</li>
+                        <li><code>cards</code>: An array of flashcard objects</li>
+                        <li>Each card must have <code>question</code> and <code>answer</code> fields</li>
+                        <li>Questions and answers cannot be empty</li>
+                        <li>At least one card is required</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-question-circle me-2"></i>
+                    How to Use
+                </h2>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li>Prepare your flashcard data in the JSON format shown above</li>
+                    <li>Either upload a .json file or paste the JSON data directly</li>
+                    <li>Click "Generate Anki Deck" to process your data</li>
+                    <li>Download the generated .apkg file</li>
+                    <li>Import the .apkg file into Anki using File → Import</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
