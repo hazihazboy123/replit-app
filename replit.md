@@ -149,7 +149,9 @@ Changelog:
   * Added flask-cors dependency and configured CORS for API endpoints
   * Implemented comprehensive API endpoints: /health, /generate, /validate, /schema
   * All endpoints tested and working locally with proper JSON responses
-  * Ready for external deployment to enable n8n workflow integration
+  * Added enhanced debugging logs to track exact data received from n8n
+  * Identified issue: n8n AI agents generating medical sample data instead of processing user input
+  * API confirmed working correctly - issue is in n8n workflow data flow
 ```
 
 ## User Preferences
