@@ -305,17 +305,17 @@ class FlashcardProcessor:
                 guid=note_guid
             )
             
-            # Handle hierarchical tags properly
+            # Handle hierarchical tags properly (remove spaces for Anki compatibility)
             tags_data = card_data.get('tags', '')
             if tags_data:
                 if isinstance(tags_data, list):
-                    note.tags = [tag.strip() for tag in tags_data if tag.strip()]
+                    note.tags = [tag.strip().replace(' ', '_') for tag in tags_data if tag.strip()]
                 elif isinstance(tags_data, str):
                     # Support both space and :: separated tags
                     if '::' in tags_data:
-                        note.tags = [tag.strip() for tag in tags_data.split('::') if tag.strip()]
+                        note.tags = [tag.strip().replace(' ', '_') for tag in tags_data.split('::') if tag.strip()]
                     else:
-                        note.tags = [tag.strip() for tag in tags_data.split() if tag.strip()]
+                        note.tags = [tag.strip().replace(' ', '_') for tag in tags_data.split() if tag.strip()]
             
             deck.add_note(note)
         

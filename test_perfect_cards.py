@@ -45,6 +45,7 @@ test_data = {
         {
             "type": "cloze",
             "front": "The {{c1::sympathetic}} nervous system releases {{c2::norepinephrine}} at most {{c3::postganglionic}} terminals",
+            "back": "",
             "mnemonic": "Sympathetic = Speed up with NE",
             "vignette": "Fight-or-flight response during stress increases heart rate and blood pressure",
             "clinical_correlation": "Beta-blockers work by antagonizing norepinephrine at cardiac receptors",
