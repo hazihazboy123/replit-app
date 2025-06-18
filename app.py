@@ -286,10 +286,11 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Medical JSON to Anki Converter',
-        'version': '2.0.0',
+        'version': '3.0.0',
         'supports_front_back': True, 
         'supports_ai_format': True,
-        'last_updated': '2025-06-18T02:43:00Z',
+        'deployment_fix': 'active',
+        'last_updated': '2025-06-18T02:47:00Z',
         'timestamp': int(time.time())
     }), 200
 

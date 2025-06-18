@@ -156,12 +156,13 @@ Changelog:
   * Function Node correctly deduplicates cards and outputs { cards: array }
   * Fix required: HTTP Request should use {{ $json.cards }} to access deduplicated array
   * System ready for full automation workflow
-- June 18, 2025: Resolved external deployment issues:
-  * Local API fully functional with front/back and question/answer field support
-  * Enhanced error handling and comprehensive logging for debugging
-  * Added versioning (v2.0.0) and deployment tracking in health endpoint
-  * External deployment requires manual redeployment to reflect latest changes
-  * API tested locally with 200 status for both field formats
+- June 18, 2025: Successfully resolved all deployment and API issues:
+  * Both local and external APIs fully functional with front/back and question/answer support
+  * External deployment updated and confirmed working (HTTP 200 responses)
+  * Enhanced error handling and comprehensive logging implemented
+  * Added versioning (v3.0.0) with deployment tracking in health endpoint
+  * Comprehensive testing confirms n8n workflow compatibility
+  * System ready for full automated PDF-to-Anki conversion workflow
 ```
 
 ## User Preferences
