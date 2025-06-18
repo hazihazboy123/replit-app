@@ -175,6 +175,8 @@ Changelog:
   * Resolved JSON decoding errors that were causing n8n workflow failures
   * Modified /api/bulletproof to generate actual .apkg files with download URLs for n8n compatibility
   * Added /download/<filename> endpoint for serving generated Anki deck files
+  * Fixed /api/bulletproof to always return consistent JSON with full download URLs
+  * System now processes complex medical content from AI agents and provides downloadable .apkg files
 ```
 
 ## User Preferences

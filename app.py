@@ -642,28 +642,27 @@ def api_bulletproof():
                     safe_filename = "medical_flashcards"
                 filename = f"{safe_filename}.apkg"
                 
-                # For n8n (JSON response), return download info
-                if request.headers.get('User-Agent', '').lower() == 'n8n' or request.headers.get('Accept') == 'application/json':
-                    download_url = f"/download/{os.path.basename(tmp_file.name)}"
-                    return {
-                        'success': True,
-                        'status': 'completed',
-                        'deck_name': deck_name,
-                        'cards_processed': valid_cards,
-                        'total_cards': len(cards),
-                        'file_size': file_size,
-                        'filename': filename,
-                        'download_url': download_url,
-                        'message': f'Successfully generated {valid_cards} medical flashcards'
-                    }, 200
+                # Always return JSON for this endpoint to maintain n8n compatibility
+                download_url = f"/download/{os.path.basename(tmp_file.name)}"
+                full_download_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
                 
-                # For browser requests, return file directly
-                return send_file(
-                    tmp_file.name,
-                    as_attachment=True,
-                    download_name=filename,
-                    mimetype='application/octet-stream'
-                )
+                response_data = {
+                    'success': True,
+                    'status': 'completed',
+                    'deck_name': deck_name,
+                    'cards_processed': valid_cards,
+                    'total_cards': len(cards),
+                    'file_size': file_size,
+                    'filename': filename,
+                    'download_url': download_url,
+                    'full_download_url': full_download_url,
+                    'message': f'Successfully generated {valid_cards} medical flashcards'
+                }
+                
+                app.logger.info(f"Returning response: {response_data}")
+                return response_data, 200
+                
+                # Note: Removed browser file download to maintain consistent JSON response
                 
         except Exception as deck_error:
             app.logger.error(f"Deck generation failed: {deck_error}")
