@@ -495,6 +495,29 @@ def api_generate_json():
         if not json_data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
+        # Enhanced logging for debugging n8n issues
+        app.logger.info(f"Received JSON data: {json_data}")
+        app.logger.info(f"Data type: {type(json_data)}")
+        app.logger.info(f"Keys in data: {json_data.keys() if isinstance(json_data, dict) else 'Not a dict'}")
+        
+        # Handle case where n8n sends just the cards array
+        if isinstance(json_data, list):
+            json_data = {
+                'deck_name': 'Medical Flashcards',
+                'cards': json_data
+            }
+            app.logger.info("Converted array to proper format")
+        elif 'deck_name' not in json_data and 'cards' in json_data:
+            json_data['deck_name'] = 'Medical Flashcards'
+            app.logger.info("Added missing deck_name")
+        elif 'cards' not in json_data:
+            app.logger.error("Missing 'cards' field in request")
+            return jsonify({
+                'error': 'Missing cards field',
+                'message': 'Request must include "cards" array',
+                'received_keys': list(json_data.keys()) if isinstance(json_data, dict) else str(type(json_data))
+            }), 400
+        
         app.logger.info(f"Processing {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
         
         processor = FlashcardProcessor()

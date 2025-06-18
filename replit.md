@@ -177,6 +177,13 @@ Changelog:
   * Added /download/<filename> endpoint for serving generated Anki deck files
   * Fixed /api/bulletproof to always return consistent JSON with full download URLs
   * System now processes complex medical content from AI agents and provides downloadable .apkg files
+- June 18, 2025: Enhanced n8n compatibility for /api/generate-json endpoint:
+  * Added intelligent handling for multiple JSON input formats from n8n workflows
+  * Supports array format: [{"front":"Q","back":"A"}] 
+  * Supports object format: {"cards":[{"front":"Q","back":"A"}]}
+  * Auto-adds missing deck_name field for n8n compatibility
+  * Enhanced error logging to debug n8n validation issues
+  * Confirmed working with both local and external deployment testing
 ```
 
 ## User Preferences
