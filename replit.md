@@ -152,7 +152,8 @@ Changelog:
   * Added enhanced debugging logs to track exact data received from n8n
   * Confirmed n8n workflow generating intended medical flashcards from PDF content
   * API successfully processing spinothalamic tract and pain signal cards as expected
-  * System fully operational for automated PDF-to-Anki conversion workflow
+  * Identified issue: n8n HTTP Request node using hardcoded JSON instead of dynamic AI output
+  * System ready - requires n8n workflow JSON body fix to use $json dynamic data
 ```
 
 ## User Preferences
