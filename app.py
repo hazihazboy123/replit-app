@@ -815,7 +815,145 @@ def api_schema():
         }
     }
     
-    return jsonify(schema), 200
+    return jsonify(schema)
+
+
+@app.route('/api/simple', methods=['POST', 'OPTIONS'])
+def api_simple():
+    """Bulletproof endpoint that accepts any reasonable JSON format from n8n"""
+    if request.method == 'OPTIONS':
+        return '', 200
+        
+    try:
+        app.logger.info("=== SIMPLE API CALLED ===")
+        
+        # Get the raw request data
+        raw_data = request.get_data(as_text=True)
+        app.logger.info(f"Raw request: {raw_data}")
+        
+        # Parse JSON with multiple fallback methods
+        data = None
+        
+        # Try Flask's built-in parser
+        try:
+            data = request.get_json(force=True)
+            app.logger.info("✓ Flask parser worked")
+        except Exception as e:
+            app.logger.info(f"✗ Flask parser failed: {e}")
+            
+        # Try manual JSON parsing
+        if not data:
+            try:
+                import json
+                data = json.loads(raw_data)
+                app.logger.info("✓ Manual JSON parser worked")
+            except Exception as e:
+                app.logger.info(f"✗ Manual parser failed: {e}")
+        
+        # Still no data? Return detailed error
+        if not data:
+            return {
+                'error': 'Could not parse JSON',
+                'raw_data_preview': raw_data[:100],
+                'suggestions': [
+                    'Send: {"cards": [{"front":"Q","back":"A"}]}',
+                    'Or send: [{"front":"Q","back":"A"}]'
+                ]
+            }, 400
+        
+        app.logger.info(f"Parsed data type: {type(data)}")
+        app.logger.info(f"Parsed data: {data}")
+        
+        # Convert different input formats to standard format
+        if isinstance(data, list):
+            # If it's just an array of cards
+            cards = data
+            deck_name = "Medical Flashcards"
+            app.logger.info("Input was cards array")
+        elif isinstance(data, dict):
+            if 'cards' in data:
+                # Standard format with cards field
+                cards = data['cards']
+                deck_name = data.get('deck_name', 'Medical Flashcards')
+                app.logger.info("Input was object with cards field")
+            else:
+                # Maybe the whole object is one card?
+                if 'front' in data or 'question' in data:
+                    cards = [data]
+                    deck_name = "Medical Flashcards"
+                    app.logger.info("Input was single card object")
+                else:
+                    return {
+                        'error': 'No cards found',
+                        'received_keys': list(data.keys()),
+                        'expected': 'cards field or front/question field'
+                    }, 400
+        else:
+            return {
+                'error': 'Invalid data type',
+                'received_type': str(type(data))
+            }, 400
+        
+        # Validate we have cards
+        if not cards or not isinstance(cards, list):
+            return {
+                'error': 'Invalid cards',
+                'cards_type': str(type(cards)),
+                'cards_value': cards
+            }, 400
+        
+        app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
+        
+        # Create the final data structure
+        final_data = {
+            'deck_name': deck_name,
+            'cards': cards
+        }
+        
+        # Generate the Anki deck
+        processor = FlashcardProcessor()
+        processor.validate_json_structure(final_data)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
+            processor.create_anki_deck(final_data)
+            # The deck is returned, write it to file
+            deck = processor.create_anki_deck(final_data)
+            deck.write_to_file(tmp_file.name)
+            file_size = os.path.getsize(tmp_file.name)
+            
+            # Clean filename
+            safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            if not safe_name:
+                safe_name = "flashcards"
+            filename = f"{safe_name}.apkg"
+            
+            download_url = f"/download/{os.path.basename(tmp_file.name)}"
+            full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
+            
+            result = {
+                'success': True,
+                'status': 'completed',
+                'deck_name': deck_name,
+                'cards_processed': len(cards),
+                'file_size': file_size,
+                'filename': filename,
+                'download_url': download_url,
+                'full_download_url': full_url,
+                'message': f'Generated Anki deck with {len(cards)} cards'
+            }
+            
+            app.logger.info(f"SUCCESS: {result}")
+            return result, 200
+            
+    except Exception as e:
+        app.logger.error(f"SIMPLE API ERROR: {str(e)}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            'error': 'Processing failed',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }, 500
 
 @app.route('/process', methods=['POST'])
 def process_flashcards():
