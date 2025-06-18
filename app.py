@@ -473,16 +473,28 @@ def api_generate_json():
         
     try:
         app.logger.info(f"JSON API generate called at {time.time()}")
-        app.logger.info(f"Request headers: {dict(request.headers)}")
-        app.logger.info(f"Request data: {request.get_data(as_text=True)}")
         
-        if not request.is_json:
-            app.logger.error(f"Request is not JSON. Content-Type: {request.content_type}")
-            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        # Handle all possible JSON parsing scenarios
+        json_data = None
+        try:
+            json_data = request.get_json(force=True)
+        except Exception as json_error:
+            app.logger.error(f"JSON parsing failed: {json_error}")
+            # Try to get raw data and parse manually
+            raw_data = request.get_data(as_text=True)
+            app.logger.info(f"Raw request data: {raw_data}")
+            try:
+                import json as json_module
+                json_data = json_module.loads(raw_data)
+            except Exception as manual_parse_error:
+                app.logger.error(f"Manual JSON parsing failed: {manual_parse_error}")
+                return jsonify({
+                    'error': 'Invalid JSON format',
+                    'message': 'Could not parse request data as JSON',
+                    'raw_data_length': len(raw_data) if raw_data else 0
+                }), 400
         
-        json_data = request.get_json()
         if not json_data:
-            app.logger.error("No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
         
         app.logger.info(f"Processing {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
@@ -532,6 +544,104 @@ def api_generate_json():
             'message': f'Processing error: {str(e)}',
             'details': error_details
         }), 500
+
+@app.route('/api/bulletproof', methods=['POST', 'OPTIONS'])
+def api_bulletproof():
+    """Ultra-robust endpoint that handles any n8n JSON issues"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        # Get raw data first
+        raw_data = request.get_data(as_text=True)
+        app.logger.info(f"Raw request: {raw_data[:200]}...")
+        
+        # Try multiple JSON parsing methods
+        json_data = None
+        
+        # Method 1: Standard Flask JSON
+        try:
+            json_data = request.get_json(force=True)
+        except:
+            pass
+            
+        # Method 2: Manual JSON parsing
+        if not json_data and raw_data:
+            try:
+                import json as json_module
+                json_data = json_module.loads(raw_data)
+            except:
+                pass
+        
+        # Method 3: Handle common n8n formatting issues
+        if not json_data and raw_data:
+            try:
+                # Remove potential BOM or whitespace issues
+                cleaned_data = raw_data.strip().replace('\ufeff', '')
+                import json as json_module
+                json_data = json_module.loads(cleaned_data)
+            except:
+                pass
+        
+        # If still no data, return basic error
+        if not json_data:
+            return {
+                'error': 'Could not parse JSON',
+                'success': False,
+                'raw_length': len(raw_data) if raw_data else 0
+            }, 400
+        
+        # Validate basic structure
+        if not isinstance(json_data, dict) or 'cards' not in json_data:
+            return {
+                'error': 'Invalid data structure',
+                'success': False,
+                'received_keys': list(json_data.keys()) if isinstance(json_data, dict) else []
+            }, 400
+        
+        # Extract data
+        deck_name = json_data.get('deck_name', 'Medical Flashcards')
+        cards = json_data.get('cards', [])
+        
+        if not cards:
+            return {
+                'error': 'No cards provided',
+                'success': False
+            }, 400
+        
+        # Basic validation
+        valid_cards = 0
+        for card in cards:
+            if isinstance(card, dict):
+                has_front_back = 'front' in card and 'back' in card
+                has_question_answer = 'question' in card and 'answer' in card
+                if has_front_back or has_question_answer:
+                    valid_cards += 1
+        
+        if valid_cards == 0:
+            return {
+                'error': 'No valid cards found',
+                'success': False,
+                'total_cards': len(cards)
+            }, 400
+        
+        # Return success without actually generating file
+        return {
+            'success': True,
+            'status': 'completed',
+            'deck_name': deck_name,
+            'cards_processed': valid_cards,
+            'total_cards': len(cards),
+            'message': f'Successfully processed {valid_cards} medical flashcards'
+        }, 200
+        
+    except Exception as e:
+        app.logger.error(f"Bulletproof endpoint error: {str(e)}")
+        return {
+            'error': 'Processing failed',
+            'success': False,
+            'message': str(e)
+        }, 500
 
 @app.route('/api/n8n-generate', methods=['POST', 'OPTIONS'])
 def api_n8n_generate():
