@@ -5,6 +5,7 @@ import logging
 import random
 import uuid
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for, jsonify
+from flask_cors import CORS
 import genanki
 
 # Configure logging
@@ -14,9 +15,14 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
-# Configure CORS for n8n integration
-from cors_config import configure_cors
-configure_cors(app)
+# Configure CORS for API endpoints
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 class FlashcardProcessor:
     """Handles processing of JSON flashcard data and Anki deck generation for medical students"""
