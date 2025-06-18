@@ -332,11 +332,14 @@ def test_validation():
 def api_generate():
     """API endpoint for n8n integration to generate Anki decks from JSON data"""
     try:
-        # Add deployment timestamp for debugging
-        app.logger.info(f"API generate called at {time.time()}, supports front/back: True")
-        app.logger.info(f"Request headers: {dict(request.headers)}")
-        app.logger.info(f"Request method: {request.method}")
-        app.logger.info(f"Request content type: {request.content_type}")
+        # Check if n8n wants JSON response based on headers
+        user_agent = request.headers.get('User-Agent', '').lower()
+        accept_header = request.headers.get('Accept', '').lower()
+        wants_json = 'n8n' in user_agent or 'application/json' in accept_header
+        
+        app.logger.info(f"API generate called, wants_json: {wants_json}")
+        app.logger.info(f"User-Agent: {request.headers.get('User-Agent')}")
+        app.logger.info(f"Accept: {request.headers.get('Accept')}")
         if not request.is_json:
             app.logger.error("Request is not JSON")
             return jsonify({
