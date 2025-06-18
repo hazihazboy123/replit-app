@@ -14,6 +14,10 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
+# Configure CORS for n8n integration
+from cors_config import configure_cors
+configure_cors(app)
+
 class FlashcardProcessor:
     """Handles processing of JSON flashcard data and Anki deck generation for medical students"""
     
@@ -328,6 +332,10 @@ def process_flashcards():
         app.logger.error(f"Error processing flashcards: {str(e)}")
         flash('An error occurred while processing your flashcards. Please try again.', 'error')
         return redirect(url_for('index'))
+
+# Register API blueprint
+from api_routes import api
+app.register_blueprint(api)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
