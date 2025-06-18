@@ -163,8 +163,10 @@ Changelog:
   * Added versioning (v3.0.0) with deployment tracking in health endpoint
   * Comprehensive testing confirms n8n workflow compatibility
   * System ready for full automated PDF-to-Anki conversion workflow
-  * Added /api/generate-json endpoint specifically for n8n integration (returns JSON instead of binary file)
+  * Added /api/generate-json endpoint specifically for n8n integration (returns JSON instead of binary file)  
   * Both endpoints support front/back and question/answer card formats from AI agents
+  * Confirmed: External API working correctly - n8n error was due to binary file response interpretation
+  * Solution: Use /api/generate-json endpoint for n8n workflows to receive JSON confirmation
 ```
 
 ## User Preferences
