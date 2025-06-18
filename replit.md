@@ -167,6 +167,7 @@ Changelog:
   * Both endpoints support front/back and question/answer card formats from AI agents
   * Confirmed: External API working correctly - n8n error was due to binary file response interpretation
   * Solution: Use /api/generate-json endpoint for n8n workflows to receive JSON confirmation
+  * Added /api/n8n-generate as ultra-simple endpoint with minimal processing for maximum n8n compatibility
 ```
 
 ## User Preferences

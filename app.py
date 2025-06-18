@@ -530,6 +530,38 @@ def api_generate_json():
             'details': error_details
         }), 500
 
+@app.route('/api/n8n-generate', methods=['POST', 'OPTIONS'])
+def api_n8n_generate():
+    """Ultra-simple endpoint specifically for n8n with minimal processing"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    # Always return JSON for n8n regardless of headers
+    try:
+        data = request.get_json(force=True)
+        if not data or 'cards' not in data:
+            return {'error': 'Invalid data'}, 400
+            
+        deck_name = data.get('deck_name', 'Medical Flashcards')
+        card_count = len(data.get('cards', []))
+        
+        # Just validate basic structure
+        for card in data['cards']:
+            if not (('front' in card and 'back' in card) or ('question' in card and 'answer' in card)):
+                return {'error': 'Invalid card format'}, 400
+        
+        # Return simple success JSON
+        return {
+            'success': True,
+            'status': 'completed',
+            'deck_name': deck_name,
+            'cards_processed': card_count,
+            'message': f'Generated {card_count} cards'
+        }, 200
+        
+    except Exception as e:
+        return {'error': str(e), 'success': False}, 500
+
 @app.route('/api/schema', methods=['GET'])
 def api_schema():
     """API endpoint to get the expected JSON schema for medical flashcards"""
