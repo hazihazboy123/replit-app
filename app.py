@@ -198,16 +198,22 @@ class FlashcardProcessor:
             if not isinstance(card, dict):
                 raise ValueError(f"Card {i+1} must be an object")
             
-            # Check for either basic Q&A or cloze text
-            has_qa = 'question' in card and 'answer' in card
+            # Check for either basic Q&A (question/answer OR front/back) or cloze text
+            has_qa_traditional = 'question' in card and 'answer' in card
+            has_qa_front_back = 'front' in card and 'back' in card
             has_cloze = 'cloze_text' in card and card.get('cloze_text', '').strip()
             
-            if not has_qa and not has_cloze:
-                raise ValueError(f"Card {i+1} must have either 'question'/'answer' fields or 'cloze_text' field")
+            has_qa = has_qa_traditional or has_qa_front_back
             
-            if has_qa:
+            if not has_qa and not has_cloze:
+                raise ValueError(f"Card {i+1} must have either 'question'/'answer' fields, 'front'/'back' fields, or 'cloze_text' field")
+            
+            if has_qa_traditional:
                 if not card['question'].strip() or not card['answer'].strip():
                     raise ValueError(f"Card {i+1} question and answer cannot be empty")
+            elif has_qa_front_back:
+                if not card['front'].strip() or not card['back'].strip():
+                    raise ValueError(f"Card {i+1} front and back cannot be empty")
             
             # Validate high_yield_flag if present (for internal flagging, not automatic coloring)
             high_yield = card.get('high_yield_flag', '').strip().lower()
@@ -227,14 +233,18 @@ class FlashcardProcessor:
         
         # Add cards to deck
         for card_data in cards_data:
-            # Extract and normalize field data
-            question = card_data.get('question', '').strip()
-            answer = card_data.get('answer', '').strip()
+            # Extract and normalize field data - support both question/answer and front/back formats
+            question = card_data.get('question', card_data.get('front', '')).strip()
+            answer = card_data.get('answer', card_data.get('back', '')).strip()
             image = card_data.get('image', '').strip()
-            notes = card_data.get('notes', '').strip()
+            notes = card_data.get('notes', card_data.get('note', '')).strip()
             cloze_text = card_data.get('cloze_text', '').strip()
             high_yield_flag = card_data.get('high_yield_flag', '').strip().lower()
             tags = card_data.get('tags', '').strip()
+            
+            # Handle tags as array or string
+            if isinstance(card_data.get('tags'), list):
+                tags = '::'.join(card_data['tags'])
             
             # Create note with fields in correct order matching the model
             fields_data = [
@@ -339,10 +349,14 @@ def api_generate():
             'message': str(e)
         }), 400
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         app.logger.error(f"API error generating deck: {str(e)}")
+        app.logger.error(f"Full traceback: {error_details}")
         return jsonify({
             'error': 'Internal server error',
-            'message': 'An error occurred while processing your request'
+            'message': f'Processing error: {str(e)}',
+            'details': error_details if app.debug else None
         }), 500
 
 @app.route('/api/validate', methods=['POST'])
