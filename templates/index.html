@@ -111,6 +111,37 @@
                 </ol>
             </div>
         </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-code-slash me-2"></i>
+                    API Endpoints for n8n Integration
+                </h2>
+            </div>
+            <div class="card-body">
+                <p>Use these API endpoints for programmatic access and n8n workflows:</p>
+                <div class="mb-3">
+                    <h6><code>POST /api/generate</code></h6>
+                    <p class="mb-2">Generate Anki deck from JSON data. Send JSON in request body with <code>Content-Type: application/json</code></p>
+                    <p class="mb-2"><strong>Returns:</strong> Binary .apkg file for download</p>
+                </div>
+                <div class="mb-3">
+                    <h6><code>POST /api/validate</code></h6>
+                    <p class="mb-2">Validate JSON structure without generating deck</p>
+                    <p class="mb-2"><strong>Returns:</strong> JSON with validation results and card summary</p>
+                </div>
+                <div class="mb-3">
+                    <h6><code>GET /api/schema</code></h6>
+                    <p class="mb-2">Get the complete JSON schema and examples</p>
+                    <p class="mb-2"><strong>Returns:</strong> JSON schema with field descriptions</p>
+                </div>
+                <div>
+                    <h6><code>GET /api/health</code></h6>
+                    <p class="mb-0">Health check endpoint for monitoring</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
