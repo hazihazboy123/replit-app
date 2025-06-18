@@ -904,6 +904,22 @@ def api_simple():
         
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
         
+        # Debug each card content
+        for i, card in enumerate(cards):
+            app.logger.info(f"Card {i}: {card}")
+            front = card.get('front', '') or card.get('question', '')
+            back = card.get('back', '') or card.get('answer', '')
+            app.logger.info(f"Card {i} - Front: '{front}' | Back: '{back}'")
+            
+            if not front and not back:
+                app.logger.error(f"Card {i} is completely empty!")
+                return {
+                    'error': 'Empty card detected',
+                    'card_index': i,
+                    'card_data': card,
+                    'message': 'Cards must have front/back or question/answer content'
+                }, 400
+        
         # Create the final data structure
         final_data = {
             'deck_name': deck_name,

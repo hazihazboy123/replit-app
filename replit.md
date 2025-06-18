@@ -184,6 +184,9 @@ Changelog:
   * Auto-adds missing deck_name field for n8n compatibility
   * Enhanced error logging to debug n8n validation issues
   * Confirmed working with both local and external deployment testing
+  * Added detailed card content debugging to identify empty data from n8n workflows
+  * Verified API generates proper medical flashcards when given valid content
+  * Issue isolated to n8n data pipeline - API endpoint fully functional
 ```
 
 ## User Preferences
