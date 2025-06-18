@@ -1053,10 +1053,17 @@ def api_simple():
         
         # Convert different input formats to standard format
         if isinstance(data, list):
-            # If it's just an array of cards
-            cards = data
-            deck_name = "Medical Flashcards"
-            app.logger.info("Input was cards array")
+            # Check if it's an array containing objects with 'cards' field
+            if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
+                # Handle format: [{"cards": [...]}]
+                cards = data[0]['cards']
+                deck_name = data[0].get('deck_name', 'Medical Flashcards')
+                app.logger.info("Input was array with cards object")
+            else:
+                # If it's just an array of cards
+                cards = data
+                deck_name = "Medical Flashcards"
+                app.logger.info("Input was cards array")
         elif isinstance(data, dict):
             if 'cards' in data:
                 # Standard format with cards field
@@ -1127,28 +1134,39 @@ def api_simple():
                     }
                 }, 400
                 
-            # Normalize the card format for processing
+            # Normalize the card format for processing - handle all field variations
             card_type = card.get('type', '').lower()
             
+            # Map field variations to standard fields
             if card_type == 'cloze' and front and '{{c' in front:
-                # Handle cloze cards where content is in front field
+                # Handle cloze cards where content is in question field
                 card['cloze_text'] = front
                 # Clear front/back for cloze cards
                 card.pop('front', None)
                 card.pop('back', None)
+                card.pop('question', None)
+                card.pop('answer', None)
             elif card_type == 'cloze' and front:
-                # Handle any cloze card - put content in cloze_text and add placeholder back
+                # Handle any cloze card - put content in cloze_text 
                 card['cloze_text'] = front
                 card['back'] = ' '  # Add space to prevent validation error
             elif not front and not back and cloze:
                 # Standard cloze deletion card
                 card['cloze_text'] = cloze
             else:
-                # Standard Q&A card
+                # Standard Q&A card - map to front/back for consistency
                 if front:
                     card['front'] = front
                 if back:
                     card['back'] = back
+            
+            # Map field variations to standard names
+            if 'clinical_correl' in card:
+                card['clinical_correlation'] = card.get('clinical_correl', '')
+            if 'additional_notes' in card:
+                card['notes'] = card.get('additional_notes', '')
+            elif 'note' in card:
+                card['notes'] = card.get('note', '')
         
         # Create the final data structure
         final_data = {
