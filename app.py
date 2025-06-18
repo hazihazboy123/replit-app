@@ -334,6 +334,9 @@ def api_generate():
     try:
         # Add deployment timestamp for debugging
         app.logger.info(f"API generate called at {time.time()}, supports front/back: True")
+        app.logger.info(f"Request headers: {dict(request.headers)}")
+        app.logger.info(f"Request method: {request.method}")
+        app.logger.info(f"Request content type: {request.content_type}")
         if not request.is_json:
             app.logger.error("Request is not JSON")
             return jsonify({
