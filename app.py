@@ -4,6 +4,7 @@ import tempfile
 import logging
 import random
 import uuid
+import json
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for, jsonify
 from flask_cors import CORS
 import genanki
@@ -283,6 +284,7 @@ def api_generate():
     """API endpoint for n8n integration to generate Anki decks from JSON data"""
     try:
         if not request.is_json:
+            app.logger.error("Request is not JSON")
             return jsonify({
                 'error': 'Content-Type must be application/json',
                 'message': 'Please send JSON data with proper Content-Type header'
@@ -290,10 +292,28 @@ def api_generate():
         
         json_data = request.get_json()
         if not json_data:
+            app.logger.error("No JSON data in request")
             return jsonify({
                 'error': 'No JSON data provided',
                 'message': 'Request body must contain valid JSON data'
             }), 400
+        
+        # Log exactly what we received
+        app.logger.info(f"=== API GENERATE DEBUG ===")
+        app.logger.info(f"Received deck_name: {json_data.get('deck_name', 'MISSING')}")
+        app.logger.info(f"Number of cards: {len(json_data.get('cards', []))}")
+        for i, card in enumerate(json_data.get('cards', [])):
+            app.logger.info(f"Card {i+1}: {json.dumps(card, indent=2)}")
+        app.logger.info(f"=== END DEBUG ===")
+        
+        # Ensure we're not using any cached or sample data by creating fresh processor
+        processor = FlashcardProcessor()
+        
+        # Validate the exact data we received
+        processor.validate_json_structure(json_data)
+        
+        # Create deck from the exact data received
+        deck = processor.create_anki_deck(json_data)
         
         # Process the JSON data
         processor = FlashcardProcessor()
