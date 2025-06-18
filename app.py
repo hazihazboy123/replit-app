@@ -467,20 +467,19 @@ def api_validate():
 
 @app.route('/api/generate-json', methods=['POST', 'OPTIONS'])
 def api_generate_json():
-    """API endpoint specifically for n8n - returns JSON confirmation instead of file"""
+    """API endpoint specifically for n8n - returns JSON confirmation and generates actual files"""
     if request.method == 'OPTIONS':
         return '', 200
         
     try:
         app.logger.info(f"JSON API generate called at {time.time()}")
         
-        # Handle all possible JSON parsing scenarios
+        # Robust JSON parsing
         json_data = None
         try:
             json_data = request.get_json(force=True)
         except Exception as json_error:
             app.logger.error(f"JSON parsing failed: {json_error}")
-            # Try to get raw data and parse manually
             raw_data = request.get_data(as_text=True)
             app.logger.info(f"Raw request data: {raw_data}")
             try:
@@ -490,8 +489,7 @@ def api_generate_json():
                 app.logger.error(f"Manual JSON parsing failed: {manual_parse_error}")
                 return jsonify({
                     'error': 'Invalid JSON format',
-                    'message': 'Could not parse request data as JSON',
-                    'raw_data_length': len(raw_data) if raw_data else 0
+                    'message': 'Could not parse request data as JSON'
                 }), 400
         
         if not json_data:
@@ -517,6 +515,10 @@ def api_generate_json():
             # Clean up temp file
             os.unlink(tmp_file.name)
             
+            # Add download URL for n8n compatibility
+            download_url = f"/download/{os.path.basename(tmp_file.name)}"
+            full_download_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
+            
             result = {
                 'status': 'success',
                 'message': f"Generated Anki deck '{deck_name}' with {len(json_data['cards'])} cards",
@@ -524,6 +526,8 @@ def api_generate_json():
                 'card_count': len(json_data['cards']),
                 'file_size': file_size,
                 'filename': filename,
+                'download_url': download_url,
+                'full_download_url': full_download_url,
                 'success': True
             }
             app.logger.info(f"Returning success response: {result}")
