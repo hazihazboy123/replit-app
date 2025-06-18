@@ -111,17 +111,26 @@ class FlashcardProcessor:
             {'name': 'Notes'},
             {'name': 'ClozeText'},
             {'name': 'HighYieldFlag'},
-            {'name': 'Tags'}
+            {'name': 'Tags'},
+            {'name': 'Vignette'},
+            {'name': 'Mnemonic'}
         ]
         
         templates = [
             {
-                'name': 'Basic Card',
+                'name': 'Medical Card',
                 'qfmt': '''
                 <div class="main-content">
-                    {{Question}}
+                    {{#Question}}{{Question}}{{/Question}}
+                    {{#ClozeText}}{{cloze:ClozeText}}{{/ClozeText}}
                     {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
+                {{#Vignette}}
+                <div class="vignette-section">
+                    <div class="section-heading">Clinical Vignette:</div>
+                    {{Vignette}}
+                </div>
+                {{/Vignette}}
                 {{#Notes}}
                 <div class="notes-section">
                     <strong>Notes:</strong> {{Notes}}
@@ -130,36 +139,26 @@ class FlashcardProcessor:
                 ''',
                 'afmt': '''
                 <div class="main-content">
-                    {{Question}}
-                    {{#Image}}<img src="{{Image}}">{{/Image}}
-                    <hr id="answer">
-                    {{Answer}}
-                </div>
-                {{#Notes}}
-                <div class="notes-section">
-                    <strong>Notes:</strong> {{Notes}}
-                </div>
-                {{/Notes}}
-                '''
-            },
-            {
-                'name': 'Cloze Card',
-                'qfmt': '''
-                <div class="main-content">
-                    {{cloze:ClozeText}}
+                    {{#Question}}
+                        {{Question}}
+                        <hr id="answer">
+                        {{Answer}}
+                    {{/Question}}
+                    {{#ClozeText}}{{cloze:ClozeText}}{{/ClozeText}}
                     {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Notes}}
-                <div class="notes-section">
-                    <strong>Notes:</strong> {{Notes}}
+                {{#Vignette}}
+                <div class="vignette-section">
+                    <div class="section-heading">Clinical Vignette:</div>
+                    {{Vignette}}
                 </div>
-                {{/Notes}}
-                ''',
-                'afmt': '''
-                <div class="main-content">
-                    {{cloze:ClozeText}}
-                    {{#Image}}<img src="{{Image}}">{{/Image}}
+                {{/Vignette}}
+                {{#Mnemonic}}
+                <div class="mnemonic-section">
+                    <div class="section-heading">Mnemonic:</div>
+                    {{Mnemonic}}
                 </div>
+                {{/Mnemonic}}
                 {{#Notes}}
                 <div class="notes-section">
                     <strong>Notes:</strong> {{Notes}}

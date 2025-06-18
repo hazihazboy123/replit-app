@@ -1,0 +1,55 @@
+omprehensive Anki Model Definition (create_anki_model function):
+
+Fields: Ensure the model includes Question, Answer, Image, Notes, ClozeText, HighYieldFlag, Vignette, and Mnemonic fields.
+CSS (model_css):
+Readability & Aesthetics:
+Set font-size: 19px; for body text.
+Set line-height: 1.5; for wider line spacing to improve readability.
+Set text-align: start; (left-aligned) for better readability, especially for longer content.
+Limit line length with max-width: 650px; for optimal reading comfort.
+Apply margin: auto; padding: 40px 20px; to the .card class for proper centering and breathing room.
+Use a modern, system-font stack for font-family (e.g., -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) for better native rendering across devices.
+Ensure color: black; and background-color: white; for day mode, with appropriate nightMode adjustments for contrast and readability.
+Highlighting: Maintain the .highlight-red class for specific word coloring (e.g., color: red; font-weight: bold;).
+Notes Section: Refine .notes-section CSS to ensure it acts as a distinct footer, pushed to the bottom of the card (margin-top: auto; display: block; width: 100%; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9em; color: #666;).
+Vignettes & Mnemonics Styling: Add new CSS classes (e.g., .vignette-section, .mnemonic-section) with distinct styling (e.g., borders, background colors, headings) to visually separate these sections on the card.
+Image Styling: Ensure img tags are styled with max-width: 100%; height: auto; display: block; margin: 10px auto; to prevent overflow and center images.
+Divider: Use a clean horizontal rule (<hr>) with appropriate styling (e.g., border: none; border-top: 1px dashed #ccc; margin: 20px 0;) between question and answer. [1]
+Templates (templates):
+Unified Card Type: Continue using a single model that intelligently handles both basic Q&A and cloze deletions based on the presence of ClozeText field.
+Conditional Display:
+Display Question and Answer for basic cards.
+Display ClozeText for cloze cards.
+Conditionally display Vignette and Mnemonic fields on the back of the card, each within its dedicated styled section, only if their content is present.
+Ensure Notes is displayed in its dedicated footer section on the back.
+Display Image if Image field is present.
+Tags: Ensure Tags are applied internally to the note but are not displayed on the card template.
+Robust Processing Logic (process_csv_and_generate_apkg function):
+
+Input Data Extraction: Ensure all new fields (Vignette, Mnemonic) are correctly extracted from the input JSON.
+Cloze Syntax Fix: Implement a workaround for the n8n JSON parsing issue where {{}} might be stripped. Before creating the genanki.Note, check if the ClozeText field starts with {c (indicating a cloze) but is missing the outer {{}}. If so, programmatically add the missing outer braces (e.g., if fields_data.startswith('{c') and not fields_data.startswith('{{'): fields_data = '{' + fields_data). This ensures genanki receives the correct syntax.
+Stable GUIDs for No Duplicates: Modify the genanki.guid_for() call to generate GUIDs based only on the core identifying fields: Question, Answer, and ClozeText. This prevents duplicate cards from being created when only Vignette or Mnemonic content is added or changed in subsequent runs.
+Example: guid_fields = [fields_data['Question'], fields_data['Answer'], fields_data]
+note_guid = genanki.guid_for(*guid_fields)
+Field Order Consistency: Verify that the order of fields passed to genanki.Note matches the order defined in the create_anki_model() function's fields list.
+This comprehensive update will transform your Anki card generation, making them highly effective and visually appealing for medical students."
+
+Here is your updated main.py file:
+Building a High-Yield Anki APKG Converter on Replit for Medical Students
+Jun 18, 12:18 AM
+
+ Try again without Canvas 
+
+I have updated the main.py code with the following key improvements:
+
+Enhanced Anki Model (create_anki_model):
+Improved CSS: Applied best practices for font-size, line-height, text-align, max-width, margin, and padding to significantly boost readability and visual appeal. Switched to modern system fonts.
+Dedicated Sections: Added specific CSS for .vignette-section and .mnemonic-section with distinct borders and backgrounds to clearly separate this content.
+Notes Footer: The .notes-section CSS now uses margin-top: auto; to reliably push the notes to the bottom of the card, creating a true footer.
+High-Yield Highlighting: The .highlight-red class is retained for specific word coloring.
+New Fields: The Anki model now explicitly includes Vignette and Mnemonic fields.
+Updated Templates: The qfmt (question format) and afmt (answer format) templates now conditionally display Vignette and Mnemonic fields on the back of the card only if they contain content. The Notes field is also correctly placed in its footer section.
+Robust Processing Logic (process_csv_and_generate_apkg):
+Cloze Syntax Fix: A crucial workaround has been added. If the ClozeText field from your input starts with {c but is missing the outer {{}} (a common n8n JSON parsing issue), the code will now automatically add the missing outer brace ({ + ClozeText + }). This should resolve your cloze cards showing {} instead of {{}}.
+Stable GUIDs: The genanki.guid_for() function now generates GUIDs based only on the Question, Answer, and ClozeText fields. This ensures that adding or modifying only the Vignette or Mnemonic content will not create duplicate cards upon re-import, as the core identity of the card remains the same.
+New Field Extraction: The code now correctly extracts Vignette and Mnemonic data from your input.
