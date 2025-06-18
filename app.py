@@ -240,7 +240,12 @@ class FlashcardProcessor:
             notes = card_data.get('notes', card_data.get('note', '')).strip()
             cloze_text = card_data.get('cloze_text', '').strip()
             high_yield_flag = card_data.get('high_yield_flag', '').strip().lower()
-            tags = card_data.get('tags', '').strip()
+            # Handle tags as either string or array
+            tags_data = card_data.get('tags', '')
+            if isinstance(tags_data, list):
+                tags = ' '.join(tags_data) if tags_data else ''
+            else:
+                tags = tags_data.strip() if tags_data else ''
             
             # Handle tags as array or string
             if isinstance(card_data.get('tags'), list):
@@ -974,11 +979,19 @@ def api_simple():
                 }, 400
                 
             # Normalize the card format for processing
-            if not front and not back and cloze:
-                # It's a cloze deletion card
+            card_type = card.get('type', '').lower()
+            
+            if card_type == 'cloze' and front and '{{c' in front:
+                # Handle cloze cards where content is in front field
+                card['cloze_text'] = front
+                # Clear front/back for cloze cards
+                card.pop('front', None)
+                card.pop('back', None)
+            elif not front and not back and cloze:
+                # Standard cloze deletion card
                 card['cloze_text'] = cloze
             else:
-                # It's a standard Q&A card
+                # Standard Q&A card
                 if front:
                     card['front'] = front
                 if back:
