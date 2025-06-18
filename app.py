@@ -298,21 +298,8 @@ def api_generate():
                 'message': 'Request body must contain valid JSON data'
             }), 400
         
-        # Log exactly what we received
-        app.logger.info(f"=== API GENERATE DEBUG ===")
-        app.logger.info(f"REQUEST HEADERS: {dict(request.headers)}")
-        app.logger.info(f"RAW REQUEST DATA: {request.get_data(as_text=True)}")
-        app.logger.info(f"Received deck_name: {json_data.get('deck_name', 'MISSING')}")
-        app.logger.info(f"Number of cards: {len(json_data.get('cards', []))}")
-        for i, card in enumerate(json_data.get('cards', [])):
-            app.logger.info(f"Card {i+1}: {json.dumps(card, indent=2)}")
-            # Check for medical keywords that suggest sample data
-            card_text = json.dumps(card).lower()
-            medical_keywords = ['azathioprine', 'aspirin', 'eosinophil', 'spinothalamic', 'cox-1', 'purine']
-            found_keywords = [kw for kw in medical_keywords if kw in card_text]
-            if found_keywords:
-                app.logger.warning(f"Card {i+1} contains sample medical keywords: {found_keywords}")
-        app.logger.info(f"=== END DEBUG ===")
+        # Log received data for debugging
+        app.logger.info(f"Processing deck: {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
         
         # Ensure we're not using any cached or sample data by creating fresh processor
         processor = FlashcardProcessor()
@@ -404,38 +391,7 @@ def api_validate():
             'message': 'An error occurred while validating your request'
         }), 500
 
-@app.route('/api/debug', methods=['POST'])
-def api_debug():
-    """Debug endpoint to see exactly what n8n is sending"""
-    try:
-        app.logger.info(f"=== DEBUG ENDPOINT HIT ===")
-        app.logger.info(f"REQUEST HEADERS: {dict(request.headers)}")
-        app.logger.info(f"RAW REQUEST DATA: {request.get_data(as_text=True)}")
-        
-        if request.is_json:
-            json_data = request.get_json()
-            app.logger.info(f"PARSED JSON: {json.dumps(json_data, indent=2)}")
-            return jsonify({
-                'status': 'success',
-                'received_data': json_data,
-                'data_type': 'JSON',
-                'message': 'Data logged successfully'
-            })
-        else:
-            raw_data = request.get_data(as_text=True)
-            app.logger.info(f"NON-JSON DATA: {raw_data}")
-            return jsonify({
-                'status': 'success',
-                'received_data': raw_data,
-                'data_type': 'TEXT',
-                'message': 'Data logged successfully'
-            })
-    except Exception as e:
-        app.logger.error(f"Debug endpoint error: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+
 
 @app.route('/api/schema', methods=['GET'])
 def api_schema():
