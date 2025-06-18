@@ -625,15 +625,53 @@ def api_bulletproof():
                 'total_cards': len(cards)
             }, 400
         
-        # Return success without actually generating file
-        return {
-            'success': True,
-            'status': 'completed',
-            'deck_name': deck_name,
-            'cards_processed': valid_cards,
-            'total_cards': len(cards),
-            'message': f'Successfully processed {valid_cards} medical flashcards'
-        }, 200
+        # Actually generate the Anki deck
+        try:
+            processor = FlashcardProcessor()
+            processor.validate_json_structure(json_data)
+            deck = processor.create_anki_deck(json_data)
+            
+            # Create temporary file for download
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
+                genanki.Package(deck).write_to_file(tmp_file.name)
+                file_size = os.path.getsize(tmp_file.name)
+                
+                # Generate safe filename
+                safe_filename = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+                if not safe_filename:
+                    safe_filename = "medical_flashcards"
+                filename = f"{safe_filename}.apkg"
+                
+                # For n8n (JSON response), return download info
+                if request.headers.get('User-Agent', '').lower() == 'n8n' or request.headers.get('Accept') == 'application/json':
+                    download_url = f"/download/{os.path.basename(tmp_file.name)}"
+                    return {
+                        'success': True,
+                        'status': 'completed',
+                        'deck_name': deck_name,
+                        'cards_processed': valid_cards,
+                        'total_cards': len(cards),
+                        'file_size': file_size,
+                        'filename': filename,
+                        'download_url': download_url,
+                        'message': f'Successfully generated {valid_cards} medical flashcards'
+                    }, 200
+                
+                # For browser requests, return file directly
+                return send_file(
+                    tmp_file.name,
+                    as_attachment=True,
+                    download_name=filename,
+                    mimetype='application/octet-stream'
+                )
+                
+        except Exception as deck_error:
+            app.logger.error(f"Deck generation failed: {deck_error}")
+            return {
+                'error': 'Deck generation failed',
+                'success': False,
+                'message': str(deck_error)
+            }, 500
         
     except Exception as e:
         app.logger.error(f"Bulletproof endpoint error: {str(e)}")
@@ -674,6 +712,31 @@ def api_n8n_generate():
         
     except Exception as e:
         return {'error': str(e), 'success': False}, 500
+
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    """Serve generated .apkg files for download"""
+    try:
+        # Construct full path to temporary file
+        temp_dir = tempfile.gettempdir()
+        file_path = os.path.join(temp_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return "File not found", 404
+        
+        # Extract deck name from filename for download name
+        base_name = filename.replace('.apkg', '').replace('tmp', 'medical_flashcards')
+        download_name = f"{base_name}.apkg"
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=download_name,
+            mimetype='application/octet-stream'
+        )
+    except Exception as e:
+        app.logger.error(f"Download error: {e}")
+        return "Download failed", 500
 
 @app.route('/api/schema', methods=['GET'])
 def api_schema():

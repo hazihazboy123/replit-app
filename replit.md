@@ -173,6 +173,8 @@ Changelog:
   * Created /api/bulletproof endpoint with multiple JSON parsing methods to handle n8n data issues
   * Bulletproof endpoint validates all card formats and provides detailed error messages
   * Resolved JSON decoding errors that were causing n8n workflow failures
+  * Modified /api/bulletproof to generate actual .apkg files with download URLs for n8n compatibility
+  * Added /download/<filename> endpoint for serving generated Anki deck files
 ```
 
 ## User Preferences
