@@ -212,7 +212,15 @@ class FlashcardProcessor:
                 if not card['question'].strip() or not card['answer'].strip():
                     raise ValueError(f"Card {i+1} question and answer cannot be empty")
             elif has_qa_front_back:
-                if not card['front'].strip() or not card['back'].strip():
+                front_content = card.get('front', '').strip()
+                back_content = card.get('back', '').strip()
+                card_type = card.get('type', '').lower()
+                
+                # Handle cloze cards where content is in front field
+                if card_type == 'cloze' and front_content and '{{c' in front_content:
+                    # This is a valid cloze card with content in front field
+                    pass
+                elif not front_content or not back_content:
                     raise ValueError(f"Card {i+1} front and back cannot be empty")
             
             # Validate high_yield_flag if present (for internal flagging, not automatic coloring)
