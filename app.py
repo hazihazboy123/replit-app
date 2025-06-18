@@ -286,8 +286,10 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Medical JSON to Anki Converter',
-        'version': '1.0.0',
-        'supports_front_back': True,
+        'version': '2.0.0',
+        'supports_front_back': True, 
+        'supports_ai_format': True,
+        'last_updated': '2025-06-18T02:43:00Z',
         'timestamp': int(time.time())
     }), 200
 
@@ -329,6 +331,8 @@ def test_validation():
 def api_generate():
     """API endpoint for n8n integration to generate Anki decks from JSON data"""
     try:
+        # Add deployment timestamp for debugging
+        app.logger.info(f"API generate called at {time.time()}, supports front/back: True")
         if not request.is_json:
             app.logger.error("Request is not JSON")
             return jsonify({
@@ -389,9 +393,12 @@ def api_generate():
         app.logger.error(f"API error generating deck: {str(e)}")
         app.logger.error(f"Full traceback: {error_details}")
         try:
-            app.logger.error(f"Input data that caused error: {json.dumps(json_data, indent=2)}")
-        except:
-            app.logger.error("Could not log input data")
+            if 'json_data' in locals():
+                app.logger.error(f"Input data that caused error: {json.dumps(json_data, indent=2)}")
+            else:
+                app.logger.error("json_data not available for logging")
+        except Exception as log_error:
+            app.logger.error(f"Could not log input data: {str(log_error)}")
         return jsonify({
             'error': 'Internal server error',
             'message': f'Processing error: {str(e)}',
