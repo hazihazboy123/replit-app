@@ -315,13 +315,6 @@ def api_generate():
         # Create deck from the exact data received
         deck = processor.create_anki_deck(json_data)
         
-        # Process the JSON data
-        processor = FlashcardProcessor()
-        processor.validate_json_structure(json_data)
-        
-        # Create Anki deck
-        deck = processor.create_anki_deck(json_data)
-        
         # Generate .apkg file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
             genanki.Package(deck).write_to_file(tmp_file.name)
