@@ -1,0 +1,278 @@
+import genanki
+import random
+import html
+import os
+
+# --- Configuration ---
+# Generate unique IDs once and hardcode them for consistent deck generation.
+# For a real application, these should be stored persistently (e.g., in a config file).
+# Example generation: random.randrange(1 << 30, 1 << 31)
+MY_MODEL_ID = 1607392319 # A consistent example ID
+MY_DECK_ID = 2059400110  # A consistent example ID
+
+DECK_NAME = 'High-Yield Medical Cards for Students'
+OUTPUT__FILENAME = 'high_yield_medical_cards.apkg'
+
+# --- CSS for Optimal Card Presentation ---
+# This CSS addresses common readability issues: font, centering, line height, and max width.
+# It uses system fonts for optimal readability across devices and includes dark mode support.
+# Styling adjusted to center text within the card, as demonstrated in the provided video.
+MY_CARD_CSS = """
+/* ANKINGMASTER NOTETYPE VERSION 8 inspired styling */
+
+html {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center; /* Center vertically */
+    align-items: center;   /* Center horizontally */
+    font-size: 28px; /* Base font size for desktop, as per AnKing */
+}
+
+.mobile {
+    font-size: 28px; /* Base font size for mobile, as per AnKing */
+}
+
+.card {
+    font-family: Arial Greek, Arial, sans-serif; /* Step exam's font is Arial Greek, as per AnKing */
+    font-size: 1rem; /* Relative to html font-size */
+    color: black; /* Default text color, as per AnKing */
+    background-color: #D1CFCE; /* Background color, as per AnKing */
+    text-align: center; /* Center align text within the card, as per video and AnKing */
+    line-height: 1.6; /* Wider line spacing for readability */
+    margin: 0px 15px; /* Margins, as per AnKing */
+    flex-grow: 1; /* Allow card to grow and fill space */
+    padding-bottom: 1em; /* Padding at the bottom, as per AnKing */
+    box-sizing: border-box; /* Include padding in element's total width and height */
+    max-width: 700px; /* Limit line length for readability */
+}
+
+/* Dark mode styling, as per AnKing */
+.nightMode.card,.night_mode.card {
+    color: #FFFAFA!important; /* Night mode text color */
+    background-color: #272828!important; /* Night mode background color */
+}
+
+/* Style for the horizontal rule separating question and answer */
+hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 20px 0;
+}
+
+/* Styling for cloze deletions, as per AnKing */
+.cloze {
+    font-weight: bold;
+    color: blue; /* Cloze color */
+}
+
+.nightMode.cloze,.night_mode.cloze {
+    color: #4297F9!important; /* Night mode cloze color */
+}
+
+/* Styling for the "EXTRA" field (used for Additional Notes), as per AnKing */
+#extra {
+    font-style: italic;
+    font-size: 1rem; /* Relative to base font size */
+    color: navy; /* "EXTRA" field color */
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee; /* Subtle separator */
+    text-align: left; /* Left-align for longer notes */
+}
+
+.nightMode #extra,.night_mode #extra {
+    color: magenta; /* Night mode "EXTRA" field color */
+    border-top: 1px dashed #444;
+}
+
+/* Styling for mnemonics and vignettes, as per AnKing */
+.mnemonic-section,.vignette-section,.clinical-correl-section,.source-section {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee; /* Subtle separator */
+    font-size: 0.95em; /* Slightly smaller font for supplementary info */
+    color: #555;
+    text-align: left; /* Mnemonics and other sections left-aligned as per AnKing */
+}
+
+.nightMode.mnemonic-section,.nightMode.vignette-section,.nightMode.clinical-correl-section,.nightMode.source-section {
+    color: #aaa;
+    border-top: 1px dashed #444;
+}
+
+.section-label {
+    font-weight: bold;
+    color: #333; /* Darker color for labels */
+    margin-bottom: 5px;
+    display: block; /* Ensure label is on its own line */
+}
+
+.nightMode.section-label {
+    color: #ccc;
+}
+
+/* Image sizing, as per AnKing */
+img {
+    max-height: none; /* No max height */
+}
+#extra img, #lecture img, #missed img, #pathoma img, #bnb img {
+    max-width: 85%; /* Max width for images in extra fields */
+}
+#firstaid img, #sketchy img, #physeo img, #additional img {
+    max-width: 60%; /* Max width for specific resource images */
+}
+.mobile.card img {
+    max-width: 100%!important;
+}
+
+/* TAGS container, as per AnKing */
+#tags-container {
+    position: fixed;
+    bottom:.5px;
+    width: 100%;
+    line-height:.45rem;
+    margin-left: -15px;
+    background-color: transparent;
+    display: block; /* Ensure tags are visible by default */
+}
+.mobile #tags-container {
+    line-height: 0.6rem;
+    margin-left: 0px;
+    display: block; /* Ensure tags are visible on mobile */
+}
+
+/* Clickable Tags (kbd elements), as per AnKing */
+kbd {
+    display: inline-block;
+    letter-spacing:.1px;
+    font-weight: bold;
+    font-size: 10px!important;
+    text-shadow: none!important;
+    padding: 0.05rem 0.1rem!important;
+    margin: 1px -3px!important;
+    border-radius: 4px;
+    border-width: 1.5px!important;
+    border-style: solid;
+    background-color: transparent!important;
+    box-shadow: none!important;
+    opacity: 0.5;
+    vertical-align: middle!important;
+    line-height: auto!important;
+    height: auto!important;
+    font-family: Arial Greek, Arial; /* Font for tags */
+}
+kbd:hover {
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+/* Tag Colors, as per AnKing */
+kbd:nth-of-type(1n+0) { border-color: #F44336; color: #F44336!important; }
+kbd:nth-of-type(2n+0) { border-color: #9C27B0; color: #9C27B0!important; }
+kbd:nth-of-type(3n+0) { border-color: #3F51B5; color: #3F51B5!important; }
+kbd:nth-of-type(4n+0) { border-color: #03A9F4; color: #03A9F4!important; }
+kbd:nth-of-type(5n+0) { border-color: #009688; color: #009688!important; }
+kbd:nth-of-type(6n+0) { border-color: #C0CA33; color: #C0CA33!important; }
+kbd:nth-of-type(7n+0) { border-color: #FF9800; color: #FF9800!important;}
+kbd:nth-of-type(8n+0) { border-color: #FF5722; color: #FF5722!important; }
+kbd:nth-of-type(9n+0) { border-color: #9E9E9E; color: #9E9E9E!important; }
+kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
+
+.mobile kbd {
+    opacity:.9;
+    margin: 1px!important;
+    display: inline-block;
+    font-size: 10px!important;
+}
+
+/* MNEMONICS CENTER OR LEFT, as per AnKing */
+.mnemonics {
+    display: inline-block;
+}
+.centerbox {text-align:center;}
+"""
+
+# --- Define the Custom Model (Note Type) ---
+# This model includes all necessary fields for high-yield medical cards and
+# defines how these fields are displayed on the front and back using HTML templates.
+# It also embeds the custom CSS.
+medical_model = genanki.Model(
+    MY_MODEL_ID,
+    'Medical High-Yield Card',
+    fields=,
+    templates=,
+    css=MY_CARD_CSS
+)
+
+# --- Create a Deck ---
+my_deck = genanki.Deck(
+    MY_DECK_ID,
+    DECK_NAME
+)
+
+# --- Function to Add a Basic Note ---
+def add_basic_note(question, answer, mnemonic="", vignette="", clinical_correl="", additional_notes="", source="", tags=""):
+    """Adds a basic Q&A note to the deck with optional rich content."""
+    note_fields = [
+        html.escape(question),
+        html.escape(answer),
+        html.escape(mnemonic),
+        html.escape(vignette),
+        html.escape(clinical_correl),
+        html.escape(additional_notes),
+        html.escape(source),
+        html.escape(tags) # Added tags field
+    ]
+    my_note = genanki.Note(
+        model=medical_model,
+        fields=note_fields,
+        # Optional: Custom GUID if needed for updates. Default is hash of fields.
+        # guid=genanki.guid_for(question, answer)
+    )
+    my_deck.add_note(my_note)
+    print(f"Added Basic Note: '{question[:50]}...'")
+
+# --- Function to Add a Cloze Note ---
+def add_cloze_note(cloze_question, answer, mnemonic="", vignette="", clinical_correl="", additional_notes="", source="", tags=""):
+    """Adds a cloze deletion note to the deck with optional rich content."""
+    note_fields = [
+        html.escape(cloze_question),
+        html.escape(answer),
+        html.escape(mnemonic),
+        html.escape(vignette),
+        html.escape(clinical_correl),
+        html.escape(additional_notes),
+        html.escape(source),
+        html.escape(tags) # Added tags field
+    ]
+    my_note = genanki.Note(
+        model=medical_model,
+        fields=note_fields,
+        # guid=genanki.guid_for(cloze_question)
+    )
+    my_deck.add_note(my_note)
+    print(f"Added Cloze Note: '{cloze_question[:50]}...'")
+
+# --- Example Usage: Populating Notes with AI Agent Data ---
+# Simulate data received from AI agents.
+# Ensure all text content is HTML-escaped before passing to genanki.Note.
+
+# Example 1: Basic Q&A Card
+add_basic_note(
+    question="What is the primary function of the glomerulus in the kidney?",
+    answer="The glomerulus is a capillary tuft that filters blood to form glomerular filtrate, the first step in urine formation.",
+    mnemonic="GLOMERULUS: G-F-L-O-M-E-R-U-L-U-S for 'Great Filtration Location Of Many Essential Renal Units, Little Urine Starts'",
+    vignette="A 55-year-old male with uncontrolled hypertension presents with proteinuria and elevated serum creatinine. Biopsy reveals glomerular sclerosis.",
+    clinical_correl="Glomerular damage, often due to chronic hypertension or diabetes, impairs filtration and leads to protein leakage into urine.",
+    additional_notes="The glomerular filtration barrier consists of fenestrated endothelium, glomerular basement membrane, and podocytes.",
+    source="Guyton & Hall Textbook of Medical Physiology, Ch. 26",
+    tags="Kidney::Physiology::Glomerulus::Pathology"
+)
+
+# Example 2: Cloze Deletion Card
+add_cloze_note(
+    cloze_question="The {{c1::Na+/K+ ATPase pump}} actively transports {{c2::3 Na+ ions}} out of the cell and {{c3::2 K+ ions}} into the cell, against their concentration gradients.",
+    answer="This pump is crucial for maintaining cell volume, resting membrane potential, and is a target for cardiac glycosides like digoxin.",
+    mnemonic="Na/K Pump: '3 Na Out, 2 K In' - Think of a 'Naughty Kid' (Na/K) who wants to get '3' (Na) out and '2' (K) in.",
+    vignette="A patient on digoxin develops arrhythmias due to electrolyte imbalance, affecting the Na+/K+ ATPase pump function.",
+    clinical_correl="Digoxin inhibits the Na+/K+ ATPase, leading to increased intracellular Na+ and

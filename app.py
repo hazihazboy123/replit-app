@@ -40,95 +40,201 @@ class FlashcardProcessor:
     def _create_medical_model(self):
         """Create advanced Anki model for medical students with perfect styling and multiple card types"""
         
-        # Perfect CSS based on the comprehensive guide recommendations
+        # AnKing-inspired perfect CSS styling for medical cards
         model_css = """
-        .card {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-            font-size: 19px; /* Optimal readability as per guide */
-            color: black;
-            background-color: white;
-            text-align: start; /* Left-align for better readability of paragraphs */
-            line-height: 1.6; /* Improved vertical spacing for readability */
-            margin: 0 auto; /* Horizontal centering of card content */
-            padding: 40px 20px; /* Comfortable margins around content */
-            max-width: 700px; /* Optimal line length around 75 characters */
-            box-sizing: border-box; /* Include padding in element's total width */
-        }
+/* ANKINGMASTER NOTETYPE VERSION 8 inspired styling */
 
-        /* Dark mode styling */
-        .nightMode .card {
-            color: white;
-            background-color: #1a1a1a;
-        }
+html {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center; /* Center vertically */
+    align-items: center;   /* Center horizontally */
+    font-size: 28px; /* Base font size for desktop, as per AnKing */
+}
 
-        /* Perfect centering - vertical and horizontal within Anki window */
-        html {
-            height: 100%;
-            display: flex;
-            justify-content: center; /* Center horizontally */
-            align-items: center;   /* Center vertically */
-        }
+.mobile {
+    font-size: 28px; /* Base font size for mobile, as per AnKing */
+}
 
-        /* QA section for proper content structure */
-        .qa-section {
-            display: block;
-            width: 100%;
-            text-align: start; /* Ensure text within is left-aligned */
-        }
+.card {
+    font-family: Arial Greek, Arial, sans-serif; /* Step exam's font is Arial Greek, as per AnKing */
+    font-size: 1rem; /* Relative to html font-size */
+    color: black; /* Default text color, as per AnKing */
+    background-color: #D1CFCE; /* Background color, as per AnKing */
+    text-align: center; /* Center align text within the card, as per video and AnKing */
+    line-height: 1.6; /* Wider line spacing for readability */
+    margin: 0px 15px; /* Margins, as per AnKing */
+    flex-grow: 1; /* Allow card to grow and fill space */
+    padding-bottom: 1em; /* Padding at the bottom, as per AnKing */
+    box-sizing: border-box; /* Include padding in element's total width and height */
+    max-width: 700px; /* Limit line length for readability */
+}
 
-        /* Style for horizontal rule separating question and answer */
-        hr {
-            border: none;
-            border-top: 1px solid #ccc;
-            margin: 20px 0;
-        }
+/* Dark mode styling, as per AnKing */
+.nightMode.card,.night_mode.card {
+    color: #FFFAFA!important; /* Night mode text color */
+    background-color: #272828!important; /* Night mode background color */
+}
 
-        /* Specific styling for sections like mnemonics, vignettes, and additional notes */
-        .mnemonic-section, .vignette-section, .additional-notes-section, .clinical-correlation-section {
-            margin-top: 25px;
-            padding-top: 15px;
-            border-top: 1px dashed #eee; /* Subtle separator */
-            font-size: 0.95em; /* Slightly smaller font for supplementary info */
-            color: #555;
-        }
+/* Style for the horizontal rule separating question and answer */
+hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 20px 0;
+}
 
-        .nightMode .mnemonic-section, .nightMode .vignette-section, .nightMode .additional-notes-section, .nightMode .clinical-correlation-section {
-            color: #aaa;
-            border-top: 1px dashed #444;
-        }
+/* Styling for cloze deletions, as per AnKing */
+.cloze {
+    font-weight: bold;
+    color: blue; /* Cloze color */
+}
 
-        .section-label {
-            font-weight: bold;
-            color: #333; /* Darker color for labels */
-            margin-bottom: 5px;
-            display: block; /* Ensure label is on its own line */
-        }
+.nightMode.cloze,.night_mode.cloze {
+    color: #4297F9!important; /* Night mode cloze color */
+}
 
-        .nightMode .section-label {
-            color: #ccc;
-        }
+/* Styling for the "EXTRA" field (used for Additional Notes), as per AnKing */
+#extra {
+    font-style: italic;
+    font-size: 1rem; /* Relative to base font size */
+    color: navy; /* "EXTRA" field color */
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee; /* Subtle separator */
+    text-align: left; /* Left-align for longer notes */
+}
 
-        /* Styling for cloze deletions */
-        .cloze {
-            font-weight: bold;
-            color: #007bff; /* Distinct blue for cloze text */
-        }
+.nightMode #extra,.night_mode #extra {
+    color: magenta; /* Night mode "EXTRA" field color */
+    border-top: 1px dashed #444;
+}
 
-        .nightMode .cloze {
-            color: #66b3ff; /* Lighter blue for dark mode */
-        }
+/* Styling for mnemonics and vignettes, as per AnKing */
+.mnemonic-section,.vignette-section,.clinical-correl-section,.source-section {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee; /* Subtle separator */
+    font-size: 0.95em; /* Slightly smaller font for supplementary info */
+    color: #555;
+    text-align: left; /* Mnemonics and other sections left-aligned as per AnKing */
+}
 
-        /* Image styling */
-        img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 10px auto;
-            border-radius: 4px;
-        }
-        .main-content {
-            flex-grow: 1;
-        }
+.nightMode.mnemonic-section,.nightMode.vignette-section,.nightMode.clinical-correl-section,.nightMode.source-section {
+    color: #aaa;
+    border-top: 1px dashed #444;
+}
+
+.section-label {
+    font-weight: bold;
+    color: #333; /* Darker color for labels */
+    margin-bottom: 5px;
+    display: block; /* Ensure label is on its own line */
+}
+
+.nightMode.section-label {
+    color: #ccc;
+}
+
+/* Image sizing, as per AnKing */
+img {
+    max-height: none; /* No max height */
+}
+#extra img, #lecture img, #missed img, #pathoma img, #bnb img {
+    max-width: 85%; /* Max width for images in extra fields */
+}
+#firstaid img, #sketchy img, #physeo img, #additional img {
+    max-width: 60%; /* Max width for specific resource images */
+}
+.mobile.card img {
+    max-width: 100%!important;
+}
+
+/* TAGS container, as per AnKing */
+#tags-container {
+    position: fixed;
+    bottom:.5px;
+    width: 100%;
+    line-height:.45rem;
+    margin-left: -15px;
+    background-color: transparent;
+    display: block; /* Ensure tags are visible by default */
+}
+.mobile #tags-container {
+    line-height: 0.6rem;
+    margin-left: 0px;
+    display: block; /* Ensure tags are visible on mobile */
+}
+
+/* Clickable Tags (kbd elements), as per AnKing */
+kbd {
+    display: inline-block;
+    letter-spacing:.1px;
+    font-weight: bold;
+    font-size: 10px!important;
+    text-shadow: none!important;
+    padding: 0.05rem 0.1rem!important;
+    margin: 1px -3px!important;
+    border-radius: 4px;
+    border-width: 1.5px!important;
+    border-style: solid;
+    background-color: transparent!important;
+    box-shadow: none!important;
+    opacity: 0.5;
+    vertical-align: middle!important;
+    line-height: auto!important;
+    height: auto!important;
+    font-family: Arial Greek, Arial; /* Font for tags */
+}
+kbd:hover {
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+/* Tag Colors, as per AnKing */
+kbd:nth-of-type(1n+0) { border-color: #F44336; color: #F44336!important; }
+kbd:nth-of-type(2n+0) { border-color: #9C27B0; color: #9C27B0!important; }
+kbd:nth-of-type(3n+0) { border-color: #3F51B5; color: #3F51B5!important; }
+kbd:nth-of-type(4n+0) { border-color: #03A9F4; color: #03A9F4!important; }
+kbd:nth-of-type(5n+0) { border-color: #009688; color: #009688!important; }
+kbd:nth-of-type(6n+0) { border-color: #C0CA33; color: #C0CA33!important; }
+kbd:nth-of-type(7n+0) { border-color: #FF9800; color: #FF9800!important;}
+kbd:nth-of-type(8n+0) { border-color: #FF5722; color: #FF5722!important; }
+kbd:nth-of-type(9n+0) { border-color: #9E9E9E; color: #9E9E9E!important; }
+kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
+
+.mobile kbd {
+    opacity:.9;
+    margin: 1px!important;
+    display: inline-block;
+    font-size: 10px!important;
+}
+
+/* MNEMONICS CENTER OR LEFT, as per AnKing */
+.mnemonics {
+    display: inline-block;
+}
+.centerbox {text-align:center;}
+
+/* QA section for proper content structure */
+.qa-section {
+    display: block;
+    width: 100%;
+}
+
+/* Additional styling for sections */
+.additional-notes-section {
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee;
+    font-size: 0.95em;
+    color: #555;
+    text-align: left;
+}
+
+.nightMode.additional-notes-section {
+    color: #aaa;
+    border-top: 1px dashed #444;
+}
         """
         
         # Define fields in precise order for consistent content mapping
@@ -144,7 +250,7 @@ class FlashcardProcessor:
             {'name': 'Image'}
         ]
         
-        # Perfect templates with conditional display and proper HTML structure
+        # AnKing-inspired templates with proper styling and structure
         templates = [
             {
                 'name': 'Medical High-Yield Card',
@@ -164,7 +270,9 @@ class FlashcardProcessor:
                 </div>
                 {{#Mnemonic}}
                 <div class="mnemonic-section">
-                    <span class="section-label">Mnemonic:</span> {{Mnemonic}}
+                    <div class="mnemonics centerbox">
+                        <span class="section-label">Mnemonic:</span> {{Mnemonic}}
+                    </div>
                 </div>
                 {{/Mnemonic}}
                 {{#Vignette}}
@@ -173,17 +281,17 @@ class FlashcardProcessor:
                 </div>
                 {{/Vignette}}
                 {{#ClinicalCorrelation}}
-                <div class="clinical-correlation-section">
+                <div class="clinical-correl-section">
                     <span class="section-label">Clinical Correlation:</span> {{ClinicalCorrelation}}
                 </div>
                 {{/ClinicalCorrelation}}
                 {{#AdditionalNotes}}
-                <div class="additional-notes-section">
-                    <span class="section-label">Additional Notes:</span> {{AdditionalNotes}}
+                <div id="extra">
+                    {{AdditionalNotes}}
                 </div>
                 {{/AdditionalNotes}}
                 {{#Source}}
-                <div class="additional-notes-section">
+                <div class="source-section">
                     <span class="section-label">Source:</span> {{Source}}
                 </div>
                 {{/Source}}
