@@ -459,6 +459,64 @@ def api_validate():
 
 
 
+@app.route('/api/generate-json', methods=['POST'])
+def api_generate_json():
+    """API endpoint specifically for n8n - returns JSON confirmation instead of file"""
+    try:
+        app.logger.info(f"JSON API generate called at {time.time()}")
+        
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        json_data = request.get_json()
+        if not json_data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        app.logger.info(f"Processing {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
+        
+        processor = FlashcardProcessor()
+        processor.validate_json_structure(json_data)
+        
+        deck = processor.create_anki_deck(json_data)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
+            genanki.Package(deck).write_to_file(tmp_file.name)
+            file_size = os.path.getsize(tmp_file.name)
+            
+            deck_name = json_data['deck_name']
+            safe_filename = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            if not safe_filename:
+                safe_filename = "medical_flashcards"
+            filename = f"{safe_filename}.apkg"
+            
+            # Clean up temp file
+            os.unlink(tmp_file.name)
+            
+            return jsonify({
+                'status': 'success',
+                'message': f"Generated Anki deck '{deck_name}' with {len(json_data['cards'])} cards",
+                'deck_name': deck_name,
+                'card_count': len(json_data['cards']),
+                'file_size': file_size,
+                'filename': filename
+            }), 200
+    
+    except ValueError as e:
+        return jsonify({
+            'error': 'Validation error',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        app.logger.error(f"JSON API error: {str(e)}")
+        app.logger.error(f"Full traceback: {error_details}")
+        return jsonify({
+            'error': 'Internal server error',
+            'message': f'Processing error: {str(e)}',
+            'details': error_details
+        }), 500
+
 @app.route('/api/schema', methods=['GET'])
 def api_schema():
     """API endpoint to get the expected JSON schema for medical flashcards"""
