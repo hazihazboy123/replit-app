@@ -827,37 +827,70 @@ def api_simple():
     try:
         app.logger.info("=== SIMPLE API CALLED ===")
         
-        # Get the raw request data
+        # Get comprehensive request information for debugging
         raw_data = request.get_data(as_text=True)
+        content_type = request.headers.get('Content-Type', 'unknown')
+        user_agent = request.headers.get('User-Agent', 'unknown')
+        
+        app.logger.info(f"Content-Type: {content_type}")
+        app.logger.info(f"User-Agent: {user_agent}")
+        app.logger.info(f"Raw request length: {len(raw_data)}")
         app.logger.info(f"Raw request: {raw_data}")
         
-        # Parse JSON with multiple fallback methods
+        # Parse JSON following the Replit HTTPS guide best practices
         data = None
         
-        # Try Flask's built-in parser
-        try:
-            data = request.get_json(force=True)
-            app.logger.info("✓ Flask parser worked")
-        except Exception as e:
-            app.logger.info(f"✗ Flask parser failed: {e}")
-            
-        # Try manual JSON parsing
-        if not data:
+        # Method 1: Flask's get_json with proper Content-Type validation
+        if 'application/json' in content_type.lower():
+            try:
+                data = request.get_json(force=True)
+                app.logger.info("✓ Flask JSON parser worked")
+            except Exception as e:
+                app.logger.info(f"✗ Flask JSON parser failed: {e}")
+        
+        # Method 2: Manual JSON parsing for edge cases
+        if not data and raw_data.strip():
             try:
                 import json
                 data = json.loads(raw_data)
                 app.logger.info("✓ Manual JSON parser worked")
             except Exception as e:
-                app.logger.info(f"✗ Manual parser failed: {e}")
+                app.logger.info(f"✗ Manual JSON parser failed: {e}")
+                
+        # Method 3: Handle URL-encoded data that might contain JSON
+        if not data and 'application/x-www-form-urlencoded' in content_type.lower():
+            try:
+                from urllib.parse import parse_qs
+                form_data = parse_qs(raw_data)
+                # Check if any form field contains JSON
+                for key, values in form_data.items():
+                    for value in values:
+                        try:
+                            potential_json = json.loads(value)
+                            if isinstance(potential_json, (list, dict)):
+                                data = potential_json
+                                app.logger.info("✓ Found JSON in form data")
+                                break
+                        except:
+                            continue
+                    if data:
+                        break
+            except Exception as e:
+                app.logger.info(f"✗ Form data parsing failed: {e}")
         
-        # Still no data? Return detailed error
+        # Return detailed error with debugging information
         if not data:
             return {
-                'error': 'Could not parse JSON',
-                'raw_data_preview': raw_data[:100],
+                'error': 'Could not parse request data',
+                'content_type': content_type,
+                'user_agent': user_agent,
+                'raw_data_preview': raw_data[:200],
+                'raw_data_length': len(raw_data),
                 'suggestions': [
+                    'Ensure Content-Type is application/json',
                     'Send: {"cards": [{"front":"Q","back":"A"}]}',
-                    'Or send: [{"front":"Q","back":"A"}]'
+                    'Or send: [{"front":"Q","back":"A"}]',
+                    'Verify n8n HTTP Request node settings'
                 ]
             }, 400
         
@@ -904,21 +937,52 @@ def api_simple():
         
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
         
-        # Debug each card content
+        # Enhanced card content validation following best practices
         for i, card in enumerate(cards):
             app.logger.info(f"Card {i}: {card}")
-            front = card.get('front', '') or card.get('question', '')
-            back = card.get('back', '') or card.get('answer', '')
-            app.logger.info(f"Card {i} - Front: '{front}' | Back: '{back}'")
             
-            if not front and not back:
+            # Support multiple field formats as per API documentation
+            front = (card.get('front', '') or 
+                    card.get('question', '') or 
+                    card.get('Front', '') or 
+                    card.get('Question', ''))
+            
+            back = (card.get('back', '') or 
+                   card.get('answer', '') or 
+                   card.get('Back', '') or 
+                   card.get('Answer', ''))
+            
+            # Handle cloze deletion cards
+            cloze = card.get('cloze_text', '') or card.get('cloze', '')
+            
+            app.logger.info(f"Card {i} - Front: '{front}' | Back: '{back}' | Cloze: '{cloze}'")
+            
+            # Validate card has content
+            if not front and not back and not cloze:
                 app.logger.error(f"Card {i} is completely empty!")
                 return {
                     'error': 'Empty card detected',
                     'card_index': i,
                     'card_data': card,
-                    'message': 'Cards must have front/back or question/answer content'
+                    'available_fields': list(card.keys()) if isinstance(card, dict) else 'not a dict',
+                    'message': 'Cards must have front/back, question/answer, or cloze_text content',
+                    'debug_info': {
+                        'front_variants': ['front', 'question', 'Front', 'Question'],
+                        'back_variants': ['back', 'answer', 'Back', 'Answer'],
+                        'cloze_variants': ['cloze_text', 'cloze']
+                    }
                 }, 400
+                
+            # Normalize the card format for processing
+            if not front and not back and cloze:
+                # It's a cloze deletion card
+                card['cloze_text'] = cloze
+            else:
+                # It's a standard Q&A card
+                if front:
+                    card['front'] = front
+                if back:
+                    card['back'] = back
         
         # Create the final data structure
         final_data = {
