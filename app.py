@@ -258,6 +258,20 @@ class FlashcardProcessor:
             if isinstance(card_data.get('tags'), list):
                 tags = '::'.join(card_data['tags'])
             
+            # Handle vignette and mnemonic fields
+            vignette = card_data.get('vignette', '') or card_data.get('Vignette', '')
+            mnemonic = card_data.get('mnemonic', '') or card_data.get('Mnemonic', '')
+            
+            if isinstance(vignette, str):
+                vignette = vignette.strip()
+            else:
+                vignette = str(vignette) if vignette else ''
+                
+            if isinstance(mnemonic, str):
+                mnemonic = mnemonic.strip()
+            else:
+                mnemonic = str(mnemonic) if mnemonic else ''
+            
             # Create note with fields in correct order matching the model
             fields_data = [
                 question,           # Question
@@ -266,7 +280,9 @@ class FlashcardProcessor:
                 notes,             # Notes
                 cloze_text,        # ClozeText
                 high_yield_flag,   # HighYieldFlag (for internal use, not automatic styling)
-                tags               # Tags
+                tags,              # Tags
+                vignette,          # Vignette
+                mnemonic           # Mnemonic
             ]
             
             # Generate stable GUID for note updates

@@ -191,6 +191,15 @@ Changelog:
   * Enhanced tags handling to support both array and string formats
   * Added support for cards with type:"cloze" and content in front field
   * Successfully processing complex medical content from AI agents
+- June 18, 2025: Enhanced medical card generation with improved CSS and templates:
+  * Updated CSS with professional medical styling: modern fonts, better spacing, responsive design
+  * Added support for vignette and mnemonic fields with distinct visual styling
+  * Implemented clinical vignette sections with light blue backgrounds and borders
+  * Added mnemonic sections with gold dashed borders and light yellow backgrounds
+  * Fixed field count mismatch - model now properly supports 9 fields including vignette/mnemonic
+  * Enhanced readability with 19px font, 1.5 line-height, and 650px max-width
+  * Maintained download functionality while upgrading card appearance
+  * Confirmed working with complex medical content including cloze deletions, vignettes, and mnemonics
 ```
 
 ## User Preferences
