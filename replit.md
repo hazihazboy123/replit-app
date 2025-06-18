@@ -153,7 +153,9 @@ Changelog:
   * Confirmed n8n workflow generating intended medical flashcards from PDF content
   * API successfully processing spinothalamic tract and pain signal cards as expected
   * Identified issue: n8n HTTP Request node using hardcoded JSON instead of dynamic AI output
-  * System ready - requires n8n workflow JSON body fix to use $json dynamic data
+  * Function Node correctly deduplicates cards and outputs { cards: array }
+  * Fix required: HTTP Request should use {{ $json.cards }} to access deduplicated array
+  * System ready for full automation workflow
 ```
 
 ## User Preferences
