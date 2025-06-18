@@ -4,7 +4,7 @@ import tempfile
 import logging
 import random
 import uuid
-import json
+import time
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for, jsonify
 from flask_cors import CORS
 import genanki
@@ -286,8 +286,44 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Medical JSON to Anki Converter',
-        'version': '1.0.0'
+        'version': '1.0.0',
+        'supports_front_back': True,
+        'timestamp': int(time.time())
     }), 200
+
+@app.route('/api/test-validation', methods=['POST'])
+def test_validation():
+    """Test endpoint to validate front/back card format"""
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        json_data = request.get_json()
+        if not json_data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Test validation with sample front/back card
+        test_card = {"front": "Test front", "back": "Test back", "type": "basic"}
+        processor = FlashcardProcessor()
+        
+        test_data = {
+            "deck_name": "Validation Test",
+            "cards": [test_card]
+        }
+        
+        processor.validate_json_structure(test_data)
+        
+        return jsonify({
+            'validation': 'success',
+            'message': 'API supports front/back format',
+            'test_data': test_data
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'validation': 'failed',
+            'error': str(e)
+        }), 500
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
@@ -318,7 +354,6 @@ def api_generate():
         processor.validate_json_structure(json_data)
         
         # Force fresh deck creation with timestamp to avoid any caching
-        import time
         current_time = int(time.time())
         app.logger.info(f"Creating fresh deck at timestamp: {current_time}")
         
@@ -353,10 +388,14 @@ def api_generate():
         error_details = traceback.format_exc()
         app.logger.error(f"API error generating deck: {str(e)}")
         app.logger.error(f"Full traceback: {error_details}")
+        try:
+            app.logger.error(f"Input data that caused error: {json.dumps(json_data, indent=2)}")
+        except:
+            app.logger.error("Could not log input data")
         return jsonify({
             'error': 'Internal server error',
             'message': f'Processing error: {str(e)}',
-            'details': error_details if app.debug else None
+            'details': error_details
         }), 500
 
 @app.route('/api/validate', methods=['POST'])
