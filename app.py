@@ -298,14 +298,39 @@ def api_generate():
                 'message': 'Request body must contain valid JSON data'
             }), 400
         
-        # Log received data for debugging
-        app.logger.info(f"Processing deck: {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
+        # Log detailed card content to identify repeated data
+        app.logger.info(f"=== PROCESSING REQUEST ===")
+        app.logger.info(f"Deck: {json_data.get('deck_name', 'Unknown')}")
+        app.logger.info(f"Cards: {len(json_data.get('cards', []))}")
+        
+        # Log first few words of each card to identify if they're the same
+        for i, card in enumerate(json_data.get('cards', [])[:3]):  # Only log first 3 cards
+            if 'question' in card:
+                preview = card['question'][:50] + "..." if len(card['question']) > 50 else card['question']
+                app.logger.info(f"Card {i+1} Q: {preview}")
+            elif 'front' in card:
+                preview = card['front'][:50] + "..." if len(card['front']) > 50 else card['front']
+                app.logger.info(f"Card {i+1} F: {preview}")
+            elif 'cloze_text' in card:
+                preview = card['cloze_text'][:50] + "..." if len(card['cloze_text']) > 50 else card['cloze_text']
+                app.logger.info(f"Card {i+1} C: {preview}")
+        app.logger.info(f"=== END REQUEST ===")
+        
+        # Check if this exact same data was processed recently
+        import hashlib
+        data_hash = hashlib.md5(json.dumps(json_data, sort_keys=True).encode()).hexdigest()[:8]
+        app.logger.info(f"Data hash: {data_hash} (use this to identify duplicate requests)")
         
         # Ensure we're not using any cached or sample data by creating fresh processor
         processor = FlashcardProcessor()
         
         # Validate the exact data we received
         processor.validate_json_structure(json_data)
+        
+        # Force fresh deck creation with timestamp to avoid any caching
+        import time
+        current_time = int(time.time())
+        app.logger.info(f"Creating fresh deck at timestamp: {current_time}")
         
         # Create deck from the exact data received
         deck = processor.create_anki_deck(json_data)
