@@ -187,6 +187,10 @@ Changelog:
   * Added detailed card content debugging to identify empty data from n8n workflows
   * Verified API generates proper medical flashcards when given valid content
   * Issue isolated to n8n data pipeline - API endpoint fully functional
+  * Fixed cloze deletion card support for AI-generated medical content
+  * Enhanced tags handling to support both array and string formats
+  * Added support for cards with type:"cloze" and content in front field
+  * Successfully processing complex medical content from AI agents
 ```
 
 ## User Preferences
