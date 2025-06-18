@@ -170,6 +170,9 @@ Changelog:
   * Added /api/n8n-generate as ultra-simple endpoint with minimal processing for maximum n8n compatibility
   * Modified /api/generate to detect n8n User-Agent and return JSON instead of binary files
   * Final solution: Use /api/generate-json for guaranteed n8n compatibility
+  * Created /api/bulletproof endpoint with multiple JSON parsing methods to handle n8n data issues
+  * Bulletproof endpoint validates all card formats and provides detailed error messages
+  * Resolved JSON decoding errors that were causing n8n workflow failures
 ```
 
 ## User Preferences
