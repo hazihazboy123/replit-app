@@ -462,17 +462,24 @@ def api_validate():
 
 
 
-@app.route('/api/generate-json', methods=['POST'])
+@app.route('/api/generate-json', methods=['POST', 'OPTIONS'])
 def api_generate_json():
     """API endpoint specifically for n8n - returns JSON confirmation instead of file"""
+    if request.method == 'OPTIONS':
+        return '', 200
+        
     try:
         app.logger.info(f"JSON API generate called at {time.time()}")
+        app.logger.info(f"Request headers: {dict(request.headers)}")
+        app.logger.info(f"Request data: {request.get_data(as_text=True)}")
         
         if not request.is_json:
+            app.logger.error(f"Request is not JSON. Content-Type: {request.content_type}")
             return jsonify({'error': 'Content-Type must be application/json'}), 400
         
         json_data = request.get_json()
         if not json_data:
+            app.logger.error("No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
         
         app.logger.info(f"Processing {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
@@ -495,14 +502,17 @@ def api_generate_json():
             # Clean up temp file
             os.unlink(tmp_file.name)
             
-            return jsonify({
+            result = {
                 'status': 'success',
                 'message': f"Generated Anki deck '{deck_name}' with {len(json_data['cards'])} cards",
                 'deck_name': deck_name,
                 'card_count': len(json_data['cards']),
                 'file_size': file_size,
-                'filename': filename
-            }), 200
+                'filename': filename,
+                'success': True
+            }
+            app.logger.info(f"Returning success response: {result}")
+            return jsonify(result), 200
     
     except ValueError as e:
         return jsonify({
