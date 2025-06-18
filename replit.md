@@ -168,6 +168,8 @@ Changelog:
   * Confirmed: External API working correctly - n8n error was due to binary file response interpretation
   * Solution: Use /api/generate-json endpoint for n8n workflows to receive JSON confirmation
   * Added /api/n8n-generate as ultra-simple endpoint with minimal processing for maximum n8n compatibility
+  * Modified /api/generate to detect n8n User-Agent and return JSON instead of binary files
+  * Final solution: Use /api/generate-json for guaranteed n8n compatibility
 ```
 
 ## User Preferences
