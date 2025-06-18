@@ -217,8 +217,8 @@ class FlashcardProcessor:
                 card_type = card.get('type', '').lower()
                 
                 # Handle cloze cards where content is in front field
-                if card_type == 'cloze' and front_content and '{{c' in front_content:
-                    # This is a valid cloze card with content in front field
+                if card_type == 'cloze' and front_content:
+                    # This is a valid cloze card - allow empty back field
                     pass
                 elif not front_content or not back_content:
                     raise ValueError(f"Card {i+1} front and back cannot be empty")
@@ -995,6 +995,10 @@ def api_simple():
                 # Clear front/back for cloze cards
                 card.pop('front', None)
                 card.pop('back', None)
+            elif card_type == 'cloze' and front:
+                # Handle any cloze card - put content in cloze_text and add placeholder back
+                card['cloze_text'] = front
+                card['back'] = ' '  # Add space to prevent validation error
             elif not front and not back and cloze:
                 # Standard cloze deletion card
                 card['cloze_text'] = cloze
