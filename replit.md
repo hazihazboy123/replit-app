@@ -144,6 +144,12 @@ Changelog:
   * Added highlight-red CSS class for manual text highlighting
   * Improved card templates with main-content div structure
   * Fixed Jinja2 template syntax conflicts with cloze deletion format
+- June 18, 2025: Completed n8n API integration:
+  * Fixed API routing issues by consolidating routes into main app file
+  * Added flask-cors dependency and configured CORS for API endpoints
+  * Implemented comprehensive API endpoints: /health, /generate, /validate, /schema
+  * All endpoints tested and working locally with proper JSON responses
+  * Ready for external deployment to enable n8n workflow integration
 ```
 
 ## User Preferences
