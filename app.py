@@ -5,6 +5,7 @@ import logging
 import random
 import uuid
 import time
+import html
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for, jsonify
 from flask_cors import CORS
 import genanki
@@ -29,57 +30,95 @@ class FlashcardProcessor:
     """Handles processing of JSON flashcard data and Anki deck generation for medical students"""
     
     def __init__(self):
-        # Generate unique IDs for model and deck (recommended by genanki for proper Anki tracking)
-        self.model_id = random.randrange(1 << 30, 1 << 31)
-        self.deck_id = random.randrange(1 << 30, 1 << 31)
+        # Use consistent model ID for proper Anki tracking (as recommended in the guide)
+        self.model_id = 1607392319  # Fixed ID for consistency across generations
+        self.deck_id = 2059400110   # Fixed ID for consistency across generations
         
-        # Create advanced model for medical flashcards
+        # Create advanced model for medical flashcards with perfect styling
         self.model = self._create_medical_model()
     
     def _create_medical_model(self):
-        """Create advanced Anki model for medical students with styling and multiple card types"""
+        """Create advanced Anki model for medical students with perfect styling and multiple card types"""
         
+        # Perfect CSS based on the comprehensive guide recommendations
         model_css = """
         .card {
-            font-family: Arial, sans-serif;
-            font-size: 20px;
-            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            font-size: 19px; /* Optimal readability as per guide */
             color: black;
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            line-height: 1.5;
-            max-width: 650px;
-            margin: auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            text-align: start; /* Left-align for better readability of paragraphs */
+            line-height: 1.6; /* Improved vertical spacing for readability */
+            margin: 0 auto; /* Horizontal centering of card content */
+            padding: 40px 20px; /* Comfortable margins around content */
+            max-width: 700px; /* Optimal line length around 75 characters */
+            box-sizing: border-box; /* Include padding in element's total width */
         }
-        .card.nightMode {
+
+        /* Dark mode styling */
+        .nightMode .card {
             color: white;
-            background-color: #333;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            background-color: #1a1a1a;
         }
-        .highlight-red {
-            color: red;
-            font-weight: bold;
+
+        /* Perfect centering - vertical and horizontal within Anki window */
+        html {
+            height: 100%;
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center;   /* Center vertically */
         }
-        .card.nightMode .highlight-red {
-            color: #FF6666;
+
+        /* QA section for proper content structure */
+        .qa-section {
+            display: block;
+            width: 100%;
+            text-align: start; /* Ensure text within is left-aligned */
         }
-        .notes-section {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: auto;
+
+        /* Style for horizontal rule separating question and answer */
+        hr {
+            border: none;
+            border-top: 1px solid #ccc;
+            margin: 20px 0;
+        }
+
+        /* Specific styling for sections like mnemonics, vignettes, and additional notes */
+        .mnemonic-section, .vignette-section, .additional-notes-section, .clinical-correlation-section {
+            margin-top: 25px;
             padding-top: 15px;
-            border-top: 1px solid #eee;
-            text-align: left;
+            border-top: 1px dashed #eee; /* Subtle separator */
+            font-size: 0.95em; /* Slightly smaller font for supplementary info */
+            color: #555;
         }
-        .card.nightMode .notes-section {
-            color: #999;
-            border-top-color: #444;
+
+        .nightMode .mnemonic-section, .nightMode .vignette-section, .nightMode .additional-notes-section, .nightMode .clinical-correlation-section {
+            color: #aaa;
+            border-top: 1px dashed #444;
         }
+
+        .section-label {
+            font-weight: bold;
+            color: #333; /* Darker color for labels */
+            margin-bottom: 5px;
+            display: block; /* Ensure label is on its own line */
+        }
+
+        .nightMode .section-label {
+            color: #ccc;
+        }
+
+        /* Styling for cloze deletions */
+        .cloze {
+            font-weight: bold;
+            color: #007bff; /* Distinct blue for cloze text */
+        }
+
+        .nightMode .cloze {
+            color: #66b3ff; /* Lighter blue for dark mode */
+        }
+
+        /* Image styling */
         img {
             max-width: 100%;
             height: auto;
@@ -87,83 +126,67 @@ class FlashcardProcessor:
             margin: 10px auto;
             border-radius: 4px;
         }
-        .cloze {
-            font-weight: bold;
-            color: blue;
-        }
-        .card.nightMode .cloze {
-            color: lightblue;
-        }
-        hr {
-            border: none;
-            border-top: 1px dashed #ccc;
-            margin: 20px 0;
-        }
         .main-content {
             flex-grow: 1;
         }
         """
         
+        # Define fields in precise order for consistent content mapping
         fields = [
             {'name': 'Question'},
             {'name': 'Answer'},
-            {'name': 'Image'},
-            {'name': 'Notes'},
-            {'name': 'ClozeText'},
-            {'name': 'HighYieldFlag'},
-            {'name': 'Tags'},
+            {'name': 'Mnemonic'},
             {'name': 'Vignette'},
-            {'name': 'Mnemonic'}
+            {'name': 'ClinicalCorrelation'},
+            {'name': 'AdditionalNotes'},
+            {'name': 'Source'},
+            {'name': 'ClozeText'},
+            {'name': 'Image'}
         ]
         
+        # Perfect templates with conditional display and proper HTML structure
         templates = [
             {
-                'name': 'Medical Card',
+                'name': 'Medical High-Yield Card',
                 'qfmt': '''
-                <div class="main-content">
+                <div class="qa-section">
                     {{#Question}}{{Question}}{{/Question}}
                     {{#ClozeText}}{{cloze:ClozeText}}{{/ClozeText}}
                     {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Vignette}}
-                <div class="vignette-section">
-                    <div class="section-heading">Clinical Vignette:</div>
-                    {{Vignette}}
-                </div>
-                {{/Vignette}}
-                {{#Notes}}
-                <div class="notes-section">
-                    <strong>Notes:</strong> {{Notes}}
-                </div>
-                {{/Notes}}
                 ''',
                 'afmt': '''
-                <div class="main-content">
-                    {{#Question}}
-                        {{Question}}
-                        <hr id="answer">
-                        {{Answer}}
-                    {{/Question}}
+                {{FrontSide}}
+                <hr id="answer">
+                <div class="qa-section">
+                    {{#Answer}}{{Answer}}{{/Answer}}
                     {{#ClozeText}}{{cloze:ClozeText}}{{/ClozeText}}
-                    {{#Image}}<img src="{{Image}}">{{/Image}}
                 </div>
-                {{#Vignette}}
-                <div class="vignette-section">
-                    <div class="section-heading">Clinical Vignette:</div>
-                    {{Vignette}}
-                </div>
-                {{/Vignette}}
                 {{#Mnemonic}}
                 <div class="mnemonic-section">
-                    <div class="section-heading">Mnemonic:</div>
-                    {{Mnemonic}}
+                    <span class="section-label">Mnemonic:</span> {{Mnemonic}}
                 </div>
                 {{/Mnemonic}}
-                {{#Notes}}
-                <div class="notes-section">
-                    <strong>Notes:</strong> {{Notes}}
+                {{#Vignette}}
+                <div class="vignette-section">
+                    <span class="section-label">Clinical Vignette:</span> {{Vignette}}
                 </div>
-                {{/Notes}}
+                {{/Vignette}}
+                {{#ClinicalCorrelation}}
+                <div class="clinical-correlation-section">
+                    <span class="section-label">Clinical Correlation:</span> {{ClinicalCorrelation}}
+                </div>
+                {{/ClinicalCorrelation}}
+                {{#AdditionalNotes}}
+                <div class="additional-notes-section">
+                    <span class="section-label">Additional Notes:</span> {{AdditionalNotes}}
+                </div>
+                {{/AdditionalNotes}}
+                {{#Source}}
+                <div class="additional-notes-section">
+                    <span class="section-label">Source:</span> {{Source}}
+                </div>
+                {{/Source}}
                 '''
             }
         ]
@@ -228,76 +251,71 @@ class FlashcardProcessor:
                 raise ValueError(f"Card {i+1} high_yield_flag must be 'high-yield' or empty")
     
     def create_anki_deck(self, data):
-        """Create an Anki deck from validated JSON data with advanced medical card features"""
+        """Create perfect Anki deck from validated JSON data with comprehensive medical card features"""
         deck_name = data['deck_name']
         cards_data = data['cards']
         
-        # Create deck with unique ID
+        # Create deck with consistent ID for proper Anki tracking
         deck = genanki.Deck(
             self.deck_id,
             deck_name
         )
         
-        # Add cards to deck
+        # Add cards to deck with perfect field mapping
         for card_data in cards_data:
-            # Extract and normalize field data - support both question/answer and front/back formats
+            # Extract and normalize all field data with comprehensive format support
             question = card_data.get('question', card_data.get('front', '')).strip()
             answer = card_data.get('answer', card_data.get('back', '')).strip()
-            image = card_data.get('image', '').strip()
-            notes = card_data.get('notes', card_data.get('note', '')).strip()
+            mnemonic = card_data.get('mnemonic', card_data.get('Mnemonic', '')).strip()
+            vignette = card_data.get('vignette', card_data.get('Vignette', '')).strip()
+            clinical_correlation = card_data.get('clinical_correlation', card_data.get('clinicalCorrelation', '')).strip()
+            additional_notes = card_data.get('notes', card_data.get('additional_notes', card_data.get('note', ''))).strip()
+            source = card_data.get('source', '').strip()
             cloze_text = card_data.get('cloze_text', '').strip()
-            high_yield_flag = card_data.get('high_yield_flag', '').strip().lower()
-            # Handle tags as either string or array
-            tags_data = card_data.get('tags', '')
-            if isinstance(tags_data, list):
-                tags = ' '.join(tags_data) if tags_data else ''
-            else:
-                tags = tags_data.strip() if tags_data else ''
+            image = card_data.get('image', '').strip()
             
-            # Handle tags as array or string
-            if isinstance(card_data.get('tags'), list):
-                tags = '::'.join(card_data['tags'])
+            # Handle cloze cards with type detection
+            if card_data.get('type') == 'cloze' and not cloze_text:
+                cloze_text = question  # Use front field for cloze content
+                question = ''  # Clear question for cloze cards
+                answer = ''    # Clear answer for cloze cards
             
-            # Handle vignette and mnemonic fields
-            vignette = card_data.get('vignette', '') or card_data.get('Vignette', '')
-            mnemonic = card_data.get('mnemonic', '') or card_data.get('Mnemonic', '')
-            
-            if isinstance(vignette, str):
-                vignette = vignette.strip()
-            else:
-                vignette = str(vignette) if vignette else ''
-                
-            if isinstance(mnemonic, str):
-                mnemonic = mnemonic.strip()
-            else:
-                mnemonic = str(mnemonic) if mnemonic else ''
-            
-            # Create note with fields in correct order matching the model
+            # Perfect field order matching model definition:
+            # Question, Answer, Mnemonic, Vignette, ClinicalCorrelation, AdditionalNotes, Source, ClozeText, Image
             fields_data = [
-                question,           # Question
-                answer,            # Answer
-                image,             # Image
-                notes,             # Notes
-                cloze_text,        # ClozeText
-                high_yield_flag,   # HighYieldFlag (for internal use, not automatic styling)
-                tags,              # Tags
-                vignette,          # Vignette
-                mnemonic           # Mnemonic
+                html.escape(question) if question else '',                    # Question
+                html.escape(answer) if answer else '',                      # Answer  
+                html.escape(mnemonic) if mnemonic else '',                  # Mnemonic
+                html.escape(vignette) if vignette else '',                  # Vignette
+                html.escape(clinical_correlation) if clinical_correlation else '',  # ClinicalCorrelation
+                html.escape(additional_notes) if additional_notes else '',  # AdditionalNotes
+                html.escape(source) if source else '',                     # Source
+                cloze_text if cloze_text else '',                          # ClozeText (no escape - contains Anki syntax)
+                image if image else ''                                      # Image (no escape - filename only)
             ]
             
-            # Generate stable GUID for note updates
-            guid_components = [question, answer, cloze_text, image]
+            # Generate stable GUID for consistent note updates
+            guid_components = [question, answer, cloze_text, mnemonic, vignette]
             note_guid = genanki.guid_for(*[comp for comp in guid_components if comp])
             
+            # Create note with perfect field mapping
             note = genanki.Note(
                 model=self.model,
                 fields=fields_data,
                 guid=note_guid
             )
             
-            # Add hierarchical tags if provided
-            if tags:
-                note.tags = [tag.strip() for tag in tags.split('::') if tag.strip()]
+            # Handle hierarchical tags properly
+            tags_data = card_data.get('tags', '')
+            if tags_data:
+                if isinstance(tags_data, list):
+                    note.tags = [tag.strip() for tag in tags_data if tag.strip()]
+                elif isinstance(tags_data, str):
+                    # Support both space and :: separated tags
+                    if '::' in tags_data:
+                        note.tags = [tag.strip() for tag in tags_data.split('::') if tag.strip()]
+                    else:
+                        note.tags = [tag.strip() for tag in tags_data.split() if tag.strip()]
             
             deck.add_note(note)
         
