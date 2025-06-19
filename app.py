@@ -899,6 +899,26 @@ def api_n8n_generate():
     except Exception as e:
         return {'error': str(e), 'success': False}, 500
 
+@app.route('/export/<path:filename>')
+def export_file(filename):
+    """Serve export files for download"""
+    try:
+        # Handle both .apkg files and export archives
+        file_path = os.path.join('/home/runner/workspace', filename)
+        
+        if not os.path.exists(file_path):
+            return "Export file not found", 404
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/gzip' if filename.endswith('.tar.gz') else 'application/octet-stream'
+        )
+    except Exception as e:
+        app.logger.error(f"Export error: {e}")
+        return "Export failed", 500
+
 @app.route('/download/<path:filename>')
 def download_file(filename):
     """Serve generated .apkg files for download"""
