@@ -897,14 +897,29 @@ def api_n8n_generate():
 def download_file(filename):
     """Serve generated .apkg files for download"""
     try:
-        # Construct full path to temporary file
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, filename)
+        # Construct full path to temporary file in /tmp directory
+        file_path = os.path.join('/tmp', filename)
+        
+        app.logger.info(f"Attempting to serve file: {file_path}")
         
         if not os.path.exists(file_path):
+            app.logger.error(f"File not found: {file_path}")
+            # List available files for debugging
+            available_files = []
+            try:
+                for f in os.listdir('/tmp'):
+                    if f.endswith('.apkg'):
+                        available_files.append(f)
+                app.logger.info(f"Available .apkg files: {available_files}")
+            except:
+                pass
             return "File not found", 404
         
-        # Extract deck name from filename for download name
+        # Verify file size
+        file_size = os.path.getsize(file_path)
+        app.logger.info(f"Serving file: {filename}, size: {file_size} bytes")
+        
+        # Generate clean download name
         base_name = filename.replace('.apkg', '').replace('tmp', 'medical_flashcards')
         download_name = f"{base_name}.apkg"
         
@@ -916,6 +931,8 @@ def download_file(filename):
         )
     except Exception as e:
         app.logger.error(f"Download error: {e}")
+        import traceback
+        app.logger.error(f"Download traceback: {traceback.format_exc()}")
         return "Download failed", 500
 
 @app.route('/api/schema', methods=['GET'])
