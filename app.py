@@ -388,6 +388,12 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 question = ''  # Clear question for cloze cards
                 answer = ''    # Clear answer for cloze cards
             
+            # Ensure proper cloze deletion formatting with double curly braces
+            if cloze_text and '{{c' not in cloze_text and '{c' in cloze_text:
+                # Fix single braces to double braces for proper Anki cloze formatting
+                import re
+                cloze_text = re.sub(r'\{(c\d+::[^}]+)\}', r'{{\1}}', cloze_text)
+            
             # Perfect field order matching model definition:
             # Question, Answer, Mnemonic, Vignette, ClinicalCorrelation, AdditionalNotes, Source, ClozeText, Image
             fields_data = [

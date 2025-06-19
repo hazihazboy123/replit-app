@@ -211,6 +211,13 @@ Changelog:
   * Professional medical card styling with proper field organization
   * All recommendations from comprehensive PDF guide implemented
   * Consistent model IDs (1607392319/2059400110) for proper Anki tracking
+- June 19, 2025: Fixed download functionality and cloze deletion formatting:
+  * Resolved "File wasn't available on site" download errors by fixing file persistence
+  * Fixed temporary file creation with proper /tmp directory handling
+  * Enhanced download endpoint with detailed logging and error handling
+  * Fixed cloze deletion formatting to ensure proper double curly braces {{c1::text}}
+  * Added regex pattern matching to correct single brace format automatically
+  * Verified neuroanatomy cards generate with proper AnKing styling and cloze functionality
 ```
 
 ## User Preferences
