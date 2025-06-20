@@ -218,6 +218,13 @@ Changelog:
   * Fixed cloze deletion formatting to ensure proper double curly braces {{c1::text}}
   * Added regex pattern matching to correct single brace format automatically
   * Verified neuroanatomy cards generate with proper AnKing styling and cloze functionality
+- June 20, 2025: Integrated comprehensive AnKing engine with full CSS and JavaScript:
+  * Created anking_engine.py with complete AnKing CSS from AnKingMaster note type version 8
+  * Implemented full AnKing JavaScript including timers, cloze one-by-one, and interactive features
+  * Added [CLOZE::text] to {{c1::text}} placeholder conversion for n8n automation compatibility
+  * Enhanced FlashcardProcessor with AnKing engine integration and fallback to standard implementation
+  * Successfully tested with complex medical content including vignettes, mnemonics, and clinical correlations
+  * System now generates true AnKing-style cards with Arial Greek font, proper styling, and interactive features
 ```
 
 ## User Preferences
