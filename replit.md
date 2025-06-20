@@ -238,6 +238,8 @@ Changelog:
   * Modified anking_create_deck method to return proper genanki.Deck object instead of dict result
   * Enhanced cloze card handling to properly convert [CLOZE::text] and place content in Front field
   * Verified deck generation creates proper SQLite database with accessible notes and cards (86KB files)
+  * Fixed template naming issue causing 0 cards despite notes being created (changed to "Card 1" and "Cloze")
+  * Confirmed 1:1 note-to-card ratio working correctly in final Anki deck imports
   * Complete production-ready system with all AnKing features and full n8n automation compatibility
 ```
 

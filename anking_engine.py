@@ -770,7 +770,7 @@ def get_anking_model():
     # AnKing templates with full functionality
     templates = [
         {
-            'name': 'AnKing Basic Card',
+            'name': 'Card 1',
             'qfmt': f"""
                 <div class="card-content">
                     <div id="text">{{{{Front}}}}</div>
@@ -861,7 +861,7 @@ def get_anking_model():
             """,
         },
         {
-            'name': 'AnKing Cloze Card',
+            'name': 'Cloze',
             'qfmt': f"""
                 <div class="card-content">
                     <div id="text">{{{{cloze:Front}}}}</div>
