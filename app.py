@@ -1355,12 +1355,12 @@ def process_flashcards():
         processor = FlashcardProcessor()
         processor.validate_json_structure(json_data)
         
-        # Create Anki deck
+        # Create Anki deck using the same logic as API endpoints
         deck = processor.create_anki_deck(json_data)
         
         # Generate .apkg file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
-            genanki.Package(deck).write_to_file(tmp_file.name)
+            deck.write_to_file(tmp_file.name)
             
             # Generate safe filename
             deck_name = json_data['deck_name']
@@ -1381,7 +1381,9 @@ def process_flashcards():
         return redirect(url_for('index'))
     except Exception as e:
         app.logger.error(f"Error processing flashcards: {str(e)}")
-        flash('An error occurred while processing your flashcards. Please try again.', 'error')
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        flash(f'Processing failed: {str(e)}', 'error')
         return redirect(url_for('index'))
 
 # API routes are now defined directly in this file to avoid import issues
