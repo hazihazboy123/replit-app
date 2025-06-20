@@ -1160,6 +1160,11 @@ def api_simple():
                 cards = data['cards']
                 deck_name = data.get('deck_name', 'Medical Flashcards')
                 app.logger.info("Input was object with cards field")
+            elif 'json' in data and isinstance(data['json'], dict) and 'cards' in data['json']:
+                # Handle nested n8n format: {"json": {"cards": [...]}}
+                cards = data['json']['cards']
+                deck_name = data['json'].get('deck_name', 'Medical Flashcards')
+                app.logger.info("Input was nested n8n format with json.cards")
             else:
                 # Maybe the whole object is one card?
                 if 'front' in data or 'question' in data:
