@@ -1003,13 +1003,16 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             image_ref
         ]
 
-        # Handle tags - convert to list if string
+        # Handle tags - convert to list if string and sanitize for genanki
         if isinstance(tags, str):
             if '::' in tags:
-                tags = [tag.strip() for tag in tags.split('::') if tag.strip()]
+                tags = [tag.strip().replace(' ', '_') for tag in tags.split('::') if tag.strip()]
             else:
-                tags = [tag.strip() for tag in tags.split() if tag.strip()]
-        elif not isinstance(tags, list):
+                tags = [tag.strip().replace(' ', '_') for tag in tags.split() if tag.strip()]
+        elif isinstance(tags, list):
+            # Sanitize list tags - replace spaces with underscores
+            tags = [str(tag).strip().replace(' ', '_') for tag in tags if str(tag).strip()]
+        else:
             tags = []
 
         note = genanki.Note(

@@ -231,7 +231,9 @@ Changelog:
   * Complete night mode support with proper color schemes for dark theme compatibility
   * Added comprehensive user customization options for fonts, colors, and display settings
   * Fixed nested n8n JSON format handling for {"json":{"cards":[...]}} structures
-  * Added health endpoint at /health and /api/health for monitoring and status checks
+  * Added health endpoint at /health and /api/health for monitoring and status checks  
+  * Fixed critical tag validation error by sanitizing spaces in tags (replacing with underscores)
+  * Resolved genanki ValueError for tags containing spaces in hierarchical tag structures
   * Complete production-ready system with all AnKing features and full n8n automation compatibility
 ```
 
