@@ -922,7 +922,9 @@ def get_anking_model():
             'afmt': f"""
                 {{{{FrontSide}}}}
                 <hr id="answer">
-                <div class="answer-text">{{{{cloze:Back}}}}</div>
+                {{{{#Back}}}}
+                <div class="answer-text">{{{{Back}}}}</div>
+                {{{{/Back}}}}
 
                 {{{{#Extra}}}}
                 <div id="extra">{{{{Extra}}}}</div>
@@ -951,13 +953,14 @@ def get_anking_model():
         }
     ]
 
-    # Create the Anki Model
+    # Create the Anki Model with proper type specification
     my_model = genanki.Model(
         ANKING_MODEL_ID,
         'AnKing-Like Medical Flashcards',
         fields=fields,
         templates=templates,
-        css=ANKING_CSS
+        css=ANKING_CSS,
+        model_type=genanki.Model.CLOZE  # This enables cloze deletion support
     )
     return my_model, ANKING_DECK_ID
 
@@ -983,9 +986,12 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
         tags = card_info.get('tags', [])
 
         # Convert [CLOZE::text] to {{c#::text}} for cloze cards
-        if card_type == 'cloze':
+        if card_type == 'cloze' or '{{c' in front_content or '[CLOZE::' in front_content:
             front_content = convert_cloze_placeholder(front_content)
-            back_content = convert_cloze_placeholder(back_content)
+            # For cloze cards, put all content in Front field
+            if not front_content and back_content:
+                front_content = convert_cloze_placeholder(back_content)
+                back_content = ''
 
         # Handle image embedding
         if image_ref:
