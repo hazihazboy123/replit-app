@@ -234,9 +234,10 @@ Changelog:
   * Added health endpoint at /health and /api/health for monitoring and status checks  
   * Fixed critical tag validation error by sanitizing spaces in tags (replacing with underscores)
   * Resolved genanki ValueError for tags containing spaces in hierarchical tag structures
-  * Fixed "0 notes found" issue by correcting AnKing model type specification to CLOZE model
+  * Fixed "0 notes found" issue by correcting FlashcardProcessor integration with AnKing engine
+  * Modified anking_create_deck method to return proper genanki.Deck object instead of dict result
   * Enhanced cloze card handling to properly convert [CLOZE::text] and place content in Front field
-  * Verified deck generation creates proper SQLite database with accessible notes and cards
+  * Verified deck generation creates proper SQLite database with accessible notes and cards (86KB files)
   * Complete production-ready system with all AnKing features and full n8n automation compatibility
 ```
 
