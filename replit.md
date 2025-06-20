@@ -230,7 +230,9 @@ Changelog:
   * Enhanced mobile responsiveness and button layouts following AnKing standards
   * Complete night mode support with proper color schemes for dark theme compatibility
   * Added comprehensive user customization options for fonts, colors, and display settings
-  * Complete production-ready system with all AnKing features and add-on compatibility
+  * Fixed nested n8n JSON format handling for {"json":{"cards":[...]}} structures
+  * Added health endpoint at /health and /api/health for monitoring and status checks
+  * Complete production-ready system with all AnKing features and full n8n automation compatibility
 ```
 
 ## User Preferences
