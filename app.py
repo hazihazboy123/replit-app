@@ -404,13 +404,8 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 }
                 anking_cards.append(anking_card)
             
-            # Create temporary file for AnKing deck
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
-                result = self.anking_create_deck(anking_cards, tmp_file.name)
-                
-                # Return genanki deck object for compatibility
-                return genanki.Deck(self.anking_deck_id, deck_name)
+            # Use AnKing engine to create the actual deck
+            return self.anking_create_deck(anking_cards, deck_name)
         
         # Fallback to original implementation
         app.logger.info("Using standard deck creation")

@@ -1036,9 +1036,5 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
     # Write the package to a file
     my_package.write_to_file(output_filename)
     
-    return {
-        'success': True,
-        'filename': output_filename,
-        'card_count': len(cards_data),
-        'media_count': len(media_files)
-    }
+    # Return the deck object for integration compatibility
+    return my_deck
