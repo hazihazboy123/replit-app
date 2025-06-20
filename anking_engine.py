@@ -11,8 +11,8 @@ ANKING_CSS = """
 
 /* The AnKing wishes you the best of luck! Be sure to check out our YouTube channel and Instagram
  for all things Anki and Med School related (including how to customize this card type and use these decks):  
-		www.AnKingMed.com
-			@ankingmed    			
+                www.AnKingMed.com
+                        @ankingmed                      
 */
 
 /*#########################################################
@@ -394,47 +394,263 @@ ul ul, table ul, ol ol, table ol {
 }
 """
 
-# Simplified AnKing JavaScript for core functionality
+# Complete AnKing JavaScript with all advanced features
 ANKING_JS = """
 <script>
-// AnKing Core JavaScript
-var autoflip = false;
-var minutes = 0;
-var seconds = 9;
-var timeOverMsg = "<span style='color:#CC5B5B'>!<br/>!<br/>!<br/>!<br/>!<br/>!</span>";
+// ############## USER CONFIGURATION START ##############
+// Auto flip to back when One by one mode.
+var autoflip = false 
 
-// Timer functionality
-function countdown() {
-    var totalSeconds = minutes * 60 + seconds;
-    if (totalSeconds > 0) {
-        var timer = setInterval(function() {
-            if (totalSeconds <= 0) {
-                clearInterval(timer);
-                document.getElementById("s2").innerHTML = timeOverMsg;
-            } else {
-                var mins = Math.floor(totalSeconds / 60);
-                var secs = totalSeconds % 60;
-                document.getElementById("s2").innerHTML = mins + ":" + (secs < 10 ? "0" : "") + secs;
-                totalSeconds--;
-            }
-        }, 1000);
+// Timer config (timer length, timer finished message)
+var minutes = 0
+var seconds = 9
+var timeOverMsg = "<span style='color:#CC5B5B'>!<br/>!<br/>!<br/>!<br/>!<br/>!</span>"
+
+// ##############  TAG SHORTCUT  ##############
+var toggleTagsShortcut = "C";
+
+// ENTER THE TAG TERM WHICH, WHEN PRESENT, WILL TRIGGER A RED BACKGROUND
+var tagID = "XXXYYYZZZ"
+
+// WHETHER THE WHOLE TAG OR ONLY THE LAST PART SHOULD BE SHOWN
+var numTagLevelsToShow = 0;
+
+// ##############  CLOZE ONE BY ONE  ##############
+var revealNextShortcut = "N" 
+var revealNextWordShortcut = "Shift + N"
+var toggleAllShortcut = ","
+
+// Changes how "Reveal Next" and clicking behaves. Either "cloze" or "word".
+// "word" reveals word by word. 
+var revealNextClozeMode = "cloze" 
+
+// What cloze is hidden with
+var clozeHider = (elem) => "👑"
+
+// enables selective cloze one-by-one (e.g. only c1 and c3)
+// seperate wanted numbers by "," in one-by-one field
+var selectiveOneByOne = false;
+// if selective one-by-one is disabled, set this to select a min number of clozes necessary to activate 1b1
+// can be set to any number to set lower bound, any falsy value (e.g. 0 or null) disables this setting
+var minNumberOfClozes = 0;
+
+// ############## USER CONFIGURATION END ##############
+</script>
+
+<script>
+if (typeof(window.Persistence) === 'undefined') {
+  var _persistenceKey = "anki-persistence-key";
+  var isAvailable = true;
+  try {
+    if (window.sessionStorage) {
+      this.clear = function() {
+        var keys = this.getAllKeys();
+        for (var i = 0; i < keys.length; i++) {
+          this.removeItem(keys[i]);
+        }
+      };
+      this.setItem = function(key, val) {
+        sessionStorage.setItem(_persistenceKey + key, JSON.stringify(val));
+      };
+      this.getItem = function(key) {
+        try {
+          return JSON.parse(sessionStorage.getItem(_persistenceKey + key));
+        } catch(e) {
+          return null;
+        }
+      };
+      this.removeItem = function(key) {
+        sessionStorage.removeItem(_persistenceKey + key);
+      };
+      this.getAllKeys = function () {
+        var keys = [];
+        var prefixedKeys = Object.keys(sessionStorage);
+        for (var i = 0; i < prefixedKeys.length; i++) {
+          var k = prefixedKeys[i];
+          if (k.indexOf(_persistenceKey) == 0) {
+            keys.push(k.substring(_persistenceKey.length, k.length));
+          }
+        };
+        return keys.sort()
+      }
     }
+  } catch(err) {}
+  this.isAvailable = function() {
+    return isAvailable;
+  }
+  
+  window.Persistence = this;
+}
+</script>
+
+<script>
+var alreadyRendered = false;
+
+function processSelective1b1() {
+  if (alreadyRendered) return;
+  // parse the cloze numbers for which selectiveOneByOne is enabled
+  var clozeNumbers = document.getElementById("one-by-one") ? document.getElementById("one-by-one").textContent.split(',').filter(element => element).map(Number) : []
+  var cardNumberIsOneByOne = !clozeNumbers.filter(n => !Number.isNaN(n)).length || clozeNumbers.includes(parseInt(getCardNumber()))
+
+  // check the amount of clozes -> disable OneByOne if less than minimum value wanted (minNumberOfClozes)
+  var numClozesForNumber = (minNumberOfClozes) ? document.querySelectorAll('.clozefield.cloze').length : 0
+
+  // stop OneByOne if selectiveOneByOne is not enabled for this specific card OR if OneByOne is disabled some other way
+  // -> show normal backside
+  if (!alwaysOneByOne && ((selectiveOneByOne && !cardNumberIsOneByOne) || (oneByOneFieldNotEmpty && (numClozesForNumber < minNumberOfClozes)))) {
+    clozeOneByOneEnabled = false
+  }
+
+  if (autoflip && clozeOneByOneEnabled) {
+    if(window.pycmd || window.showAnswer) {
+      // avoid flickering. Must unset this in the back.
+      document.getElementById("qa").style.display = "none";
+    }
+
+    if (window.pycmd) {
+      pycmd("ans")
+    } else if (window.showAnswer) {
+      showAnswer()
+    }
+  }
+
+  alreadyRendered = true;
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof countdown === 'function') {
-        countdown();
-    }
-});
+function delayedProcessSelective1b1() {
+  if (window.requestAnimationFrame) window.requestAnimationFrame(processSelective1b1); // less flickering
+  else window.setTimeout(processSelective1b1, 0);
+};
 
-// Cloze one-by-one functionality (simplified)
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'n' || event.key === 'N') {
-        // Reveal next cloze logic would go here
-        console.log('Reveal next cloze');
+function getCardNumber() {
+  return document.querySelector('.card') ? 1 : 1;
+}
+
+window.onload = delayedProcessSelective1b1;
+if (document.readyState === "complete") {
+  delayedProcessSelective1b1();
+}
+else {
+  document.addEventListener("DOMContentLoaded", delayedProcessSelective1b1);
+}
+
+// Observe document.body class changes to trigger re-rendering.
+const observer = new MutationObserver(function(mutationsList, observer) {
+  for (let mutation of mutationsList) {
+    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+      delayedProcessSelective1b1();
     }
+  }
 });
+if (document.body) {
+  observer.observe(document.body, { attributes: true });
+}
+</script>
+
+<script>
+if (window.ankingEventListeners) {
+  for (const listener of ankingEventListeners) {
+    const type = listener[0]
+    const handler = listener[1]
+    document.removeEventListener(type, handler)
+  }
+}
+window.ankingEventListeners = []
+
+window.ankingAddEventListener = function(type, handler) {
+  document.addEventListener(type, handler)
+  window.ankingEventListeners.push([type, handler])
+}
+</script>
+
+<script>
+var specialCharCodes = {
+  "-": "minus",
+  "=": "equal",
+  "[": "bracketleft",
+  "]": "bracketright",
+  ";": "semicolon",
+  "'": "quote",
+  "`": "backquote",
+  "\\": "backslash",
+  ",": "comma",
+  ".": "period",
+  "/": "slash",
+};
+// Returns function that match keyboard event to see if it matches given shortcut.
+function shortcutMatcher(shortcut) {
+  let shortcutKeys = shortcut.toLowerCase().split(/[+]/).map(key => key.trim())
+  let mainKey = shortcutKeys[shortcutKeys.length - 1]
+  if (mainKey.length === 1) {
+    if (/\\d/.test(mainKey)) {
+      mainKey = "digit" + mainKey
+    } else if (/[a-zA-Z]/.test(mainKey)) {
+      mainKey = "key" + mainKey
+    } else {
+      let code = specialCharCodes[mainKey];
+      if (code) {
+        mainKey = code
+      }
+    }
+  }
+  let ctrl = shortcutKeys.includes("ctrl")
+  let shift = shortcutKeys.includes("shift")
+  let alt = shortcutKeys.includes("alt")
+
+  let matchShortcut = function (ctrl, shift, alt, mainKey, event) {
+    if (mainKey !== event.code.toLowerCase()) return false
+    if (ctrl !== (event.ctrlKey || event.metaKey)) return false
+    if (shift !== event.shiftKey) return false
+    if (alt !== event.altKey) return false
+    return true
+  }.bind(window, ctrl, shift, alt, mainKey)
+  
+  return matchShortcut
+}
+</script>
+
+<script>
+for (const image of document.querySelectorAll(".blur")) {
+  image.classList.add("tappable");
+  image.addEventListener("click", () => {
+    image.classList.toggle("blur");
+  });
+}
+</script>
+
+<script>
+function countdown(elementName, minutes, seconds) {
+  var element, endTime, mins, msLeft, time;
+  function twoDigits( n ) {
+    return (n <= 9 ? "0" + n : n); 
+  }
+  function updateTimer() {
+    msLeft = endTime - (+new Date);
+    
+    if ( msLeft < 1000 ) {
+      element.innerHTML = timeOverMsg;
+    } else {
+      time = new Date( msLeft );
+      mins = time.getUTCMinutes();
+      element.innerHTML = mins + ':' + twoDigits(time.getUTCSeconds());
+      setTimeout( updateTimer, time.getUTCMilliseconds() + 500 );
+    }
+  }
+  element = document.getElementById(elementName);
+  endTime = (+new Date) + 1000 * (60*minutes + seconds) + 500;
+  updateTimer();
+}
+
+// Initialize countdown if timer element exists
+if (document.getElementById("s2")) {
+  countdown("s2", minutes, seconds);
+}
+</script>
+
+<script>
+//DONT FADE BETWEEN CARDS
+var qFade = 0; 
+if (typeof anki !== 'undefined') anki.qFade = qFade;
 </script>
 """
 
@@ -485,6 +701,57 @@ def get_anking_model():
                     <div class="timer" id="s2"></div>
                     <a href="https://www.ankingmed.com"><img src="_AnKingIcon.png" alt="The AnKing" id="pic"></a>
                 </div>
+                
+                {{{{#Tags}}}}
+                <div id="tags-container">{{{{clickable::Tags}}}}</div>
+                <script>
+                var tagContainer = document.getElementById("tags-container")
+                var tagList;
+                if (tagContainer.childElementCount == 0) {{
+                  tagList = tagContainer.innerHTML.split(" ");
+                  var kbdList = [];
+                  var newTagContent = document.createElement("div");
+
+                  for (var i = 0; i < tagList.length; i++) {{
+                    var newTag = document.createElement("kbd");
+                    var tag = tagList[i];
+                    // numTagLevelsToShow == 0 means the whole tag should be shown
+                    if(numTagLevelsToShow != 0){{
+                      tag = tag.split('::').slice(-numTagLevelsToShow).join("::");
+                    }}
+                    newTag.innerHTML = tag;
+                    newTagContent.append(newTag)
+                  }}
+                  tagContainer.innerHTML = newTagContent.innerHTML;
+                  tagContainer.style.cursor = "default";
+                }}
+                else {{
+                  tagList = Array.from(tagContainer.children).map(e => e.innerText);
+                }}
+                globalThis.tagList = tagList.map(t => t.trim().toLowerCase());
+                if (tagContainer.innerHTML.indexOf(tagID) != -1) {{
+                  tagContainer.style.backgroundColor = "rgba(251,11,11,.15)";
+                }}
+
+                function showtags() {{
+                  var tagContainerShortcut = document.getElementById("tags-container");
+
+                  if (tagContainerShortcut.style.display === "none") {{
+                    tagContainerShortcut.style.display = "block";
+                  }} else {{
+                    tagContainerShortcut.style.display = "none";
+                  }}
+                }}
+                
+                var isShortcut = shortcutMatcher(toggleTagsShortcut)
+                ankingAddEventListener('keyup', function (e) {{
+                    if (isShortcut(e)) {{
+                        showtags();
+                    }}
+                }});
+                </script>
+                {{{{/Tags}}}}
+                
                 {ANKING_JS}
             """,
             'afmt': f"""
@@ -515,8 +782,6 @@ def get_anking_model():
                     <img src="{{{{Image}}}}" alt="Card Image">
                 </div>
                 {{{{/Image}}}}
-
-                {ANKING_JS}
             """,
         },
         {
@@ -527,6 +792,55 @@ def get_anking_model():
                     <div class="timer" id="s2"></div>
                     <a href="https://www.ankingmed.com"><img src="_AnKingIcon.png" alt="The AnKing" id="pic"></a>
                 </div>
+                
+                {{{{#Tags}}}}
+                <div id="tags-container">{{{{clickable::Tags}}}}</div>
+                <script>
+                var tagContainer = document.getElementById("tags-container")
+                var tagList;
+                if (tagContainer.childElementCount == 0) {{
+                  tagList = tagContainer.innerHTML.split(" ");
+                  var kbdList = [];
+                  var newTagContent = document.createElement("div");
+
+                  for (var i = 0; i < tagList.length; i++) {{
+                    var newTag = document.createElement("kbd");
+                    var tag = tagList[i];
+                    if(numTagLevelsToShow != 0){{
+                      tag = tag.split('::').slice(-numTagLevelsToShow).join("::");
+                    }}
+                    newTag.innerHTML = tag;
+                    newTagContent.append(newTag)
+                  }}
+                  tagContainer.innerHTML = newTagContent.innerHTML;
+                  tagContainer.style.cursor = "default";
+                }}
+                else {{
+                  tagList = Array.from(tagContainer.children).map(e => e.innerText);
+                }}
+                globalThis.tagList = tagList.map(t => t.trim().toLowerCase());
+                if (tagContainer.innerHTML.indexOf(tagID) != -1) {{
+                  tagContainer.style.backgroundColor = "rgba(251,11,11,.15)";
+                }}
+
+                function showtags() {{
+                  var tagContainerShortcut = document.getElementById("tags-container");
+                  if (tagContainerShortcut.style.display === "none") {{
+                    tagContainerShortcut.style.display = "block";
+                  }} else {{
+                    tagContainerShortcut.style.display = "none";
+                  }}
+                }}
+                
+                var isShortcut = shortcutMatcher(toggleTagsShortcut)
+                ankingAddEventListener('keyup', function (e) {{
+                    if (isShortcut(e)) {{
+                        showtags();
+                    }}
+                }});
+                </script>
+                {{{{/Tags}}}}
+                
                 {ANKING_JS}
             """,
             'afmt': f"""
@@ -557,8 +871,6 @@ def get_anking_model():
                     <img src="{{{{Image}}}}" alt="Card Image">
                 </div>
                 {{{{/Image}}}}
-
-                {ANKING_JS}
             """,
         }
     ]

@@ -1,0 +1,365 @@
+
+/* ~~~~~~~~~ ADD-ON CONFIGURATIONS ~~~~~~~~~ */
+/*Compatibility with Image Style Editor add-on*/
+.card {
+  --w: 0%;
+}
+
+.mobile.card {
+  --w: 100%!important;
+}
+
+/*Max image width for resize images in editor add-on */
+.card [class^=ui-] img {
+  max-width: 100%!important;
+}
+
+/*Compatibility with resize images in editor add-on */
+.resizer {
+  min-width: 0%!important;
+}
+
+.mobile.resizer {
+  min-width: 100%!important;
+}
+
+/* Fix to make pop-up dictionary images the right size */
+.qtip img {
+  max-width: 95%!important;
+  max-height: 95%!important;
+}
+
+
+/* ~~~~~~ANKING HYPERLINK IMAGE~~~~~~ */
+#pic {
+  opacity: 0.0;
+  font-size: 16px;
+  font-family: Comic Sans!important;
+  font-style: bold;
+  height: 50px;
+  border: 0;
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  display: block;
+}
+
+#pic:hover {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.mobile #pic {
+  display: none;
+}
+
+/* ~~~~~~~~~ TAGS ~~~~~~~~~ */
+/* Container To Fix Tags At Bottom Of Screen */
+#tags-container {
+  position: fixed;
+  bottom:.5px;
+  width: 100%;
+  line-height:.45rem;
+  margin-left: -15px;
+  background-color: transparent;
+}
+
+
+/* Clickable Tags (need to download the add-on) */
+kbd {
+  display: inline-block;
+  letter-spacing:.1px;
+  font-weight: bold;
+  font-size: 10px!important;
+  text-shadow: none!important;
+  padding: 0.05rem 0.1rem!important;
+  margin: 1px!important;
+  border-radius: 4px;
+  border-width: 1.5px!important;
+  border-style: solid;
+  background-color: transparent!important;
+  box-shadow: none!important;
+  opacity: 0.5;
+  vertical-align: middle!important;
+  line-height: auto!important;
+  height: auto!important;
+}
+
+/* Tag Becomes More Visible On Hover */
+kbd:hover {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Tag Colors */
+kbd:nth-of-type(1n+0) {
+  border-color: #F44336;
+  color: #F44336!important;
+}
+
+kbd:nth-of-type(2n+0) {
+  border-color: #9C27B0;
+  color: #9C27B0!important;
+}
+
+kbd:nth-of-type(3n+0) {
+  border-color: #3F51B5;
+  color: #3F51B5!important;
+}
+
+kbd:nth-of-type(4n+0) {
+  border-color: #03A9F4;
+  color: #03A9F4!important;
+}
+
+kbd:nth-of-type(5n+0) {
+  border-color: #009688;
+  color: #009688!important;
+}
+
+kbd:nth-of-type(6n+0) {
+  border-color: #C0CA33;
+  color: #C0CA33!important;
+}
+
+kbd:nth-of-type(7n+0) {
+  border-color: #FF9800;
+  color: #FF9800!important;
+}
+
+kbd:nth-of-type(8n+0) {
+  border-color: #FF5722;
+  color: #FF5722!important;
+}
+
+kbd:nth-of-type(9n+0) {
+  border-color: #9E9E9E;
+  color: #9E9E9E!important;
+}
+
+kbd:nth-of-type(10n+0) {
+  border-color: #607D8B;
+  color: #607D8B!important;
+}
+
+/* Tag Mobile Adjustments */
+.mobile kbd {
+  opacity:.9;
+  margin: 1px!important;
+  display: inline-block;
+  font-size: 10px!important;
+}
+
+.mobile #tags-container {
+  line-height: 0.6rem;
+  margin-left: 0px;
+}
+
+
+/* OME BANNER */
+.banner-ome {
+  max-width: 300px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mobile.banner-ome {
+  display: none;
+}
+
+#button-ome {
+  display: none;
+}
+
+.mobile #button-ome {
+  display: inline;
+}
+
+
+/* ~~~~~~~~~BUTTON LAYOUT~~~~~~~~~ */
+.button-general {
+  outline: 0;
+  border-radius: 0.12em;
+  border: 1px solid #525253!important;
+  padding: 5px 5px;
+  text-align: center;
+  display: inline-block;
+  font-size: 9.5px;
+  background-color: #424242;
+  color: #AFAFAF!important;
+  margin-top: 8px;
+}
+
+.mobile.button-general {
+  font-size: 18px;
+  padding: 9px 7px;
+}
+
+.expanded-button {
+  display: block;
+  margin: auto;
+  margin-top: 10px;
+  font-weight: bold;
+  width: 50%!important;
+  background: #ababab!important;
+  color: black!important;
+  font-weight: bold;
+  width: 50%!important;
+}
+
+
+#button-mq:not(.expanded-button) {
+  color: #c26165!important;
+}
+
+
+html:not(.mobile).button-general:hover {
+  cursor: default;
+  background-color: #E9E9E9!important;
+  color: #363638!important;
+}
+
+html:not(.mobile) #button-mq:hover {
+  background-color: #FA8072!important;
+}
+"""
+
+# --- 2. Define AnKing-like JavaScript ---
+# This JavaScript is directly from the AnKing template you provided.
+# It includes logic for timers, cloze one-by-one, persistence, tags, etc.
+ANKING_JS = """
+<script>
+// ############## USER CONFIGURATION START ##############
+// Auto flip to back when One by one mode.
+var autoflip = false 
+
+// Timer config (timer length, timer finished message)
+var minutes = 0
+var seconds = 9
+var timeOverMsg = "<span style='color:#CC5B5B'>!<br/>!<br/>!<br/>!<br/>!<br/>!</span>"
+
+// ##############  TAG SHORTCUT  ##############
+var toggleTagsShortcut = "C";
+
+// ENTER THE TAG TERM WHICH, WHEN PRESENT, WILL TRIGGER A RED BACKGROUND
+var tagID = "XXXYYYZZZ"
+
+// WHETHER THE WHOLE TAG OR ONLY THE LAST PART SHOULD BE SHOWN
+var numTagLevelsToShow = 0;
+
+// ##############  CLOZE ONE BY ONE  ##############
+var revealNextShortcut = "N" 
+var revealNextWordShortcut = "Shift + N"
+var toggleAllShortcut = ","
+
+// Changes how "Reveal Next" and clicking behaves. Either "cloze" or "word".
+// "word" reveals word by word. 
+var revealNextClozeMode = "cloze" 
+
+// What cloze is hidden with
+var clozeHider = (elem) => "👑"
+/* 
+You can replace the above line with below examples. '█' or '_' works well for hiding clozes.
+
+// Fixed length:
+// var clozeHider = (elem) => "███"
+// Replace each character with "█":
+// var clozeHider = (elem) => "█".repeat(elem.textContent.length)
+// Show whitespaces:
+// var clozeHider = (elem) => "[" + elem.textContent.split(" ").map((t) => "█".repeat(t.length)).join(" ") + "]"
+// Color-filled box (doesn't hide images):
+// var clozeHider = (elem) => `<span style="background-color: red; color: transparent;">${elem.innerHTML}</span>`
+*/
+
+// enables selective cloze one-by-one (e.g. only c1 and c3)
+// seperate wanted numbers by "," in one-by-one field
+var selectiveOneByOne = false;
+// if selective one-by-one is disabled, set this to select a min number of clozes necessary to activate 1b1
+// can be set to any number to set lower bound, any falsy value (e.g. 0 or null) disables this setting
+var minNumberOfClozes = 0;
+
+
+// ############## USER CONFIGURATION END ##############
+</script>
+
+<script>
+if (typeof(window.Persistence) === 'undefined') {
+  var _persistenceKey =...[source](https://forums.ankiweb.net/t/closet-for-anki-official-support/4560) + key);
+        };
+        this.getAllKeys = function () {
+          var keys =;
+          var prefixedKeys = Object.keys(sessionStorage);
+          for (var i = 0; i < prefixedKeys.length; i++) {
+            var k = prefixedKeys[i];
+            if (k.indexOf(_persistenceKey) == 0) {
+              keys.push(k.substring(_persistenceKey.length, k.length));
+            }
+          };
+          return keys.sort()
+        }
+      }
+    } catch(err) {}
+    this.isAvailable = function() {
+      return isAvailable;
+   ...[source](https://forums.ankiweb.net/t/closet-for-anki-official-support/4560)        }
+        delete obj[_persistenceKey][key];
+      };
+      this.getAllKeys = function () {
+        return Object.keys(obj[_persistenceKey]);
+      }
+
+      if (obj[_persistenceKey] == undefined) {
+        this.clear();
+      }
+    }
+   ...[source](https://forums.ankiweb.net/t/closet-for-anki-official-support/4560) = new Persistence_windowKey("qt"); // linux, mac (2.1)
+    }
+  }
+}
+</script>
+
+
+<div id="one-by-one" style="display: none;">{{One by one}}</div>
+
+<script>
+  // enables cloze one-by-one even when one-by-one field is empty
+  // minNumberOfClozes is still considered in this case
+  // overridden in importance by selectiveOneByOne
+  var alwaysOneByOne = false;
+  var clozeOneByOneEnabled = true;
+  var oneByOneFieldNotEmpty = document.getElementById("one-by-one").textContent!== "";
+    clozeOneByOneEnabled = alwaysOneByOne |
+| oneByOneFieldNotEmpty;
+  
+  var clozeHints =;
+  if (clozeOneByOneEnabled) {
+    document.getElementById("qa").classList.add('one-by-one');
+    // Save cloze hints to display in the back
+    let clozes = document.getElementsByClassName("cloze")
+    for(var i = 0; i < clozes.length; i++) {
+      clozes[i].classList.add("one-by-one");
+      if (clozes[i].innerHTML === "[...]") {
+        clozeHints.push("")
+      } else {
+        clozeHints.push(clozes[i].innerHTML)
+      }
+    }
+
+    // --- CHECK IF ONE BY ONE SHOULD BE ENABLED FOR THIS SPECIFIC CARD ---
+    /**
+     * Credit for the getCardNumber function goes to foenixx (GitHub) / ollevolle (AnkiWeb Forum)
+     */
+     const getCardNumber = function () {
+      clz = document.body.className;
+      const regex = /card(\\d+)/gm;
+      let m;
+
+      if ((m = regex.exec(clz))!== null) {
+        return m[1];
+      } else {
+        // Should only fire if card is not cloze
+        console.error("Cannot find cardN class of body element!");
+        return "0";
+      }
+    }
