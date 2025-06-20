@@ -36,6 +36,18 @@ class FlashcardProcessor:
         
         # Create advanced model for medical flashcards with perfect styling
         self.model = self._create_medical_model()
+        
+        # Import AnKing engine for advanced functionality
+        try:
+            from anking_engine import get_anking_model, create_anki_deck as anking_create_deck, convert_cloze_placeholder
+            self.anking_model, self.anking_deck_id = get_anking_model()
+            self.anking_create_deck = anking_create_deck
+            self.convert_cloze_placeholder = convert_cloze_placeholder
+            self.use_anking_engine = True
+            app.logger.info("AnKing engine loaded successfully")
+        except ImportError as e:
+            app.logger.warning(f"AnKing engine not available: {e}")
+            self.use_anking_engine = False
     
     def _create_medical_model(self):
         """Create advanced Anki model for medical students with perfect styling and multiple card types"""
@@ -363,11 +375,46 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
         deck_name = data['deck_name']
         cards_data = data['cards']
         
-        # Create deck with consistent ID for proper Anki tracking
-        deck = genanki.Deck(
-            self.deck_id,
-            deck_name
-        )
+        # Use AnKing engine if available for superior formatting
+        if self.use_anking_engine:
+            app.logger.info("Using AnKing engine for deck creation")
+            
+            # Convert data to AnKing format
+            anking_cards = []
+            for card_data in cards_data:
+                # Extract fields with comprehensive format support
+                question = card_data.get('question', card_data.get('front', '')).strip()
+                answer = card_data.get('answer', card_data.get('back', '')).strip()
+                card_type = card_data.get('type', 'basic').lower()
+                
+                # Handle cloze cards with proper conversion
+                if card_type == 'cloze' and question and not answer:
+                    # Convert to AnKing cloze format
+                    question = self.convert_cloze_placeholder(question)
+                
+                anking_card = {
+                    'type': card_type,
+                    'front': question,
+                    'back': answer,
+                    'extra': card_data.get('notes', card_data.get('additional_notes', card_data.get('extra', ''))).strip(),
+                    'vignette': card_data.get('vignette', '').strip(),
+                    'mnemonic': card_data.get('mnemonic', '').strip(),
+                    'image_ref': card_data.get('image', '').strip(),
+                    'tags': card_data.get('tags', [])
+                }
+                anking_cards.append(anking_card)
+            
+            # Create temporary file for AnKing deck
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
+                result = self.anking_create_deck(anking_cards, tmp_file.name)
+                
+                # Return genanki deck object for compatibility
+                return genanki.Deck(self.anking_deck_id, deck_name)
+        
+        # Fallback to original implementation
+        app.logger.info("Using standard deck creation")
+        deck = genanki.Deck(self.deck_id, deck_name)
         
         # Add cards to deck with perfect field mapping
         for card_data in cards_data:

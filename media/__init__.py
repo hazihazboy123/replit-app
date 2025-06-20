@@ -1,0 +1,1 @@
+# Media directory for AnKing image assets
