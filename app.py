@@ -1142,29 +1142,29 @@ def api_simple():
             if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
                 # Handle format: [{"cards": [...]}]
                 cards = data[0]['cards']
-                deck_name = data[0].get('deck_name', 'Medical Flashcards')
+                deck_name = data[0].get('deck_name', None)
                 app.logger.info("Input was array with cards object")
             else:
                 # If it's just an array of cards
                 cards = data
-                deck_name = "Medical Flashcards"
+                deck_name = None
                 app.logger.info("Input was cards array")
         elif isinstance(data, dict):
             if 'cards' in data:
                 # Standard format with cards field
                 cards = data['cards']
-                deck_name = data.get('deck_name', 'Medical Flashcards')
+                deck_name = data.get('deck_name', None)
                 app.logger.info("Input was object with cards field")
             elif 'json' in data and isinstance(data['json'], dict) and 'cards' in data['json']:
                 # Handle nested n8n format: {"json": {"cards": [...]}}
                 cards = data['json']['cards']
-                deck_name = data['json'].get('deck_name', 'Medical Flashcards')
+                deck_name = data['json'].get('deck_name', None)
                 app.logger.info("Input was nested n8n format with json.cards")
             else:
                 # Maybe the whole object is one card?
                 if 'front' in data or 'question' in data:
                     cards = [data]
-                    deck_name = "Medical Flashcards"
+                    deck_name = None
                     app.logger.info("Input was single card object")
                 else:
                     return {
@@ -1185,6 +1185,11 @@ def api_simple():
                 'cards_type': str(type(cards)),
                 'cards_value': cards
             }, 400
+        
+        # Generate SynapticRecall deck name with topic detection if not provided
+        if not deck_name or deck_name in ['Medical Flashcards', 'Flashcards']:
+            deck_name = generate_synaptic_recall_name(cards)
+            app.logger.info(f"Generated SynapticRecall deck name: '{deck_name}'")
         
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
         
@@ -1308,6 +1313,89 @@ def api_simple():
             'message': str(e),
             'traceback': traceback.format_exc()
         }, 500
+    
+def generate_synaptic_recall_name(cards):
+        """Generate SynapticRecall deck name based on card content analysis"""
+        import re
+        
+        # Collect all text content from cards
+        all_text = []
+        for card in cards:
+            # Get front/question content
+            front_text = card.get('front', card.get('question', ''))
+            back_text = card.get('back', card.get('answer', ''))
+            tags = card.get('tags', [])
+            
+            all_text.extend([front_text, back_text])
+            
+            # Add tag content for analysis
+            if isinstance(tags, list):
+                all_text.extend([str(tag) for tag in tags])
+            elif isinstance(tags, str):
+                all_text.append(tags)
+        
+        # Combine all text and convert to lowercase
+        combined_text = ' '.join(all_text).lower()
+        
+        # Medical topic keywords with priority order
+        topic_keywords = {
+            'spinothalamic': 'spinothalmictract',
+            'spinothalmic': 'spinothalmictract', 
+            'pain pathway': 'painpathways',
+            'pain processing': 'painprocessing',
+            'substantia gelatinosa': 'substantiagelatinosa',
+            'dorsal horn': 'dorsalhorn',
+            'spinal cord': 'spinalcord',
+            'neuroanatomy': 'neuroanatomy',
+            'cardiovascular': 'cardiovascular',
+            'cardiology': 'cardiology',
+            'respiratory': 'respiratory',
+            'pulmonology': 'pulmonology',
+            'pharmacology': 'pharmacology',
+            'pathology': 'pathology',
+            'anatomy': 'anatomy',
+            'physiology': 'physiology',
+            'biochemistry': 'biochemistry',
+            'immunology': 'immunology',
+            'microbiology': 'microbiology',
+            'neurology': 'neurology',
+            'psychiatry': 'psychiatry',
+            'endocrinology': 'endocrinology',
+            'gastroenterology': 'gastroenterology',
+            'nephrology': 'nephrology',
+            'hematology': 'hematology',
+            'oncology': 'oncology',
+            'dermatology': 'dermatology',
+            'ophthalmology': 'ophthalmology',
+            'otolaryngology': 'otolaryngology',
+            'orthopedics': 'orthopedics',
+            'radiology': 'radiology',
+            'surgery': 'surgery',
+            'emergency medicine': 'emergencymedicine',
+            'internal medicine': 'internalmedicine',
+            'family medicine': 'familymedicine',
+            'pediatrics': 'pediatrics',
+            'obstetrics': 'obstetrics',
+            'gynecology': 'gynecology'
+        }
+        
+        # Find the most relevant topic
+        detected_topic = None
+        for keyword, topic in topic_keywords.items():
+            if keyword in combined_text:
+                detected_topic = topic
+                break
+        
+        # If no specific topic found, use general content analysis
+        if not detected_topic:
+            # Extract key medical terms
+            medical_terms = re.findall(r'\b(?:tract|pathway|nerve|muscle|bone|organ|system|syndrome|disease|disorder|condition)\b', combined_text)
+            if medical_terms:
+                detected_topic = 'medicalterms'
+            else:
+                detected_topic = 'medicalcards'
+        
+        return f"synapticrecall_{detected_topic}"
 
 @app.route('/process', methods=['POST'])
 def process_flashcards():

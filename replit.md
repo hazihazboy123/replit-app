@@ -240,6 +240,8 @@ Changelog:
   * Verified deck generation creates proper SQLite database with accessible notes and cards (86KB files)
   * Fixed template naming issue causing 0 cards despite notes being created (changed to "Card 1" and "Cloze")
   * Confirmed 1:1 note-to-card ratio working correctly in final Anki deck imports
+  * Added intelligent SynapticRecall deck naming with topic detection based on card content
+  * Implemented automatic "synapticrecall_[topic]" naming using medical keyword analysis
   * Complete production-ready system with all AnKing features and full n8n automation compatibility
 ```
 
