@@ -228,6 +228,8 @@ Changelog:
   * Integrated complete add-on configurations for Image Style Editor compatibility
   * Added professional tag styling with colorful kbd elements and hover effects
   * Enhanced mobile responsiveness and button layouts following AnKing standards
+  * Complete night mode support with proper color schemes for dark theme compatibility
+  * Added comprehensive user customization options for fonts, colors, and display settings
   * Complete production-ready system with all AnKing features and add-on compatibility
 ```
 

@@ -174,6 +174,82 @@ a[href^="javascript:"] {
   color: cyan;
 }
 
+/* NM table colors */
+.night_mode tr td:first-child[colspan]:last-child[colspan],.nightMode tr td:first-child[colspan]:last-child[colspan] {
+  background-color: #19181d;
+  color: #4491b6;
+  border-top: 3px solid #393743;
+  border-bottom: 3px solid #393743;
+}
+
+.night_mode table th,.nightMode table th {
+  background-color: #19181d;
+  color: #3086ae;
+  border: 1px solid #393743;
+}
+
+.night_mode table tr:nth-child(even),.nightMode table tr:nth-child(even) {
+  color: #ffffff;
+  background-color: #2e2e36;
+}
+
+.night_mode table td:first-child,.nightMode table td:first-child {
+  border-left: 1px solid black;
+}
+
+.night_mode table td:last-child,.nightMode table td:last-child {
+  border-right: 1px solid black;
+}
+
+.night_mode table,.nightMode table {
+  color: #ffffff;
+  border: 1px solid #393743;
+  background-color: #26252b;
+}
+
+/*~~~~~~~~NIGHT MODE COLORS~~~~~~~~*/
+/* NM Default Text Color */
+.nightMode.card,
+.night_mode.card {
+  color: #FFFAFA!important;
+}
+
+/* NM Background Color */
+.nightMode.card,
+.night_mode.card {
+  background-color: #272828!important;
+}
+
+/* NM Cloze Color */
+.nightMode.cloze,.nightMode.cloze b,.nightMode.cloze u,.nightMode.cloze i,
+.night_mode.cloze,.night_mode.cloze b,.night_mode.cloze u,.night_mode.cloze i {
+  color: #4297F9!important;
+}
+
+/* NM One by One Cloze Color */
+.nightMode.cloze.one-by-one,.nightMode.cloze.one-by-one b,.nightMode.cloze.one-by-one u,.nightMode.cloze.one-by-one i,
+.night_mode.cloze.one-by-one,.night_mode.cloze.one-by-one b,.night_mode.cloze.one-by-one u,.night_mode.cloze.one-by-one i {
+    color: #009400!important;
+}
+
+/* NM One by One Cloze Hint Color */
+.nightMode.cloze-hint,.nightMode.cloze-hint b,.nightMode.cloze-hint u,.nightMode.cloze-hint i,
+.night_mode.cloze-hint,.night_mode.cloze-hint b,.night_mode.cloze-hint u,.night_mode.cloze-hint i {
+    color: #009400!important;
+}
+
+/* NM "Extra" Field Color */
+.nightMode #extra,.nightMode #extra i,
+.night_mode #extra,.night_mode #extra i {
+  color: magenta;
+}
+
+/* NM Hint Reveal Color */
+.nightMode.hints,
+.night_mode.hints {
+  color: cyan;
+}
+
 /* ~~~~~COLOR ACCENTS FOR BOLD-ITALICS-UNDERLINE~~~~~~*/
 b {
   color: inherit;
