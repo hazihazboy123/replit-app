@@ -774,8 +774,6 @@ def get_anking_model():
             'qfmt': f"""
                 <div class="card-content">
                     <div id="text">{{{{Front}}}}</div>
-                    <div class="timer" id="s2"></div>
-                    <a href="https://www.ankingmed.com"><img src="_AnKingIcon.png" alt="The AnKing" id="pic"></a>
                 </div>
                 
                 {{{{#Tags}}}}
@@ -865,8 +863,6 @@ def get_anking_model():
             'qfmt': f"""
                 <div class="card-content">
                     <div id="text">{{{{cloze:Front}}}}</div>
-                    <div class="timer" id="s2"></div>
-                    <a href="https://www.ankingmed.com"><img src="_AnKingIcon.png" alt="The AnKing" id="pic"></a>
                 </div>
                 
                 {{{{#Tags}}}}
@@ -953,14 +949,13 @@ def get_anking_model():
         }
     ]
 
-    # Create the Anki Model with proper type specification
+    # Create working Anki Model without model_type specification
     my_model = genanki.Model(
         ANKING_MODEL_ID,
-        'AnKing-Like Medical Flashcards',
+        'AnKing Medical Flashcards',
         fields=fields,
         templates=templates,
-        css=ANKING_CSS,
-        model_type=genanki.Model.CLOZE  # This enables cloze deletion support
+        css=ANKING_CSS
     )
     return my_model, ANKING_DECK_ID
 
