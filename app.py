@@ -1007,6 +1007,44 @@ def download_file(filename):
         app.logger.error(f"Download traceback: {traceback.format_exc()}")
         return "Download failed", 500
 
+@app.route('/api/export-code', methods=['GET'])
+def api_export_code():
+    """API endpoint to download complete system code as tar.gz"""
+    try:
+        import tempfile
+        import tarfile
+        import os
+        
+        # Create temporary archive
+        with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as tmp_file:
+            with tarfile.open(tmp_file.name, 'w:gz') as tar:
+                # Add main Python files
+                for py_file in ['app.py', 'main.py', 'anking_engine.py', 'verify_external.py']:
+                    if os.path.exists(py_file):
+                        tar.add(py_file, arcname=py_file)
+                
+                # Add configuration files
+                for config_file in ['pyproject.toml', 'setup_requirements.txt', 'replit.md', 'export_readme.md']:
+                    if os.path.exists(config_file):
+                        tar.add(config_file, arcname=config_file)
+                
+                # Add directories
+                for directory in ['templates', 'static', 'media']:
+                    if os.path.exists(directory):
+                        tar.add(directory, arcname=directory)
+            
+            # Return the file
+            return send_file(
+                tmp_file.name,
+                as_attachment=True,
+                download_name='synapticrecall-medical-flashcard-system.tar.gz',
+                mimetype='application/gzip'
+            )
+            
+    except Exception as e:
+        app.logger.error(f"Export code error: {e}")
+        return {'error': 'Export failed', 'message': str(e)}, 500
+
 @app.route('/api/schema', methods=['GET'])
 def api_schema():
     """API endpoint to get the expected JSON schema for medical flashcards"""
