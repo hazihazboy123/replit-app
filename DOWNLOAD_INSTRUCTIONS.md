@@ -2,7 +2,9 @@
 
 ## Direct Download Link
 **Click here to download the complete Python codebase:**
-https://flashcard-converter-haziqmakesai.replit.app/download/synapticrecall-medical-flashcard-system.tar.gz
+https://flashcard-converter-haziqmakesai.replit.app/api/export-code
+
+This endpoint dynamically generates and serves the complete system archive.
 
 ## What's Included
 
