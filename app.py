@@ -963,39 +963,43 @@ def export_file(filename):
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
-    """Serve generated .apkg files for download"""
+    """Serve generated .apkg files and system exports for download"""
     try:
-        # Construct full path to temporary file in /tmp directory
+        # Allow both .apkg files and .tar.gz exports
+        allowed_extensions = ['.apkg', '.tar.gz']
+        if not any(filename.endswith(ext) for ext in allowed_extensions):
+            app.logger.error(f"Invalid file extension for download: {filename}")
+            return "Invalid file type", 400
+        
+        # Check /tmp first for .apkg files, then workspace for exports
         file_path = os.path.join('/tmp', filename)
+        if not os.path.exists(file_path):
+            file_path = os.path.join('/home/runner/workspace', filename)
         
         app.logger.info(f"Attempting to serve file: {file_path}")
         
         if not os.path.exists(file_path):
             app.logger.error(f"File not found: {file_path}")
-            # List available files for debugging
-            available_files = []
-            try:
-                for f in os.listdir('/tmp'):
-                    if f.endswith('.apkg'):
-                        available_files.append(f)
-                app.logger.info(f"Available .apkg files: {available_files}")
-            except:
-                pass
             return "File not found", 404
         
         # Verify file size
         file_size = os.path.getsize(file_path)
         app.logger.info(f"Serving file: {filename}, size: {file_size} bytes")
         
-        # Generate clean download name
-        base_name = filename.replace('.apkg', '').replace('tmp', 'medical_flashcards')
-        download_name = f"{base_name}.apkg"
+        # Set appropriate mimetype and download name
+        if filename.endswith('.tar.gz'):
+            mimetype = 'application/gzip'
+            download_name = filename
+        else:
+            mimetype = 'application/octet-stream'
+            base_name = filename.replace('.apkg', '').replace('tmp', 'medical_flashcards')
+            download_name = f"{base_name}.apkg"
         
         return send_file(
             file_path,
             as_attachment=True,
             download_name=download_name,
-            mimetype='application/octet-stream'
+            mimetype=mimetype
         )
     except Exception as e:
         app.logger.error(f"Download error: {e}")
