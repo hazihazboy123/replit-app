@@ -63,8 +63,8 @@ html {
 /*~~~~~~~~~FONT STYLE~~~~~~~~~*/
 .card,
 kbd {
-  font-family: Arial Greek, Arial;
-  /*Step exam's font is Arial Greek*/
+  font-family: Courier, "Courier New", monospace;
+  /*Medical exam consistency with Courier font*/
 }
 
 /*~~~~~~~MAX IMAGE HEIGHT/WIDTH~~~~~~~*/
@@ -467,6 +467,82 @@ ul ul, table ul, ol ol, table ol {
 .mobile ol {
   text-align: left;
   max-width: 100%;
+}
+
+/* Clinical Vignette Styling */
+#vignette-section {
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 5px;
+  text-align: left;
+}
+
+#vignette-section h3 {
+  color: #1976d2;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.vignette-content {
+  line-height: 1.25;
+  font-style: italic;
+  color: #424242;
+}
+
+/* Night mode vignette styling */
+.nightMode #vignette-section, .night_mode #vignette-section {
+  background-color: #1a237e;
+  border-left-color: #3f51b5;
+}
+
+.nightMode #vignette-section h3, .night_mode #vignette-section h3 {
+  color: #7986cb;
+}
+
+.nightMode .vignette-content, .night_mode .vignette-content {
+  color: #e8eaf6;
+}
+
+/* Mnemonic Styling */
+#mnemonic-section {
+  background-color: #fff8e1;
+  border: 2px dashed #ff9800;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 5px;
+  text-align: left;
+}
+
+#mnemonic-section h3 {
+  color: #f57c00;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.mnemonic-content {
+  font-weight: bold;
+  color: #bf360c;
+  line-height: 1.2;
+}
+
+/* Night mode mnemonic styling */
+.nightMode #mnemonic-section, .night_mode #mnemonic-section {
+  background-color: #3e2723;
+  border-color: #ff9800;
+}
+
+.nightMode #mnemonic-section h3, .night_mode #mnemonic-section h3 {
+  color: #ffb74d;
+}
+
+.nightMode .mnemonic-content, .night_mode .mnemonic-content {
+  color: #ffcc02;
 }
 """
 

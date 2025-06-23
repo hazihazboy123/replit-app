@@ -243,12 +243,19 @@ Changelog:
   * Added intelligent SynapticRecall deck naming with topic detection based on card content
   * Implemented automatic "synapticrecall_[topic]" naming using medical keyword analysis
   * Complete production-ready system with all AnKing features and full n8n automation compatibility
+- June 23, 2025: Enhanced medical card styling per user preferences:
+  * Changed font from Arial Greek to Courier for medical exam consistency
+  * Increased clinical vignette line spacing to 1.25 for improved readability
+  * Added comprehensive vignette and mnemonic section styling with proper background colors and borders
+  * Enhanced night mode support for all new styling elements
 ```
 
 ## User Preferences
 
 ```
 Preferred communication style: Simple, everyday language.
+Font preference: Courier font for medical exam consistency.
+Clinical vignette formatting: Line spacing of at least 1.25 for improved readability.
 ```
 
 ### Notes for Development
