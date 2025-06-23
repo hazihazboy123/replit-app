@@ -919,34 +919,34 @@ def get_anking_model():
                 
                 {ANKING_JS}
             """,
-            'afmt': f"""
-                {{{{FrontSide}}}}
+            'afmt': """
+                {{FrontSide}}
                 <hr id="answer">
                 <div class="answer-text">{{{Back}}}</div>
 
-                {{{{#Extra}}}}
+                {{#Extra}}
                 <div id="extra">{{{Extra}}}</div>
-                {{{{/Extra}}}}
+                {{/Extra}}
 
-                {{{{#Vignette}}}}
+                {{#Vignette}}
                 <div id="vignette-section">
                     <h3>Clinical Vignette</h3>
                     <div class="vignette-content">{{{Vignette}}}</div>
                 </div>
-                {{{{/Vignette}}}}
+                {{/Vignette}}
 
-                {{{{#Mnemonic}}}}
+                {{#Mnemonic}}
                 <div id="mnemonic-section">
                     <h3>Mnemonic</h3>
                     <div class="mnemonic-content">{{{Mnemonic}}}</div>
                 </div>
-                {{{{/Mnemonic}}}}
+                {{/Mnemonic}}
 
-                {{{{#Image}}}}
+                {{#Image}}
                 <div id="image-section">
-                    <img src="{{{{Image}}}}" alt="Card Image">
+                    <img src="{{Image}}" alt="Card Image">
                 </div>
-                {{{{/Image}}}}
+                {{/Image}}
             """,
         },
         {
