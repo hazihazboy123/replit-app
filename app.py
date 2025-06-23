@@ -971,16 +971,33 @@ def download_file(filename):
             app.logger.error(f"Invalid file extension for download: {filename}")
             return "Invalid file type", 400
         
-        # Check /tmp first for .apkg files, then workspace for exports
-        file_path = os.path.join('/tmp', filename)
-        if not os.path.exists(file_path):
-            file_path = os.path.join('/home/runner/workspace', filename)
+        # Enhanced file path checking with multiple locations
+        possible_paths = [
+            os.path.join('/tmp', filename),
+            os.path.join('/home/runner/workspace', filename),
+            os.path.join('/home/runner/workspace/downloads', filename)
+        ]
         
-        app.logger.info(f"Attempting to serve file: {file_path}")
+        file_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                file_path = path
+                break
         
-        if not os.path.exists(file_path):
-            app.logger.error(f"File not found: {file_path}")
-            return "File not found", 404
+        app.logger.info(f"Searching for file: {filename}")
+        app.logger.info(f"Checked paths: {possible_paths}")
+        app.logger.info(f"Found file at: {file_path}")
+        
+        if not file_path or not os.path.exists(file_path):
+            # List available files for debugging
+            tmp_files = []
+            try:
+                tmp_files = [f for f in os.listdir('/tmp') if f.endswith('.apkg')]
+            except:
+                pass
+            app.logger.error(f"File not found: {filename}")
+            app.logger.error(f"Available .apkg files in /tmp: {tmp_files}")
+            return f"File not found: {filename}. Available files: {tmp_files}", 404
         
         # Verify file size
         file_size = os.path.getsize(file_path)
@@ -1333,36 +1350,40 @@ def api_simple():
         processor = FlashcardProcessor()
         processor.validate_json_structure(final_data)
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
-            processor.create_anki_deck(final_data)
-            # The deck is returned, write it to file
-            deck = processor.create_anki_deck(final_data)
-            deck.write_to_file(tmp_file.name)
-            file_size = os.path.getsize(tmp_file.name)
-            
-            # Clean filename
-            safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
-            if not safe_name:
-                safe_name = "flashcards"
-            filename = f"{safe_name}.apkg"
-            
-            download_url = f"/download/{os.path.basename(tmp_file.name)}"
-            full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
-            
-            result = {
-                'success': True,
-                'status': 'completed',
-                'deck_name': deck_name,
-                'cards_processed': len(cards),
-                'file_size': file_size,
-                'filename': filename,
-                'download_url': download_url,
-                'full_download_url': full_url,
-                'message': f'Generated Anki deck with {len(cards)} cards'
-            }
-            
-            app.logger.info(f"SUCCESS: {result}")
-            return result, 200
+        # Create predictable filename with timestamp
+        safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        if not safe_name:
+            safe_name = "flashcards"
+        
+        import time
+        timestamp = int(time.time())
+        filename = f"{safe_name}_{timestamp}.apkg"
+        file_path = f"/tmp/{filename}"
+        
+        # Generate deck and write to file
+        deck = processor.create_anki_deck(final_data)
+        deck.write_to_file(file_path)
+        file_size = os.path.getsize(file_path)
+        
+        app.logger.info(f"Generated file: {file_path} (size: {file_size} bytes)")
+        
+        download_url = f"/download/{filename}"
+        full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
+        
+        result = {
+            'success': True,
+            'status': 'completed',
+            'deck_name': deck_name,
+            'cards_processed': len(cards),
+            'file_size': file_size,
+            'filename': filename,
+            'download_url': download_url,
+            'full_download_url': full_url,
+            'message': f'Generated Anki deck with {len(cards)} cards'
+        }
+        
+        app.logger.info(f"SUCCESS: {result}")
+        return result, 200
             
     except Exception as e:
         app.logger.error(f"SIMPLE API ERROR: {str(e)}")

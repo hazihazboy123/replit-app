@@ -248,6 +248,11 @@ Changelog:
   * Increased clinical vignette line spacing to 1.25 for improved readability
   * Added comprehensive vignette and mnemonic section styling with proper background colors and borders
   * Enhanced night mode support for all new styling elements
+- June 23, 2025: Fixed HTML rendering and download issues:
+  * Fixed HTML content rendering using triple braces {{{ }}} in Anki templates
+  * Added highlight-red CSS class for proper text highlighting
+  * Fixed file download persistence by using predictable filenames with timestamps
+  * Enhanced download endpoint with better error handling and file path checking
 ```
 
 ## User Preferences
