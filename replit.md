@@ -261,6 +261,8 @@ Changelog:
   * Formatted answer choices vertically (A, B, C, D, E on separate lines) for better readability
   * Added bright pink highlighting support (highlight-pink class) for AnKing-style extra sections
   * Both highlight-red (dark blue) and highlight-pink (bright pink) classes now fully supported
+  * Enhanced vignette cleanup to remove all stray } characters and convert red text to dark blue
+  * Added CSS override for red inline styles in vignettes to ensure proper dark blue display
 ```
 
 ## User Preferences

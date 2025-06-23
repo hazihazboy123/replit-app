@@ -528,6 +528,13 @@ ul ul, table ul, ol ol, table ol {
   color: #424242;
 }
 
+/* Override red text in vignettes to use dark blue */
+#vignette-section .vignette-content span[style*="color: red"],
+#vignette-section .vignette-content span[style*="color:#ff0000"],
+#vignette-section .vignette-content span[style*="color: #ff0000"] {
+  color: #1e3a8a !important;
+}
+
 /* Night mode vignette styling */
 .nightMode #vignette-section, .night_mode #vignette-section {
   background-color: #1a237e;
@@ -1105,8 +1112,15 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             vignette_content = vignette_content.replace(' E.', '<br>E.')
             vignette_content = vignette_content.replace(' F.', '<br>F.')
             
-            # Remove any trailing extra characters like }
+            # Remove any trailing extra characters like } and clean up
             vignette_content = vignette_content.rstrip('} ')
+            # Remove any stray } characters that appear in the middle or end
+            vignette_content = vignette_content.replace(' }', '').replace('}', '')
+            
+            # Convert any remaining red highlighting to dark blue in vignettes
+            vignette_content = vignette_content.replace('style="color: red"', 'class="highlight-red"')
+            vignette_content = vignette_content.replace('color: red', 'color: #1e3a8a')
+            vignette_content = vignette_content.replace('color:#ff0000', 'color:#1e3a8a')
         
         # Handle mnemonic content  
         mnemonic_data = card_info.get('mnemonic', '')
