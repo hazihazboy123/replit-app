@@ -273,7 +273,7 @@ Font preference: Arial Greek font (reverted from Courier).
 Clinical vignette formatting: Line spacing of at least 1.25 for improved readability.
 Background styling: Keep blue backgrounds for vignettes and golden backgrounds for mnemonics.
 Text highlighting: Red (#d32f2f) for front/back cards and correct answers, dark blue (#1e3a8a) for vignette text contrast.
-Pink highlighting: Bright pink (#e91e63) for mnemonics and AnKing-style extra sections.
+Pink highlighting: Orange/gold (#e65100) for mnemonics to match mnemonic section colors.
 Answer formatting: A, B, C, D, E choices on separate lines with highlighting only on correct answers.
 ```
 
