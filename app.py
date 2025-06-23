@@ -997,7 +997,17 @@ def download_file(filename):
                 pass
             app.logger.error(f"File not found: {filename}")
             app.logger.error(f"Available .apkg files in /tmp: {tmp_files}")
-            return f"File not found: {filename}. Available files: {tmp_files}", 404
+            app.logger.error(f"Checked paths: {possible_paths}")
+            
+            # Try to find a similar file with different timestamp
+            similar_files = [f for f in tmp_files if filename.replace('_', '').replace('.apkg', '') in f.replace('_', '').replace('.apkg', '')]
+            if similar_files:
+                # Use the most recent similar file
+                newest_file = max(similar_files, key=lambda f: os.path.getmtime(os.path.join('/tmp', f)))
+                file_path = os.path.join('/tmp', newest_file)
+                app.logger.info(f"Using similar file: {file_path}")
+            else:
+                return f"File not found: {filename}. Available files: {tmp_files}", 404
         
         # Verify file size
         file_size = os.path.getsize(file_path)
