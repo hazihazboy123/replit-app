@@ -253,6 +253,10 @@ Changelog:
   * Added highlight-red CSS class for proper text highlighting
   * Fixed file download persistence by using predictable filenames with timestamps
   * Enhanced download endpoint with better error handling and file path checking
+- June 23, 2025: Updated highlighting color for better contrast:
+  * Changed highlight-red text color from red (#d32f2f) to dark blue (#1e3a8a)
+  * Improved readability of highlighted text in blue vignette backgrounds
+  * Updated night mode highlighting to use lighter blue (#60a5fa) for dark themes
 ```
 
 ## User Preferences
@@ -262,6 +266,7 @@ Preferred communication style: Simple, everyday language.
 Font preference: Arial Greek font (reverted from Courier).
 Clinical vignette formatting: Line spacing of at least 1.25 for improved readability.
 Background styling: Keep blue backgrounds for vignettes and golden backgrounds for mnemonics.
+Text highlighting: Use dark blue (#1e3a8a) instead of red for better contrast in blue vignette backgrounds.
 ```
 
 ### Notes for Development

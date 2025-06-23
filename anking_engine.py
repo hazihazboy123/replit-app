@@ -128,7 +128,7 @@ a[href^="javascript:"] {
 
 /* Highlight Red for High-Yield */
 .highlight-red {
-    color: red!important; /* Ensure it's red */
+    color: #1e3a8a!important; /* Dark blue for better contrast */
 }
 
 /*~~~~~~~~NIGHT MODE COLORS~~~~~~~~*/
@@ -471,8 +471,8 @@ ul ul, table ul, ol ol, table ol {
 
 /* Add CSS for highlight-red class */
 .highlight-red {
-  color: #d32f2f !important;
-  background-color: #ffebee;
+  color: #1e3a8a !important;
+  background-color: #e8f4fd;
   padding: 2px 4px;
   border-radius: 3px;
   font-weight: bold;
@@ -480,8 +480,8 @@ ul ul, table ul, ol ol, table ol {
 
 /* Night mode highlight-red */
 .nightMode .highlight-red, .night_mode .highlight-red {
-  color: #ff5252 !important;
-  background-color: #3e1c1c;
+  color: #60a5fa !important;
+  background-color: #1e3a8a;
 }
 
 /* Clinical Vignette Styling */
