@@ -131,6 +131,11 @@ a[href^="javascript:"] {
     color: #1e3a8a!important; /* Dark blue for better contrast */
 }
 
+/* Highlight Pink for AnKing Style */
+.highlight-pink {
+    color: #e91e63!important; /* Bright pink like AnKing extra sections */
+}
+
 /*~~~~~~~~NIGHT MODE COLORS~~~~~~~~*/
 /* NM Default Text Color */
 .nightMode.card,
@@ -482,6 +487,21 @@ ul ul, table ul, ol ol, table ol {
 .nightMode .highlight-red, .night_mode .highlight-red {
   color: #60a5fa !important;
   background-color: #1e3a8a;
+}
+
+/* Add CSS for highlight-pink class - AnKing style bright pink */
+.highlight-pink {
+  color: #e91e63 !important;
+  background-color: #fce4ec;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+/* Night mode highlight-pink */
+.nightMode .highlight-pink, .night_mode .highlight-pink {
+  color: #f48fb1 !important;
+  background-color: #880e4f;
 }
 
 /* Clinical Vignette Styling */

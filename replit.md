@@ -259,6 +259,8 @@ Changelog:
   * Updated night mode highlighting to use lighter blue (#60a5fa) for dark themes
   * Fixed extra curly brace issue by adding trailing character cleanup in vignette processing
   * Formatted answer choices vertically (A, B, C, D, E on separate lines) for better readability
+  * Added bright pink highlighting support (highlight-pink class) for AnKing-style extra sections
+  * Both highlight-red (dark blue) and highlight-pink (bright pink) classes now fully supported
 ```
 
 ## User Preferences
@@ -269,6 +271,7 @@ Font preference: Arial Greek font (reverted from Courier).
 Clinical vignette formatting: Line spacing of at least 1.25 for improved readability.
 Background styling: Keep blue backgrounds for vignettes and golden backgrounds for mnemonics.
 Text highlighting: Use dark blue (#1e3a8a) instead of red for better contrast in blue vignette backgrounds.
+Pink highlighting: Added bright pink (#e91e63) highlighting support for AnKing-style extra sections.
 ```
 
 ### Notes for Development

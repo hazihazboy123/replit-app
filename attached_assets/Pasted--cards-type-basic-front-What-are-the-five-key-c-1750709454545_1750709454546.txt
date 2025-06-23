@@ -1,0 +1,71 @@
+[
+  {
+    "cards": [
+      {
+        "type": "basic",
+        "front": "What are the five key constructs of negative symptoms in schizophrenia?",
+        "back": "<span class=\"highlight-red\">Blunted affect</span>, <span class=\"highlight-red\">alogia</span>, <span class=\"highlight-red\">avolition</span>, <span class=\"highlight-red\">asociality</span>, and <span class=\"highlight-red\">anhedonia</span>",
+        "tags": [
+          "Psychiatry::Schizophrenia::Symptoms",
+          "USMLE::Step2::HighYield"
+        ],
+        "note": "Negative symptoms significantly impact functional outcomes and quality of life in patients with schizophrenia.",
+        "query": "negative symptoms of schizophrenia",
+        "mnemonic": "<span class=\"highlight-pink\">A 5-ALABAS</span>: Avolition, Anhedonia, Alogia, Asociality, Blunted affect – the 5 key negative features.",
+        "vignette": "A 24-year-old male presents to a psychiatric clinic with a lack of motivation and emotional expression over the past several months. His family reports that he has withdrawn from social activities and appears indifferent to previously enjoyed hobbies. The patient states he often feels empty and unfulfilled and has difficulty initiating tasks. On examination, the clinician notes a flat affect and limited verbal responses, indicating potential negative symptoms of schizophrenia. Which of the following is NOT considered a key construct of negative symptoms?\n\nAnswer Choices:\nA. <span class=\"highlight-red\">Blunted affect</span>\nB. Alogia\nC. Avolition\nD. Asociality\nE. Anhedonia\n\nCorrect Answer: <span class=\"highlight-red\">A. Blunted affect</span>"
+      },
+      {
+        "type": "basic",
+        "front": "What percentage of patients with schizophrenia may exhibit clinically relevant negative symptoms?",
+        "back": "Up to <span class=\"highlight-red\">60%</span>",
+        "tags": [
+          "Psychiatry::Schizophrenia::Prevalence",
+          "USMLE::Step2::HighYield"
+        ],
+        "note": "Negative symptoms can occur at any point in the illness.",
+        "query": "prevalence of negative symptoms",
+        "mnemonic": "<span class=\"highlight-pink\">60% is a BIG strike</span>: most patients showcase this challenge.",
+        "vignette": "A 30-year-old woman with a diagnosis of schizophrenia comes to the clinic for a routine follow-up. She expresses difficulty in finding joy in daily activities and mentions that these feelings have persisted despite medication adherence. A review of her history reveals that she has struggled with these symptoms since her initial diagnosis. The psychiatrist notes that significant portions of patients with schizophrenia can develop negative symptoms affecting their quality of life. What percentage of patients with schizophrenia may present with clinically relevant negative symptoms?\n\nAnswer Choices:\nA. 20%\nB. 40%\nC. <span class=\"highlight-red\">60%</span>\nD. 80%\nE. 100%\n\nCorrect Answer: <span class=\"highlight-red\">C. 60%</span>"
+      },
+      {
+        "type": "basic",
+        "front": "Which negative symptom is characterized by a reduction in goal-directed activity and motivation?",
+        "back": "<span class=\"highlight-red\">Avolition</span>",
+        "tags": [
+          "Psychiatry::Schizophrenia::Symptoms",
+          "USMLE::Step2::HighYield"
+        ],
+        "note": "Avolition significantly contributes to the functional impairment in schizophrenia.",
+        "query": "reduction in motivation",
+        "mnemonic": "<span class=\"highlight-pink\">Avolition = A VOICE SHUT</span>: no motivation to act.",
+        "vignette": "A 28-year-old male presents for evaluation due to increasing problems at work and home. He describes feeling less motivated to engage in activities he used to enjoy, such as playing soccer or attending social gatherings. His family notes that he has stopped participating in family events and has become more sedentary. Physical examination reveals a lack of initiative during the interview, raising concerns about potential avolition. Which negative symptom is this patient experiencing?\n\nAnswer Choices:\nA. Alogia\nB. <span class=\"highlight-red\">Avolition</span>\nC. Anhedonia\nD. Blunted affect\nE. Asociality\n\nCorrect Answer: <span class=\"highlight-red\">B. Avolition</span>"
+      },
+      {
+        "type": "basic",
+        "front": "What is the term for reduced experience of pleasure in schizophrenia?",
+        "back": "<span class=\"highlight-red\">Anhedonia</span>",
+        "tags": [
+          "Psychiatry::Schizophrenia::Symptom",
+          "USMLE::Step2::HighYield"
+        ],
+        "note": "Anhedonia is a critical component in the assessment of negative symptoms.",
+        "query": "reduced pleasure experience",
+        "mnemonic": "<span class=\"highlight-pink\">AN**HEDONISM</span>: absence of joy - a stark defining issue.",
+        "vignette": "A 35-year-old man diagnosed with schizophrenia reports a persistent loss of joy in everyday activities, including interactions with friends and family. He states that food no longer tastes good to him, and he has lost interest in hobbies he once enjoyed, such as working on cars. The doctor assesses the patient for negative symptoms, specifically looking at any signs of anhedonia. Which of the following best describes the patient's reported experience?\n\nAnswer Choices:\nA. Avolition\nB. Alogia\nC. <span class=\"highlight-red\">Anhedonia</span>\nD. Blunted affect\nE. Asociality\n\nCorrect Answer: <span class=\"highlight-red\">C. Anhedonia</span>"
+      },
+      {
+        "type": "basic",
+        "front": "What differentiates primary negative symptoms from secondary negative symptoms in schizophrenia?",
+        "back": "Primary negative symptoms are intrinsic to the <span class=\"highlight-red\">pathophysiology</span> of schizophrenia, while secondary negative symptoms arise from other factors.",
+        "tags": [
+          "Psychiatry::Schizophrenia::Symptoms",
+          "USMLE::Step2::HighYield"
+        ],
+        "note": "Understanding this distinction is important for appropriate treatment strategies.",
+        "query": "primary vs secondary negative symptoms",
+        "mnemonic": "<span class=\"highlight-pink\">PRIMARY = PATHOLOGY</span>: Secondary stems from something else...",
+        "vignette": "A 40-year-old woman with a long-standing diagnosis of schizophrenia presents with withdrawal and lack of motivation. During her assessment, the clinician notes that her negative symptoms are significant and inquires about potential contributions. The doctor explains that differentiating between primary negative symptoms, which stem from the disease itself, and secondary negative symptoms, which may develop secondary to medication use or environmental stressors, is crucial for treatment planning. What is the primary distinction between these symptom types?\n\nAnswer Choices:\nA. Secondary symptoms are often more severe\nB. <span class=\"highlight-red\">Primary symptoms are intrinsic to the pathophysiology</span>\nC. Secondary symptoms cannot be treated\nD. Primary symptoms only occur early in the illness\nE. Secondary symptoms are always present\n\nCorrect Answer: <span class=\"highlight-red\">B. Primary symptoms are intrinsic to the pathophysiology</span>"
+      }
+    ]
+  }
+]
