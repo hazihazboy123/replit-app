@@ -469,6 +469,21 @@ ul ul, table ul, ol ol, table ol {
   max-width: 100%;
 }
 
+/* Add CSS for highlight-red class */
+.highlight-red {
+  color: #d32f2f !important;
+  background-color: #ffebee;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+/* Night mode highlight-red */
+.nightMode .highlight-red, .night_mode .highlight-red {
+  color: #ff5252 !important;
+  background-color: #3e1c1c;
+}
+
 /* Clinical Vignette Styling */
 #vignette-section {
   background-color: #e3f2fd;
@@ -907,23 +922,23 @@ def get_anking_model():
             'afmt': f"""
                 {{{{FrontSide}}}}
                 <hr id="answer">
-                <div class="answer-text">{{{{Back}}}}</div>
+                <div class="answer-text">{{{Back}}}</div>
 
                 {{{{#Extra}}}}
-                <div id="extra">{{{{Extra}}}}</div>
+                <div id="extra">{{{Extra}}}</div>
                 {{{{/Extra}}}}
 
                 {{{{#Vignette}}}}
                 <div id="vignette-section">
                     <h3>Clinical Vignette</h3>
-                    <div class="vignette-content">{{{{Vignette}}}}</div>
+                    <div class="vignette-content">{{{Vignette}}}</div>
                 </div>
                 {{{{/Vignette}}}}
 
                 {{{{#Mnemonic}}}}
                 <div id="mnemonic-section">
                     <h3>Mnemonic</h3>
-                    <div class="mnemonic-content">{{{{Mnemonic}}}}</div>
+                    <div class="mnemonic-content">{{{Mnemonic}}}</div>
                 </div>
                 {{{{/Mnemonic}}}}
 
