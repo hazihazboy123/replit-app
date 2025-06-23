@@ -254,8 +254,9 @@ Changelog:
 
 ```
 Preferred communication style: Simple, everyday language.
-Font preference: Courier font for medical exam consistency.
+Font preference: Arial Greek font (reverted from Courier).
 Clinical vignette formatting: Line spacing of at least 1.25 for improved readability.
+Background styling: Keep blue backgrounds for vignettes and golden backgrounds for mnemonics.
 ```
 
 ### Notes for Development

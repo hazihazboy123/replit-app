@@ -63,8 +63,8 @@ html {
 /*~~~~~~~~~FONT STYLE~~~~~~~~~*/
 .card,
 kbd {
-  font-family: Courier, "Courier New", monospace;
-  /*Medical exam consistency with Courier font*/
+  font-family: Arial Greek, Arial;
+  /*Step exam's font is Arial Greek*/
 }
 
 /*~~~~~~~MAX IMAGE HEIGHT/WIDTH~~~~~~~*/
