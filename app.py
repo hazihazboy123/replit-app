@@ -1304,6 +1304,24 @@ def api_simple():
                 card['notes'] = card.get('additional_notes', '')
             elif 'note' in card:
                 card['notes'] = card.get('note', '')
+            
+            # Handle complex vignette structures
+            if 'vignette' in card and isinstance(card['vignette'], dict):
+                # Extract clinical case from complex vignette object
+                vignette_obj = card['vignette']
+                clinical_case = vignette_obj.get('clinical_case', '')
+                explanation = vignette_obj.get('explanation', '')
+                
+                # Combine into a single vignette field
+                combined_vignette = f"{clinical_case}"
+                if explanation:
+                    combined_vignette += f"\n\nExplanation: {explanation}"
+                
+                card['vignette'] = combined_vignette
+            
+            # Handle extra/additional information fields
+            if 'extra' not in card and 'notes' in card:
+                card['extra'] = card['notes']
         
         # Create the final data structure
         final_data = {
