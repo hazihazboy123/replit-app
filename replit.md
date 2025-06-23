@@ -257,6 +257,8 @@ Changelog:
   * Changed highlight-red text color from red (#d32f2f) to dark blue (#1e3a8a)
   * Improved readability of highlighted text in blue vignette backgrounds
   * Updated night mode highlighting to use lighter blue (#60a5fa) for dark themes
+  * Fixed extra curly brace issue by adding trailing character cleanup in vignette processing
+  * Formatted answer choices vertically (A, B, C, D, E on separate lines) for better readability
 ```
 
 ## User Preferences

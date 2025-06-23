@@ -1066,8 +1066,31 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
         front_content = card_info.get('front', card_info.get('question', ''))
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
-        vignette_content = card_info.get('vignette', '')
-        mnemonic_content = card_info.get('mnemonic', '')
+        # Handle vignette content with proper formatting
+        vignette_data = card_info.get('vignette', '')
+        vignette_content = ''
+        if vignette_data:
+            if isinstance(vignette_data, dict):
+                clinical_case = vignette_data.get('clinical_case', '')
+                explanation = vignette_data.get('explanation', '')
+                vignette_content = f"{clinical_case} {explanation}"
+            else:
+                vignette_content = str(vignette_data)
+            
+            # Format answer choices with line breaks
+            vignette_content = vignette_content.replace('Answer Choices: A.', '<br><br><strong>Answer Choices:</strong><br>A.')
+            vignette_content = vignette_content.replace(' B.', '<br>B.')
+            vignette_content = vignette_content.replace(' C.', '<br>C.')
+            vignette_content = vignette_content.replace(' D.', '<br>D.')
+            vignette_content = vignette_content.replace(' E.', '<br>E.')
+            vignette_content = vignette_content.replace(' F.', '<br>F.')
+            
+            # Remove any trailing extra characters like }
+            vignette_content = vignette_content.rstrip('} ')
+        
+        # Handle mnemonic content  
+        mnemonic_data = card_info.get('mnemonic', '')
+        mnemonic_content = str(mnemonic_data) if mnemonic_data else ''
         image_ref = card_info.get('image_ref', card_info.get('image', ''))
         tags = card_info.get('tags', [])
 
