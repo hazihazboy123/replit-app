@@ -128,7 +128,7 @@ a[href^="javascript:"] {
 
 /* Highlight Red for High-Yield */
 .highlight-red {
-    color: #1e3a8a!important; /* Dark blue for better contrast */
+    color: #d32f2f!important; /* Red for front/back cards */
 }
 
 /* Highlight Pink for AnKing Style */
@@ -476,8 +476,8 @@ ul ul, table ul, ol ol, table ol {
 
 /* Add CSS for highlight-red class */
 .highlight-red {
-  color: #1e3a8a !important;
-  background-color: #e8f4fd;
+  color: #d32f2f !important;
+  background-color: #ffebee;
   padding: 2px 4px;
   border-radius: 3px;
   font-weight: bold;
@@ -528,11 +528,16 @@ ul ul, table ul, ol ol, table ol {
   color: #424242;
 }
 
-/* Override red text in vignettes to use dark blue */
+/* Override red text in vignettes to use dark blue for better contrast */
 #vignette-section .vignette-content span[style*="color: red"],
 #vignette-section .vignette-content span[style*="color:#ff0000"],
 #vignette-section .vignette-content span[style*="color: #ff0000"] {
   color: #1e3a8a !important;
+}
+
+/* But keep highlight-red class as red in vignettes for correct answers */
+#vignette-section .vignette-content .highlight-red {
+  color: #d32f2f !important;
 }
 
 /* Night mode vignette styling */
@@ -1104,23 +1109,48 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             else:
                 vignette_content = str(vignette_data)
             
-            # Format answer choices with line breaks
+            # Format answer choices with line breaks - handle both formats
+            vignette_content = vignette_content.replace('Answer Choices:\nA.', '<br><br><strong>Answer Choices:</strong><br>A.')
             vignette_content = vignette_content.replace('Answer Choices: A.', '<br><br><strong>Answer Choices:</strong><br>A.')
+            vignette_content = vignette_content.replace('\nA.', '<br>A.')
+            vignette_content = vignette_content.replace('\nB.', '<br>B.')
+            vignette_content = vignette_content.replace('\nC.', '<br>C.')
+            vignette_content = vignette_content.replace('\nD.', '<br>D.')
+            vignette_content = vignette_content.replace('\nE.', '<br>E.')
+            vignette_content = vignette_content.replace('\nF.', '<br>F.')
             vignette_content = vignette_content.replace(' B.', '<br>B.')
             vignette_content = vignette_content.replace(' C.', '<br>C.')
             vignette_content = vignette_content.replace(' D.', '<br>D.')
             vignette_content = vignette_content.replace(' E.', '<br>E.')
             vignette_content = vignette_content.replace(' F.', '<br>F.')
+            vignette_content = vignette_content.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
             
             # Remove any trailing extra characters like } and clean up
             vignette_content = vignette_content.rstrip('} ')
             # Remove any stray } characters that appear in the middle or end
             vignette_content = vignette_content.replace(' }', '').replace('}', '')
             
-            # Convert any remaining red highlighting to dark blue in vignettes
-            vignette_content = vignette_content.replace('style="color: red"', 'class="highlight-red"')
-            vignette_content = vignette_content.replace('color: red', 'color: #1e3a8a')
-            vignette_content = vignette_content.replace('color:#ff0000', 'color:#1e3a8a')
+            # Convert red inline styles to dark blue for better contrast in vignettes (except for correct answers)
+            # But preserve highlight-red class for correct answers
+            import re
+            
+            # Only convert inline red styles that are NOT in correct answer sections
+            if 'Correct Answer:' in vignette_content:
+                parts = vignette_content.split('Correct Answer:')
+                if len(parts) == 2:
+                    before_answer = parts[0]
+                    answer_part = parts[1]
+                    
+                    # Convert red to blue in the question part only
+                    before_answer = before_answer.replace('style="color: red"', 'style="color: #1e3a8a"')
+                    before_answer = before_answer.replace('color: red', 'color: #1e3a8a')
+                    before_answer = before_answer.replace('color:#ff0000', 'color:#1e3a8a')
+                    
+                    vignette_content = before_answer + 'Correct Answer:' + answer_part
+            else:
+                vignette_content = vignette_content.replace('style="color: red"', 'style="color: #1e3a8a"')
+                vignette_content = vignette_content.replace('color: red', 'color: #1e3a8a')
+                vignette_content = vignette_content.replace('color:#ff0000', 'color:#1e3a8a')
         
         # Handle mnemonic content  
         mnemonic_data = card_info.get('mnemonic', '')

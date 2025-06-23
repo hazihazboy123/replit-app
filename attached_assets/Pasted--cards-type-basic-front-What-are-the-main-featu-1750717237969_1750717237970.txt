@@ -1,0 +1,70 @@
+[
+  {
+    "cards": [
+      {
+        "type": "basic",
+        "front": "What are the main features of Wiskott-Aldrich syndrome?",
+        "back": "It is characterized by <span class=\"highlight-red\">immune deficiency</span>, <span class=\"highlight-red\">eczema</span>, and <span class=\"highlight-red\">reduced ability to form blood clots</span>.",
+        "tags": [
+          "Genetics::GeneticConditions::WiskottAldrichSyndrome",
+          "USMLE::Step1::HighYield"
+        ],
+        "note": "Primarily affects males.",
+        "mnemonic": "<span class=\"highlight-pink\">WATER</span>: Wiskott-Aldrich = Thrombocytopenia, Eczema, Recurrent infections.",
+        "query": "",
+        "vignette": {
+          "clinical_case": "A 5-year-old boy presents to the clinic with recurrent infections, severe eczema, and easy bruising. His mother reports that he has had multiple episodes of otitis media and pneumonias. The child has had a few bleeding episodes after minor injuries. He has a family history of bleeding disorders, with his uncle reported to have had similar symptoms. On examination, the child shows extensive eczema and petechiae on his legs. A complete blood count shows thrombocytopenia. Further workup indicates the presence of a genetic mutation known to affect immune function.",
+          "explanation": "What are the main features of this condition?\n\nA. Immune deficiency, eczema, and normal platelet count\nB. Thrombocytopenia, eczema, and high risk of viral infections\nC. Immune deficiency, eczema, and reduced ability to form blood clots\nD. Eczema, normal immune function, and hypertension\nE. Increased infections, eczema, and enlarged spleen\n\nCorrect Answer: <span class=\"highlight-red\">C. Immune deficiency, eczema, and reduced ability to form blood clots</span>"
+        }
+      },
+      {
+        "type": "basic",
+        "front": "What hematological abnormality is associated with Wiskott-Aldrich syndrome?",
+        "back": "Individuals have <span class=\"highlight-red\">microthrombocytopenia</span>, which is a decrease in the number and size of platelets.",
+        "tags": [
+          "Hematology::Platelets",
+          "Genetics::GeneticConditions::WiskottAldrichSyndrome"
+        ],
+        "note": "Can lead to easy bruising and prolonged bleeding.",
+        "mnemonic": "<span class=\"highlight-pink\">Microthrombocytopenia</span>: Commonly associated with Wiskott-Aldrich Syndrome—decreased number and size of platelets.",
+        "query": "",
+        "vignette": {
+          "clinical_case": "A 7-year-old boy is brought to the emergency department after experiencing a nosebleed that does not stop after 30 minutes. His mother mentions he has a history of frequent bruising and that he tends to bleed easily after minor cuts. Upon examination, he has decreased platelet counts, and a blood smear shows smaller than normal platelets. The child also has eczema. Further testing reveals he has an underlying genetic mutation associated with Wiskott-Aldrich syndrome.",
+          "explanation": "What hematological abnormality is commonly observed in this condition?\n\nA. Increased white blood cell count\nB. Normal platelet function with elevated thrombocyte size\nC. Microthrombocytopenia with decreased platelet size and number\nD. Macrothrombocytopenia with elevated platelet size\nE. Thrombocytosis with increased platelet numbers\n\nCorrect Answer: <span class=\"highlight-red\">C. Microthrombocytopenia with decreased platelet size and number</span>"
+        }
+      },
+      {
+        "type": "basic",
+        "front": "What is the risk associated with immune system cells in Wiskott-Aldrich syndrome?",
+        "back": "There is an increased risk for <span class=\"highlight-red\">autoimmune disorders</span> and <span class=\"highlight-red\">certain cancers</span>.",
+        "tags": [
+          "Immunology::Autoimmunity",
+          "Genetics::GeneticConditions::WiskottAldrichSyndrome"
+        ],
+        "note": "Includes disorders like rheumatoid arthritis and lymphoma.",
+        "mnemonic": "<span class=\"highlight-pink\">Autoimmune disorders and cancers</span>: Increased risk seen in Wiskott-Aldrich syndrome.",
+        "query": "",
+        "vignette": {
+          "clinical_case": "A 10-year-old boy with a known diagnosis of Wiskott-Aldrich syndrome presents with complaints of joint pain and swelling. His parents report that he has been unusually tired and has had frequent fevers. On examination, there is swelling of multiple joints and erythematous patches on his skin. Laboratory tests reveal positive antinuclear antibodies (ANA) and the boy's mother mentions a family history of lymphoma. Due to his immune disorder, he is at risk for both autoimmune disorders and malignancies.",
+          "explanation": "What complications are frequently associated with this syndrome?\n\nA. Increased susceptibility to bacterial infections only\nB. Autoimmune disorders and risk of certain cancers\nC. Only allergic conditions such as asthma and hives\nD. Decreased risk of infections but increased risk of inflammation\nE. Primarily hematological cancers only\n\nCorrect Answer: <span class=\"highlight-red\">B. Autoimmune disorders and risk of certain cancers</span>"
+        }
+      },
+      {
+        "type": "basic",
+        "front": "Which other disorders are considered part of the disease spectrum with Wiskott-Aldrich syndrome?",
+        "back": "It is part of a spectrum with <span class=\"highlight-red\">X-linked thrombocytopenia</span> and <span class=\"highlight-red\">severe congenital neutropenia</span>.",
+        "tags": [
+          "Genetics::GeneticConditions::WiskottAldrichSyndrome",
+          "USMLE::Step1::HighYield"
+        ],
+        "note": "These conditions share overlapping signs and symptoms.",
+        "mnemonic": "<span class=\"highlight-pink\">X-linked thrombocytopenia and severe congenital neutropenia</span>: Conditions in the same spectrum as Wiskott-Aldrich syndrome.",
+        "query": "",
+        "vignette": {
+          "clinical_case": "A 4-year-old boy is seen in the clinic for recurrent infections, and lab tests reveal thrombocytopenia. His father, who had similar issues, is present. The child also exhibits features indicative of immunodeficiency and has been diagnosed with an autoimmune condition. Further genetic testing indicates a mutation associated with Wiskott-Aldrich syndrome. The clinician considers the broader spectrum of conditions that share similar clinical features.",
+          "explanation": "Which conditions are included in the spectrum of Wiskott-Aldrich syndrome?\n\nA. X-linked agammaglobulinemia and bone marrow aplasia\nB. Aplastic anemia and severe combined immunodeficiency\nC. X-linked thrombocytopenia and severe congenital neutropenia\nD. Ehlers-Danlos syndrome and Marfan syndrome\nE. Hyper-IgE syndrome and chronic granulomatous disease\n\nCorrect Answer: <span class=\"highlight-red\">C. X-linked thrombocytopenia and severe congenital neutropenia</span>"
+        }
+      }
+    ]
+  }
+]
