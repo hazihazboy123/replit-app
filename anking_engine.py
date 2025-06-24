@@ -531,6 +531,31 @@ ul ul, table ul, ol ol, table ol {
   color: #d32f2f !important;
 }
 
+/* Hover reveal for correct answers in vignettes */
+.correct-answer-hidden {
+  background-color: #1976d2;
+  color: transparent !important;
+  border-radius: 3px;
+  padding: 2px 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.correct-answer-hidden:hover {
+  background-color: transparent;
+  color: #d32f2f !important;
+}
+
+/* Night mode hover reveal */
+.nightMode .correct-answer-hidden, .night_mode .correct-answer-hidden {
+  background-color: #3f51b5;
+}
+
+.nightMode .correct-answer-hidden:hover, .night_mode .correct-answer-hidden:hover {
+  background-color: transparent;
+  color: #ff6b6b !important;
+}
+
 /* Night mode vignette styling */
 .nightMode #vignette-section, .night_mode #vignette-section {
   background-color: #1a237e;
@@ -1120,6 +1145,27 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             vignette_content = vignette_content.replace(' E.', '<br>E.')
             vignette_content = vignette_content.replace(' F.', '<br>F.')
             vignette_content = vignette_content.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
+            
+            # Add hover reveal effect for correct answers
+            import re
+            # Find correct answer patterns and wrap them with hover reveal class
+            correct_answer_pattern = r'(Correct Answer:\s*<[^>]*>)([^<]+)(</[^>]*>)'
+            def add_hover_reveal(match):
+                prefix = match.group(1)
+                answer_text = match.group(2)
+                suffix = match.group(3)
+                return f'{prefix}<span class="correct-answer-hidden">{answer_text}</span>{suffix}'
+            
+            vignette_content = re.sub(correct_answer_pattern, add_hover_reveal, vignette_content)
+            
+            # Also handle simpler correct answer patterns without HTML tags
+            simple_pattern = r'(Correct Answer:\s*)([A-F]\.[^<\n]+)'
+            def add_simple_hover_reveal(match):
+                prefix = match.group(1)
+                answer_text = match.group(2)
+                return f'{prefix}<span class="correct-answer-hidden">{answer_text}</span>'
+            
+            vignette_content = re.sub(simple_pattern, add_simple_hover_reveal, vignette_content)
             
             # Clean up extra braces from vignette components first
             if isinstance(vignette_data, dict):
