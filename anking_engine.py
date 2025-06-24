@@ -1098,6 +1098,14 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
         front_content = card_info.get('front', card_info.get('question', ''))
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
+        
+        # Clean up extra braces from all content fields
+        if front_content:
+            front_content = str(front_content).rstrip('} ').replace(' }', '').replace('}', '')
+        if back_content:
+            back_content = str(back_content).rstrip('} ').replace(' }', '').replace('}', '')
+        if extra_content:
+            extra_content = str(extra_content).rstrip('} ').replace(' }', '').replace('}', '')
         # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''
@@ -1125,9 +1133,23 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             vignette_content = vignette_content.replace(' F.', '<br>F.')
             vignette_content = vignette_content.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
             
-            # Remove any trailing extra characters like } and clean up
+            # Clean up extra braces from vignette components first
+            if isinstance(vignette_data, dict):
+                clinical_case = vignette_data.get('clinical_case', '')
+                explanation = vignette_data.get('explanation', '')
+                
+                # Clean individual components
+                if clinical_case:
+                    clinical_case = str(clinical_case).rstrip('} ').replace(' }', '').replace('}', '')
+                if explanation:
+                    explanation = str(explanation).rstrip('} ').replace(' }', '').replace('}', '')
+                
+                # Rebuild vignette content with cleaned components
+                vignette_content = f"{clinical_case} {explanation}" if clinical_case and explanation else (clinical_case or explanation)
+            
+            # Remove any remaining trailing extra characters like }
             vignette_content = vignette_content.rstrip('} ')
-            # Remove any stray } characters that appear in the middle or end
+            # Remove any remaining stray } characters
             vignette_content = vignette_content.replace(' }', '').replace('}', '')
             
             # Convert red inline styles to dark blue for better contrast in vignettes (except for correct answers)
