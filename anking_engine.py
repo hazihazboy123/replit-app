@@ -1101,9 +1101,13 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
         
         # Clean up extra braces from all content fields
         if front_content:
+            original_front = front_content
             front_content = str(front_content).rstrip('} ').replace(' }', '').replace('}', '')
+            print(f"DEBUG: Front cleanup - Original: '{original_front}' -> Cleaned: '{front_content}'")
         if back_content:
+            original_back = back_content
             back_content = str(back_content).rstrip('} ').replace(' }', '').replace('}', '')
+            print(f"DEBUG: Back cleanup - Original: '{original_back}' -> Cleaned: '{back_content}'")
         if extra_content:
             extra_content = str(extra_content).rstrip('} ').replace(' }', '').replace('}', '')
         # Handle vignette content with proper formatting

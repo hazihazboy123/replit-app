@@ -382,24 +382,55 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
             # Convert data to AnKing format
             anking_cards = []
             for card_data in cards_data:
-                # Extract fields with comprehensive format support
+                # Extract fields with comprehensive format support and cleanup
                 question = card_data.get('question', card_data.get('front', '')).strip()
                 answer = card_data.get('answer', card_data.get('back', '')).strip()
                 card_type = card_data.get('type', 'basic').lower()
+                
+                # Clean up extra braces from all content
+                if question:
+                    question = str(question).rstrip('} ').replace(' }', '').replace('}', '')
+                if answer:
+                    answer = str(answer).rstrip('} ').replace(' }', '').replace('}', '')
                 
                 # Handle cloze cards with proper conversion
                 if card_type == 'cloze' and question and not answer:
                     # Convert to AnKing cloze format
                     question = self.convert_cloze_placeholder(question)
                 
+                # Clean additional fields
+                extra = card_data.get('notes', card_data.get('additional_notes', card_data.get('extra', ''))).strip()
+                vignette = card_data.get('vignette', '')
+                mnemonic = card_data.get('mnemonic', '').strip()
+                image_ref = card_data.get('image', '').strip()
+                
+                # Apply cleanup to all text fields
+                if extra:
+                    extra = str(extra).rstrip('} ').replace(' }', '').replace('}', '')
+                if mnemonic:
+                    mnemonic = str(mnemonic).rstrip('} ').replace(' }', '').replace('}', '')
+                
+                # Clean vignette content (handle both string and dict formats)
+                if vignette:
+                    if isinstance(vignette, dict):
+                        clinical_case = vignette.get('clinical_case', '')
+                        explanation = vignette.get('explanation', '')
+                        if clinical_case:
+                            clinical_case = str(clinical_case).rstrip('} ').replace(' }', '').replace('}', '')
+                        if explanation:
+                            explanation = str(explanation).rstrip('} ').replace(' }', '').replace('}', '')
+                        vignette = {'clinical_case': clinical_case, 'explanation': explanation}
+                    else:
+                        vignette = str(vignette).rstrip('} ').replace(' }', '').replace('}', '')
+
                 anking_card = {
                     'type': card_type,
                     'front': question,
                     'back': answer,
-                    'extra': card_data.get('notes', card_data.get('additional_notes', card_data.get('extra', ''))).strip(),
-                    'vignette': card_data.get('vignette', '').strip(),
-                    'mnemonic': card_data.get('mnemonic', '').strip(),
-                    'image_ref': card_data.get('image', '').strip(),
+                    'extra': extra,
+                    'vignette': vignette,
+                    'mnemonic': mnemonic,
+                    'image_ref': image_ref,
                     'tags': card_data.get('tags', [])
                 }
                 anking_cards.append(anking_card)
