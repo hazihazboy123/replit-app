@@ -128,7 +128,8 @@ a[href^="javascript:"] {
 
 /* Highlight Red for High-Yield */
 .highlight-red {
-    color: #d32f2f!important; /* Red for front/back cards */
+    color: #d32f2f !important; /* Red for all content */
+    font-weight: bold;
 }
 
 /* Highlight Pink for AnKing Style */
@@ -477,16 +478,13 @@ ul ul, table ul, ol ol, table ol {
 /* Add CSS for highlight-red class */
 .highlight-red {
   color: #d32f2f !important;
-  background-color: #ffebee;
-  padding: 2px 4px;
-  border-radius: 3px;
   font-weight: bold;
 }
 
 /* Night mode highlight-red */
 .nightMode .highlight-red, .night_mode .highlight-red {
-  color: #60a5fa !important;
-  background-color: #1e3a8a;
+  color: #ff6b6b !important;
+  font-weight: bold;
 }
 
 /* Add CSS for highlight-pink class - matches mnemonic box colors */
@@ -528,14 +526,7 @@ ul ul, table ul, ol ol, table ol {
   color: #424242;
 }
 
-/* Override red text in vignettes to use dark blue for better contrast */
-#vignette-section .vignette-content span[style*="color: red"],
-#vignette-section .vignette-content span[style*="color:#ff0000"],
-#vignette-section .vignette-content span[style*="color: #ff0000"] {
-  color: #1e3a8a !important;
-}
-
-/* But keep highlight-red class as red in vignettes for correct answers */
+/* Keep all red highlighting as red, including in vignettes */
 #vignette-section .vignette-content .highlight-red {
   color: #d32f2f !important;
 }
@@ -1149,27 +1140,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             # Remove any remaining stray } characters
             vignette_content = vignette_content.replace(' }', '').replace('}', '')
             
-            # Convert red inline styles to dark blue for better contrast in vignettes (except for correct answers)
-            # But preserve highlight-red class for correct answers
-            import re
-            
-            # Only convert inline red styles that are NOT in correct answer sections
-            if 'Correct Answer:' in vignette_content:
-                parts = vignette_content.split('Correct Answer:')
-                if len(parts) == 2:
-                    before_answer = parts[0]
-                    answer_part = parts[1]
-                    
-                    # Convert red to blue in the question part only
-                    before_answer = before_answer.replace('style="color: red"', 'style="color: #1e3a8a"')
-                    before_answer = before_answer.replace('color: red', 'color: #1e3a8a')
-                    before_answer = before_answer.replace('color:#ff0000', 'color:#1e3a8a')
-                    
-                    vignette_content = before_answer + 'Correct Answer:' + answer_part
-            else:
-                vignette_content = vignette_content.replace('style="color: red"', 'style="color: #1e3a8a"')
-                vignette_content = vignette_content.replace('color: red', 'color: #1e3a8a')
-                vignette_content = vignette_content.replace('color:#ff0000', 'color:#1e3a8a')
+            # Keep all red highlighting as red - no conversion needed
         
         # Handle mnemonic content with cleanup
         mnemonic_data = card_info.get('mnemonic', '')
