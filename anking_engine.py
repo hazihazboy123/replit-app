@@ -1152,9 +1152,14 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
                 vignette_content = vignette_content.replace('color: red', 'color: #1e3a8a')
                 vignette_content = vignette_content.replace('color:#ff0000', 'color:#1e3a8a')
         
-        # Handle mnemonic content  
+        # Handle mnemonic content with cleanup
         mnemonic_data = card_info.get('mnemonic', '')
         mnemonic_content = str(mnemonic_data) if mnemonic_data else ''
+        
+        # Clean up extra braces and characters from mnemonic
+        if mnemonic_content:
+            mnemonic_content = mnemonic_content.rstrip('} ')
+            mnemonic_content = mnemonic_content.replace(' }', '').replace('}', '')
         image_ref = card_info.get('image_ref', card_info.get('image', ''))
         tags = card_info.get('tags', [])
 
