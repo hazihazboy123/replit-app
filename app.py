@@ -370,7 +370,7 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
             if high_yield and high_yield not in ['', 'high-yield']:
                 raise ValueError(f"Card {i+1} high_yield_flag must be 'high-yield' or empty")
     
-    def create_anki_deck(self, data):
+    def create_anki_deck(self, data, deck_name=None):
         """Create perfect Anki deck from validated JSON data with comprehensive medical card features"""
         deck_name = data['deck_name']
         cards_data = data['cards']
@@ -1439,8 +1439,8 @@ def api_simple():
         filename = f"{safe_name}_{timestamp}.apkg"
         file_path = f"/tmp/{filename}"
         
-        # Generate deck and write to file
-        deck = processor.create_anki_deck(final_data)
+        # Generate deck with unique name and write to file
+        deck = processor.create_anki_deck(final_data, deck_name)
         deck.write_to_file(file_path)
         file_size = os.path.getsize(file_path)
         

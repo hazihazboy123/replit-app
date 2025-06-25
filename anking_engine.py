@@ -1099,12 +1099,17 @@ def get_anking_model():
     return my_model, ANKING_DECK_ID
 
 # Main function to create AnKing deck
-def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
+def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", deck_name="AnKing Medical Deck"):
     """Create AnKing-style deck from card data"""
-    my_model, ANKING_DECK_ID = get_anking_model()
+    my_model, _ = get_anking_model()
+    
+    # Generate completely unique deck ID every time to prevent merging
+    import random
+    unique_deck_id = random.randrange(1 << 30, 1 << 31)
+    
     my_deck = genanki.Deck(
-        ANKING_DECK_ID,
-        'AnKing Medical Deck'
+        unique_deck_id,
+        deck_name
     )
 
     media_files = []
