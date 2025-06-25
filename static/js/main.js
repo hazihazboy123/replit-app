@@ -77,22 +77,27 @@ document.addEventListener('DOMContentLoaded', function() {
             "deck_name": "Medical Sample Deck",
             "cards": [
                 {
-                    "question": "What is the mechanism of action of <span class='highlight-red'>Aspirin</span>?",
-                    "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes, preventing prostaglandin synthesis",
-                    "notes": "Key drug for cardiovascular protection and pain management",
-                    "tags": "Pharmacology::NSAIDs::Aspirin"
+                    "type": "basic",
+                    "front": "What is the mechanism of action of <span class='highlight-red'>Aspirin</span>?",
+                    "back": "Irreversibly inhibits <span class='highlight-red'>COX-1 and COX-2</span> enzymes, reducing prostaglandin synthesis",
+                    "note": "Key drug for cardiovascular protection and pain management",
+                    "tags": ["Pharmacology", "NSAIDs", "Aspirin"],
+                    "mnemonic": "<span class='highlight-pink'>COX Blocker</span>: Aspirin permanently blocks COX enzymes like putting a cork in a bottle",
+                    "vignette": {
+                        "clinical_case": "A 65-year-old man with a history of myocardial infarction is prescribed daily low-dose aspirin for secondary prevention.",
+                        "explanation": "What is the primary mechanism by which aspirin provides cardioprotective effects? Answer Choices: A. Calcium channel blockade B. <span class='highlight-red'>Irreversible COX-1 inhibition</span> C. ACE inhibition D. Beta-receptor blockade Correct Answer: <span class='highlight-red'>B. Irreversible COX-1 inhibition</span>"
+                    }
                 },
                 {
-                    "cloze_text": "{{c1::Myocardial infarction}} occurs when {{c2::coronary artery}} becomes {{c3::occluded}}",
-                    "notes": "Essential pathophysiology concept for USMLE",
-                    "tags": "Cardiology::Pathophysiology::MI",
-                    "high_yield_flag": "high-yield"
-                },
-                {
-                    "question": "What are the signs of <span class='highlight-red'>diabetic ketoacidosis</span>?",
-                    "answer": "Hyperglycemia, ketosis, metabolic acidosis, dehydration",
-                    "notes": "Emergency condition requiring immediate treatment",
-                    "tags": "Endocrinology::Diabetes::DKA"
+                    "type": "cloze",
+                    "front": "{{c1::Myocardial infarction}} occurs when {{c2::coronary artery}} becomes {{c3::occluded}}",
+                    "note": "Essential pathophysiology concept for USMLE",
+                    "tags": ["Cardiology", "Pathophysiology", "MI"],
+                    "mnemonic": "<span class='highlight-pink'>Heart Attack Triad</span>: Blocked artery → Dead tissue → Heart damage",
+                    "vignette": {
+                        "clinical_case": "A 55-year-old man presents with crushing chest pain, diaphoresis, and nausea. ECG shows ST-elevation in leads II, III, and aVF.",
+                        "explanation": "This presentation is most consistent with: Answer Choices: A. Unstable angina B. <span class='highlight-red'>ST-elevation myocardial infarction</span> C. Pericarditis D. Aortic dissection Correct Answer: <span class='highlight-red'>B. ST-elevation myocardial infarction</span>"
+                    }
                 }
             ]
         };
