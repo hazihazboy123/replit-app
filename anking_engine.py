@@ -1115,10 +1115,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
         
-        # Note: Cleanup is now handled in app.py before data reaches this function
-        # This ensures all content is clean before AnKing processing
-        if extra_content:
-            extra_content = str(extra_content).rstrip('} ').replace(' }', '').replace('}', '')
+        # Note: All cleanup is handled in app.py before data reaches this function
         # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''
@@ -1186,9 +1183,9 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg"):
             # Remove any remaining stray } characters
             vignette_content = vignette_content.replace(' }', '').replace('}', '')
             
-            # Keep all red highlighting as red - no conversion needed
+            # Note: All content is pre-cleaned in app.py
         
-        # Handle mnemonic content with cleanup
+        # Handle mnemonic content
         mnemonic_data = card_info.get('mnemonic', '')
         mnemonic_content = str(mnemonic_data) if mnemonic_data else ''
         
