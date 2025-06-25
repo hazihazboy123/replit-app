@@ -132,9 +132,9 @@ a[href^="javascript:"] {
     font-weight: bold;
 }
 
-/* Highlight Pink for AnKing Style */
+/* Highlight Pink for AnKing Style - now matches red */
 .highlight-pink {
-    color: #e65100!important; /* Orange/gold to match mnemonic box */
+    color: #d32f2f!important; /* Red to match other highlighting */
 }
 
 /*~~~~~~~~NIGHT MODE COLORS~~~~~~~~*/
@@ -487,19 +487,16 @@ ul ul, table ul, ol ol, table ol {
   font-weight: bold;
 }
 
-/* Add CSS for highlight-pink class - matches mnemonic box colors */
+/* Add CSS for highlight-pink class - now matches red highlighting */
 .highlight-pink {
-  color: #e65100 !important;
-  background-color: #fff3e0;
-  padding: 2px 4px;
-  border-radius: 3px;
+  color: #d32f2f !important;
   font-weight: bold;
 }
 
-/* Night mode highlight-pink - matches mnemonic colors */
+/* Night mode highlight-pink - matches red highlighting */
 .nightMode .highlight-pink, .night_mode .highlight-pink {
-  color: #ffab40 !important;
-  background-color: #bf360c;
+  color: #ff6b6b !important;
+  font-weight: bold;
 }
 
 /* Clinical Vignette Styling */

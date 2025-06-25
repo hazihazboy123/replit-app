@@ -67,13 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Sample data button functionality
-    const sampleBtn = document.createElement('button');
-    sampleBtn.type = 'button';
-    sampleBtn.className = 'btn btn-outline-secondary btn-sm mt-2';
-    sampleBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Load Sample Data';
-    sampleBtn.addEventListener('click', function() {
-        const sampleData = {
+    // Sample data functionality
+    const sampleData = {
             "deck_name": "Medical Sample Deck",
             "cards": [
                 {
@@ -82,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     "back": "Irreversibly inhibits <span class='highlight-red'>COX-1 and COX-2</span> enzymes, reducing prostaglandin synthesis",
                     "note": "Key drug for cardiovascular protection and pain management",
                     "tags": ["Pharmacology", "NSAIDs", "Aspirin"],
-                    "mnemonic": "<span class='highlight-pink'>COX Blocker</span>: Aspirin permanently blocks COX enzymes like putting a cork in a bottle",
+                    "mnemonic": "<span class='highlight-red'>COX Blocker</span>: Aspirin permanently blocks COX enzymes like putting a cork in a bottle",
                     "vignette": {
                         "clinical_case": "A 65-year-old man with a history of myocardial infarction is prescribed daily low-dose aspirin for secondary prevention.",
                         "explanation": "What is the primary mechanism by which aspirin provides cardioprotective effects? Answer Choices: A. Calcium channel blockade B. <span class='highlight-red'>Irreversible COX-1 inhibition</span> C. ACE inhibition D. Beta-receptor blockade Correct Answer: <span class='highlight-red'>B. Irreversible COX-1 inhibition</span>"
@@ -94,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     "back": "Hyperglycemia, <span class='highlight-red'>ketosis</span>, metabolic acidosis, and <span class='highlight-red'>dehydration</span>",
                     "note": "Emergency condition requiring immediate treatment - can be life-threatening",
                     "tags": ["Endocrinology", "Diabetes", "DKA"],
-                    "mnemonic": "<span class='highlight-pink'>DKA Triad</span>: High sugar (hyperglycemia) + Ketones + Acid (acidosis) = Emergency!",
+                    "mnemonic": "<span class='highlight-red'>DKA Triad</span>: High sugar (hyperglycemia) + Ketones + Acid (acidosis) = Emergency!",
                     "vignette": {
                         "clinical_case": "A 19-year-old college student with Type 1 diabetes is brought to the emergency department by her roommate. She has been vomiting for the past 24 hours and appears dehydrated. Her roommate reports that the patient has been drinking large amounts of water and urinating frequently. Vital signs show tachycardia and tachypnea with a fruity odor on her breath.",
                         "explanation": "Laboratory results show glucose 450 mg/dL, positive serum ketones, and arterial blood gas with pH 7.25. What is the most likely diagnosis? Answer Choices: A. Hyperosmolar hyperglycemic state B. <span class='highlight-red'>Diabetic ketoacidosis</span> C. Severe dehydration D. Gastroenteritis with dehydration Correct Answer: <span class='highlight-red'>B. Diabetic ketoacidosis</span>"
@@ -102,10 +97,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             ]
         };
-        textArea.value = JSON.stringify(sampleData, null, 2);
-        fileInput.value = '';
-        validateJSON();
-    });
     
-    textArea.parentNode.appendChild(sampleBtn);
+    // Handle the Load Sample Data button
+    const loadSampleBtn = document.getElementById('loadSampleBtn');
+    if (loadSampleBtn) {
+        loadSampleBtn.addEventListener('click', function() {
+            textArea.value = JSON.stringify(sampleData, null, 2);
+            fileInput.value = '';
+            validateJSON();
+        });
+    }
 });
