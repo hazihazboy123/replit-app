@@ -278,7 +278,7 @@ Answer formatting: A, B, C, D, E choices on separate lines with highlighting onl
 Highlighting preference: No blue borders or blue text - use red highlighting consistently across all sections.
 Interactive features: Hover reveal effect for correct answers in clinical vignettes to enhance active learning.
 Deck generation: Each API call creates a new unique deck with timestamp and unique ID to prevent card merging.
-Sample data: Updated with proper n8n workflow formatting including mnemonics and clinical vignettes with red highlighting.
+Sample data: Updated with comprehensive medical vignettes including detailed patient presentations, mnemonics with highlight-pink styling, and multiple choice questions with hover reveal effects.
 ```
 
 ### Notes for Development

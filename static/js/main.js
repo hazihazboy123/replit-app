@@ -89,14 +89,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 {
-                    "type": "cloze",
-                    "front": "{{c1::Myocardial infarction}} occurs when {{c2::coronary artery}} becomes {{c3::occluded}}",
-                    "note": "Essential pathophysiology concept for USMLE",
-                    "tags": ["Cardiology", "Pathophysiology", "MI"],
-                    "mnemonic": "<span class='highlight-pink'>Heart Attack Triad</span>: Blocked artery → Dead tissue → Heart damage",
+                    "type": "basic",
+                    "front": "What are the signs of <span class='highlight-red'>diabetic ketoacidosis</span>?",
+                    "back": "Hyperglycemia, <span class='highlight-red'>ketosis</span>, metabolic acidosis, and <span class='highlight-red'>dehydration</span>",
+                    "note": "Emergency condition requiring immediate treatment - can be life-threatening",
+                    "tags": ["Endocrinology", "Diabetes", "DKA"],
+                    "mnemonic": "<span class='highlight-pink'>DKA Triad</span>: High sugar (hyperglycemia) + Ketones + Acid (acidosis) = Emergency!",
                     "vignette": {
-                        "clinical_case": "A 55-year-old man presents with crushing chest pain, diaphoresis, and nausea. ECG shows ST-elevation in leads II, III, and aVF.",
-                        "explanation": "This presentation is most consistent with: Answer Choices: A. Unstable angina B. <span class='highlight-red'>ST-elevation myocardial infarction</span> C. Pericarditis D. Aortic dissection Correct Answer: <span class='highlight-red'>B. ST-elevation myocardial infarction</span>"
+                        "clinical_case": "A 19-year-old college student with Type 1 diabetes is brought to the emergency department by her roommate. She has been vomiting for the past 24 hours and appears dehydrated. Her roommate reports that the patient has been drinking large amounts of water and urinating frequently. Vital signs show tachycardia and tachypnea with a fruity odor on her breath.",
+                        "explanation": "Laboratory results show glucose 450 mg/dL, positive serum ketones, and arterial blood gas with pH 7.25. What is the most likely diagnosis? Answer Choices: A. Hyperosmolar hyperglycemic state B. <span class='highlight-red'>Diabetic ketoacidosis</span> C. Severe dehydration D. Gastroenteritis with dehydration Correct Answer: <span class='highlight-red'>B. Diabetic ketoacidosis</span>"
                     }
                 }
             ]
