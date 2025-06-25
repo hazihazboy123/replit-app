@@ -567,10 +567,10 @@ ul ul, table ul, ol ol, table ol {
   color: #e8eaf6;
 }
 
-/* Mnemonic Styling */
+/* Mnemonic Styling - matches clinical vignette */
 #mnemonic-section {
   background-color: #fff8e1;
-  border: 2px dashed #ff9800;
+  border-left: 5px solid #ff9800;
   padding: 15px;
   margin: 15px 0;
   border-radius: 5px;
@@ -1166,35 +1166,13 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
             
             vignette_content = re.sub(simple_pattern, add_simple_hover_reveal, vignette_content)
             
-            # Clean up extra braces from vignette components first
-            if isinstance(vignette_data, dict):
-                clinical_case = vignette_data.get('clinical_case', '')
-                explanation = vignette_data.get('explanation', '')
-                
-                # Clean individual components
-                if clinical_case:
-                    clinical_case = str(clinical_case).rstrip('} ').replace(' }', '').replace('}', '')
-                if explanation:
-                    explanation = str(explanation).rstrip('} ').replace(' }', '').replace('}', '')
-                
-                # Rebuild vignette content with cleaned components
-                vignette_content = f"{clinical_case} {explanation}" if clinical_case and explanation else (clinical_case or explanation)
-            
-            # Remove any remaining trailing extra characters like }
-            vignette_content = vignette_content.rstrip('} ')
-            # Remove any remaining stray } characters
-            vignette_content = vignette_content.replace(' }', '').replace('}', '')
-            
-            # Note: All content is pre-cleaned in app.py
+            # Note: All content is pre-cleaned in app.py - no additional cleanup needed
         
         # Handle mnemonic content
         mnemonic_data = card_info.get('mnemonic', '')
         mnemonic_content = str(mnemonic_data) if mnemonic_data else ''
         
-        # Clean up extra braces and characters from mnemonic
-        if mnemonic_content:
-            mnemonic_content = mnemonic_content.rstrip('} ')
-            mnemonic_content = mnemonic_content.replace(' }', '').replace('}', '')
+        # Note: All content is pre-cleaned in app.py - no additional cleanup needed
         image_ref = card_info.get('image_ref', card_info.get('image', ''))
         tags = card_info.get('tags', [])
 
