@@ -1288,8 +1288,46 @@ def api_simple():
         
         # Generate SynapticRecall deck name with topic detection if not provided
         if not deck_name or deck_name in ['Medical Flashcards', 'Flashcards']:
-            deck_name = generate_synaptic_recall_name(cards)
-            app.logger.info(f"Generated SynapticRecall deck name: '{deck_name}'")
+            base_deck_name = generate_synaptic_recall_name(cards)
+            app.logger.info(f"Generated base SynapticRecall deck name: '{base_deck_name}'")
+        else:
+            base_deck_name = deck_name
+        
+        # Force new deck creation by adding timestamp to ensure unique deck each time
+        import time
+        timestamp = int(time.time())
+        deck_name = f"{base_deck_name}_{timestamp}"
+        app.logger.info(f"Final deck name with timestamp: '{deck_name}'")
+        
+        # CRITICAL: Clean up ALL content BEFORE processing
+        app.logger.info(f"Cleaning up {len(cards)} cards before processing")
+        for i, card in enumerate(cards):
+            # Clean all text fields to remove extra } characters
+            for field in ['front', 'back', 'question', 'answer', 'note', 'notes', 'extra', 'mnemonic']:
+                if field in card and card[field]:
+                    original = card[field]
+                    cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                    if original != cleaned:
+                        app.logger.info(f"Cleaned {field}: '{original}' -> '{cleaned}'")
+                    card[field] = cleaned
+            
+            # Clean vignette content
+            if 'vignette' in card and card['vignette']:
+                vignette = card['vignette']
+                if isinstance(vignette, dict):
+                    for vfield in ['clinical_case', 'explanation']:
+                        if vfield in vignette and vignette[vfield]:
+                            original = vignette[vfield]
+                            cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                            if original != cleaned:
+                                app.logger.info(f"Cleaned vignette.{vfield}: '{original}' -> '{cleaned}'")
+                            vignette[vfield] = cleaned
+                else:
+                    original = vignette
+                    cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                    if original != cleaned:
+                        app.logger.info(f"Cleaned vignette: '{original}' -> '{cleaned}'")
+                    card['vignette'] = cleaned
         
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
         

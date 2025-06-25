@@ -277,6 +277,7 @@ Pink highlighting: Orange/gold (#e65100) for mnemonics to match mnemonic section
 Answer formatting: A, B, C, D, E choices on separate lines with highlighting only on correct answers.
 Highlighting preference: No blue borders or blue text - use red highlighting consistently across all sections.
 Interactive features: Hover reveal effect for correct answers in clinical vignettes to enhance active learning.
+Deck generation: Each API call creates a new unique deck with timestamp to prevent card merging.
 ```
 
 ### Notes for Development
