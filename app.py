@@ -387,11 +387,11 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 answer = card_data.get('answer', card_data.get('back', '')).strip()
                 card_type = card_data.get('type', 'basic').lower()
                 
-                # Clean up extra braces from all content
+                # Clean up only trailing extra braces, preserve legitimate HTML/CSS braces
                 if question:
-                    question = str(question).rstrip('} ').replace(' }', '').replace('}', '')
+                    question = str(question).rstrip('} ')
                 if answer:
-                    answer = str(answer).rstrip('} ').replace(' }', '').replace('}', '')
+                    answer = str(answer).rstrip('} ')
                 
                 # Handle cloze cards with proper conversion
                 if card_type == 'cloze' and question and not answer:
@@ -416,9 +416,9 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 
                 # Apply cleanup to all text fields
                 if extra:
-                    extra = str(extra).rstrip('} ').replace(' }', '').replace('}', '')
+                    extra = str(extra).rstrip('} ')
                 if mnemonic:
-                    mnemonic = str(mnemonic).rstrip('} ').replace(' }', '').replace('}', '')
+                    mnemonic = str(mnemonic).rstrip('} ')
                 
                 # Clean vignette content (handle both string and dict formats)
                 if vignette:
@@ -426,16 +426,16 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                         clinical_case = vignette.get('clinical_case', '')
                         explanation = vignette.get('explanation', '')
                         if clinical_case:
-                            clinical_case = str(clinical_case).rstrip('} ').replace(' }', '').replace('}', '')
+                            clinical_case = str(clinical_case).rstrip('} ')
                             # Convert red highlighting to dark blue in vignettes
                             clinical_case = clinical_case.replace('highlight-red', 'highlight-blue')
                         if explanation:
-                            explanation = str(explanation).rstrip('} ').replace(' }', '').replace('}', '')
+                            explanation = str(explanation).rstrip('} ')
                             # Convert red highlighting to dark blue in vignettes
                             explanation = explanation.replace('highlight-red', 'highlight-blue')
                         vignette = {'clinical_case': clinical_case, 'explanation': explanation}
                     else:
-                        vignette_text = str(vignette).rstrip('} ').replace(' }', '').replace('}', '')
+                        vignette_text = str(vignette).rstrip('} ')
                         # Convert red highlighting to dark blue in vignettes
                         vignette_text = vignette_text.replace('highlight-red', 'highlight-blue')
                         vignette = vignette_text
@@ -1336,7 +1336,7 @@ def api_simple():
                     for vfield in ['clinical_case', 'explanation']:
                         if vfield in vignette and vignette[vfield]:
                             original = vignette[vfield]
-                            cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                            cleaned = str(original).rstrip('} ')
                             if original != cleaned:
                                 app.logger.info(f"Cleaned vignette.{vfield}: '{original}' -> '{cleaned}'")
                             vignette[vfield] = cleaned
