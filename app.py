@@ -453,7 +453,9 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 anking_cards.append(anking_card)
             
             # Use AnKing engine to create the actual deck
-            return self.anking_create_deck(anking_cards, deck_name)
+            # Use fixed engine without template syntax errors
+            from anking_engine_fixed import create_anki_deck as fixed_anking_create_deck
+            return fixed_anking_create_deck(anking_cards, deck_name)
         
         # Fallback to original implementation
         app.logger.info("Using standard deck creation")
