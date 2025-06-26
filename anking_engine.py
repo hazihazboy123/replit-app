@@ -989,7 +989,7 @@ def get_anking_model():
 
                 {{#Image}}
                 <div id="image-section">
-                    <img src="{{Image}}" alt="Card Image">
+                    {{{Image}}}
                 </div>
                 {{/Image}}
             """,
@@ -1078,7 +1078,7 @@ def get_anking_model():
 
                 {{{{#Image}}}}
                 <div id="image-section">
-                    <img src="{{{{Image}}}}" alt="Card Image">
+                    {{{{{{Image}}}}}}
                 </div>
                 {{{{/Image}}}}
             """,
@@ -1173,7 +1173,28 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         mnemonic_content = str(mnemonic_data) if mnemonic_data else ''
         
         # Note: All content is pre-cleaned in app.py - no additional cleanup needed
-        image_ref = card_info.get('image_ref', card_info.get('image', ''))
+        
+        # Handle image content - support both formats
+        image_data = card_info.get('image', '')
+        image_content = ''
+        image_ref = ''
+        
+        if image_data:
+            if isinstance(image_data, dict):
+                # New format with caption and URL
+                caption = image_data.get('caption', '')
+                url = image_data.get('url', '')
+                if url:
+                    # Create image content with caption
+                    image_content = f'<img src="{url}" alt="{caption}" style="max-width: 100%; height: auto;">'
+                    if caption:
+                        image_content += f'<p style="text-align: center; font-style: italic; margin-top: 10px;">{caption}</p>'
+                    image_ref = url
+            else:
+                # Simple filename format (existing)
+                image_ref = str(image_data)
+                image_content = f'<img src="{image_ref}" alt="Card Image" style="max-width: 100%; height: auto;">'
+        
         tags = card_info.get('tags', [])
 
         # Convert [CLOZE::text] to {{c#::text}} for cloze cards
@@ -1197,7 +1218,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
             extra_content,
             vignette_content,
             mnemonic_content,
-            image_ref
+            image_content  # Use formatted image content instead of just ref
         ]
 
         # Handle tags - convert to list if string and sanitize for genanki

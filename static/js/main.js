@@ -77,6 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     "back": "Irreversibly inhibits <span class='highlight-red'>COX-1 and COX-2</span> enzymes, reducing prostaglandin synthesis",
                     "note": "Key drug for cardiovascular protection and pain management",
                     "tags": ["Pharmacology", "NSAIDs", "Aspirin"],
+                    "image": {
+                        "caption": "COX enzyme inhibition mechanism",
+                        "url": "https://example.com/cox_inhibition.jpg"
+                    },
                     "mnemonic": "<span class='highlight-red'>COX Blocker</span>: Aspirin permanently blocks COX enzymes like putting a cork in a bottle",
                     "vignette": {
                         "clinical_case": "A 65-year-old man with a history of myocardial infarction is prescribed daily low-dose aspirin for secondary prevention.",

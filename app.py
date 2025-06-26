@@ -402,7 +402,16 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 extra = card_data.get('notes', card_data.get('additional_notes', card_data.get('extra', ''))).strip()
                 vignette = card_data.get('vignette', '')
                 mnemonic = card_data.get('mnemonic', '').strip()
-                image_ref = card_data.get('image', '').strip()
+                # Handle image field - support both formats
+            image_data = card_data.get('image', '')
+            image_ref = ''
+            if image_data:
+                if isinstance(image_data, dict):
+                    # New format with caption and URL
+                    image_ref = image_data.get('url', '')
+                else:
+                    # Simple filename format
+                    image_ref = str(image_data).strip()
                 
                 # Apply cleanup to all text fields
                 if extra:

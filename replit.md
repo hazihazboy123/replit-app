@@ -88,7 +88,9 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 - **high_yield_flag**: Set to "high-yield" for red highlighting
 - **notes**: Additional context information
 - **tags**: Hierarchical tags using :: separator
-- **image**: Image filename for embedding (future enhancement)
+- **image**: Image support with two formats:
+  - Simple: `"image": "filename.jpg"`
+  - Object: `"image": {"caption": "Description", "url": "https://..."}`
 
 ## External Dependencies
 
