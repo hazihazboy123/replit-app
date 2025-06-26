@@ -503,6 +503,37 @@ ul ul, table ul, ol ol, table ol {
   font-weight: bold;
 }
 
+/* Enhanced vignette styling with light blue background */
+.vignette-section {
+  background-color: #e3f2fd;
+  border: 2px solid #1976d2;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px 0;
+  line-height: 1.25;
+  color: #1976d2;
+}
+
+/* Hover reveal functionality for interactive learning */
+.hover-reveal {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.hover-reveal:hover {
+  background-color: #bbdefb !important;
+  border-color: #0d47a1 !important;
+}
+
+.hidden-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Clinical Vignette Styling */
 #vignette-section {
   background-color: #e3f2fd;

@@ -288,10 +288,10 @@ Background styling: Keep blue backgrounds for vignettes and golden backgrounds f
 Text highlighting: Red (#d32f2f) for ALL content (front/back cards, vignette text, and correct answers).
 Pink highlighting: Red (#d32f2f) for mnemonics to match consistent highlighting scheme.
 Answer formatting: A, B, C, D, E choices on separate lines with highlighting only on correct answers.
-Highlighting preference: No blue borders or blue text - use red highlighting consistently across all sections.
-Interactive features: Hover reveal effect for correct answers in clinical vignettes to enhance active learning.
+Vignette answer colors: Changed from dark blue to readable blue (#1976d2) matching vignette text color for better visibility.
+Interactive features: Added click-to-reveal functionality for correct answers and explanations in clinical vignettes to enhance active learning.
 Deck generation: Each API call creates a new unique deck with timestamp and unique ID to prevent card merging.
-Sample data: Updated with comprehensive medical vignettes including detailed patient presentations, mnemonics with highlight-pink styling, and multiple choice questions with hover reveal effects.
+Sample data: Updated with comprehensive medical vignettes including detailed patient presentations, mnemonics with highlight-pink styling, and multiple choice questions with interactive click-to-reveal functionality.
 ```
 
 ### Notes for Development
