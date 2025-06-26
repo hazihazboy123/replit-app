@@ -1128,7 +1128,7 @@ def get_anking_model():
 
                 {{{{#Image}}}}
                 <div id="image-section">
-                    {{{{{{Image}}}}}}
+                    {{{{Image}}}}
                 </div>
                 {{{{/Image}}}}
             """,
