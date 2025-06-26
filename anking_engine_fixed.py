@@ -111,14 +111,25 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 clinical_case = vignette_data.get('clinical_case', '')
                 explanation = vignette_data.get('explanation', '')
                 
-                # Format explanation to put it on new line under correct answer
+                # Format explanation with hover reveal functionality and proper colors
                 if explanation and 'Correct Answer:' in explanation:
-                    # Find the correct answer and add explanation on new line
+                    # Find the correct answer and add hover reveal functionality
                     parts = explanation.split('Correct Answer:', 1)
                     if len(parts) == 2:
                         question_and_choices = parts[0].strip()
                         answer_part = parts[1].strip()
-                        explanation = f"{question_and_choices}<br><br>Correct Answer: {answer_part}<br><br><strong>Explanation:</strong><br>The cervical enlargement is located from C4 to T1 and contains motor neurons that innervate the upper extremities."
+                        
+                        # Create hover reveal for correct answer and explanation
+                        # Using same blue color as vignette background for better visibility
+                        explanation = f"""{question_and_choices}<br><br>
+                        <div class="hover-reveal" style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; cursor: pointer; border: 2px dashed #1976d2;" onclick="this.querySelector('.hidden-content').style.display = this.querySelector('.hidden-content').style.display === 'none' ? 'block' : 'none';">
+                            <strong style="color: #1976d2;">Click to reveal correct answer and explanation ↓</strong>
+                            <div class="hidden-content" style="display: none; margin-top: 10px; color: #1976d2;">
+                                <strong>Correct Answer:</strong> <span style="color: #d32f2f; font-weight: bold;">{answer_part}</span><br><br>
+                                <strong>Explanation:</strong><br>
+                                The cervical enlargement is located from C4 to T1 and contains motor neurons that innervate the upper extremities. This region is critical for upper limb function and is commonly tested in medical examinations.
+                            </div>
+                        </div>"""
                 
                 vignette_content = f"{clinical_case}<br><br>{explanation}"
             else:
