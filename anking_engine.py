@@ -957,13 +957,13 @@ def get_anking_model():
     templates = [
         {
             'name': 'Card 1',
-            'qfmt': f"""
+            'qfmt': """
                 <div class="card-content">
-                    <div id="text">{{{{Front}}}}</div>
+                    <div id="text">{{Front}}</div>
                 </div>
                 
-                {{{{#Tags}}}}
-                <div id="tags-container">{{{{clickable::Tags}}}}</div>
+                {{#Tags}}
+                <div id="tags-container">{{clickable::Tags}}</div>
                 <script>
                 var tagContainer = document.getElementById("tags-container")
                 var tagList;
@@ -1101,36 +1101,36 @@ def get_anking_model():
                 
                 {ANKING_JS}
             """,
-            'afmt': f"""
-                {{{{FrontSide}}}}
+            'afmt': """
+                {{FrontSide}}
                 <hr id="answer">
-                {{{{#Back}}}}
-                <div class="answer-text">{{{{Back}}}}</div>
-                {{{{/Back}}}}
+                {{#Back}}
+                <div class="answer-text">{{Back}}</div>
+                {{/Back}}
 
-                {{{{#Extra}}}}
-                <div id="extra">{{{{Extra}}}}</div>
-                {{{{/Extra}}}}
+                {{#Extra}}
+                <div id="extra">{{Extra}}</div>
+                {{/Extra}}
 
-                {{{{#Vignette}}}}
+                {{#Vignette}}
                 <div id="vignette-section">
                     <h3>Clinical Vignette</h3>
-                    <div class="vignette-content">{{{{Vignette}}}}</div>
+                    <div class="vignette-content">{{{Vignette}}}</div>
                 </div>
-                {{{{/Vignette}}}}
+                {{/Vignette}}
 
-                {{{{#Mnemonic}}}}
+                {{#Mnemonic}}
                 <div id="mnemonic-section">
                     <h3>Mnemonic</h3>
-                    <div class="mnemonic-content">{{{{Mnemonic}}}}</div>
+                    <div class="mnemonic-content">{{Mnemonic}}</div>
                 </div>
-                {{{{/Mnemonic}}}}
+                {{/Mnemonic}}
 
-                {{{{#Image}}}}
+                {{#Image}}
                 <div id="image-section">
-                    {{{{Image}}}}
+                    {{{Image}}}
                 </div>
-                {{{{/Image}}}}
+                {{/Image}}
             """,
         }
     ]
