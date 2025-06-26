@@ -88,9 +88,11 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 - **high_yield_flag**: Set to "high-yield" for red highlighting
 - **notes**: Additional context information
 - **tags**: Hierarchical tags using :: separator
-- **image**: Image support with two formats:
-  - Simple: `"image": "filename.jpg"`
-  - Object: `"image": {"caption": "Description", "url": "https://..."}`
+- **image**: Image support with automatic download and embedding:
+  - Simple: `"image": "filename.jpg"` (for local files)
+  - Object: `"image": {"caption": "Description", "url": "https://..."}` (downloads and embeds)
+  - URLs are automatically downloaded and embedded as local media files in .apkg
+  - Images work offline after deck creation with no internet dependencies
 
 ## External Dependencies
 

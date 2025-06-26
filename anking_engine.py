@@ -3,6 +3,10 @@ import json
 import random
 import re
 import os
+import requests
+import tempfile
+import hashlib
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 # Complete AnKing CSS from your provided code
@@ -867,6 +871,45 @@ if (typeof anki !== 'undefined') anki.qFade = qFade;
 """
 
 # Convert [CLOZE::text] to {{c#::text}} format
+def download_image_from_url(url, media_files_list):
+    """Download image from URL and return local filename for Anki embedding"""
+    try:
+        # Create a safe filename from URL
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path)
+        
+        # If no filename in URL, generate one from URL hash
+        if not filename or '.' not in filename:
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+            filename = f"image_{url_hash}.jpg"
+        
+        # Ensure we have a valid extension
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
+        if not any(filename.lower().endswith(ext) for ext in valid_extensions):
+            filename += '.jpg'
+        
+        # Download the image
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        # Save to temporary file
+        temp_path = os.path.join(tempfile.gettempdir(), filename)
+        with open(temp_path, 'wb') as f:
+            f.write(response.content)
+        
+        # Add to media files list for Anki package
+        media_files_list.append(temp_path)
+        
+        # Return just the filename for Anki reference
+        return filename
+        
+    except Exception as e:
+        print(f"Error downloading image from {url}: {e}")
+        return None
+
 def convert_cloze_placeholder(text):
     """Convert [CLOZE::text] placeholders to Anki {{c#::text}} format"""
     if not text:
@@ -1181,15 +1224,18 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         
         if image_data:
             if isinstance(image_data, dict):
-                # New format with caption and URL
+                # New format with caption and URL - download and embed
                 caption = image_data.get('caption', '')
                 url = image_data.get('url', '')
                 if url:
-                    # Create image content with caption
-                    image_content = f'<img src="{url}" alt="{caption}" style="max-width: 100%; height: auto;">'
-                    if caption:
-                        image_content += f'<p style="text-align: center; font-style: italic; margin-top: 10px;">{caption}</p>'
-                    image_ref = url
+                    # Download image and add to media files
+                    downloaded_filename = download_image_from_url(url, media_files)
+                    if downloaded_filename:
+                        # Create image content with local filename and caption
+                        image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto;">'
+                        if caption:
+                            image_content += f'<p style="text-align: center; font-style: italic; margin-top: 10px;">{caption}</p>'
+                        image_ref = downloaded_filename
             else:
                 # Simple filename format (existing)
                 image_ref = str(image_data)
