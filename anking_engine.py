@@ -527,9 +527,16 @@ ul ul, table ul, ol ol, table ol {
   color: #424242;
 }
 
-/* Keep all red highlighting as red, including in vignettes */
-#vignette-section .vignette-content .highlight-red {
+/* Red highlighting for regular content */
+.highlight-red {
   color: #d32f2f !important;
+  font-weight: 600;
+}
+
+/* Dark blue highlighting for vignette content */
+.highlight-blue {
+  color: #1e3a8a !important;
+  font-weight: 600;
 }
 
 /* Hover reveal for correct answers in vignettes */
