@@ -103,14 +103,22 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
         
-        # Handle vignette content
+        # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''
         if vignette_data:
             if isinstance(vignette_data, dict):
                 clinical_case = vignette_data.get('clinical_case', '')
                 explanation = vignette_data.get('explanation', '')
-                vignette_content = f"{clinical_case} {explanation}"
+                
+                # Format explanation to put it on new line under correct answer
+                if explanation and 'Correct Answer:' in explanation:
+                    # Split at correct answer and add line break
+                    parts = explanation.split('Correct Answer:', 1)
+                    if len(parts) == 2:
+                        explanation = parts[0] + 'Correct Answer:' + parts[1].replace('Correct Answer:', '<br><br>Explanation:<br>')
+                
+                vignette_content = f"{clinical_case}<br><br>{explanation}"
             else:
                 vignette_content = str(vignette_data)
         
@@ -145,7 +153,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 mnemonic_content,        # Mnemonic
                 image_content            # Image
             ],
-            tags=card_info.get('tags', [])
+            tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
         )
         
         my_deck.add_note(note)
@@ -156,7 +164,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         my_package.media_files = media_files
     
     my_package.write_to_file(output_filename)
-    return output_filename
+    return my_deck
 
 def download_image_from_url(url, media_files_list):
     """Download image from URL and return local filename for Anki embedding"""
