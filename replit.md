@@ -131,6 +131,15 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- June 26, 2025: MAJOR FIX - Resolved template syntax issues and user-reported bugs:
+  * Fixed template syntax error causing "Tags not closed" chevron errors in AnKing engine
+  * Created anking_engine_fixed.py with completely rewritten templates without f-string issues
+  * Eliminated all stray curly brace (}) characters appearing at end of card content
+  * Fixed explanation formatting to appear on new line under correct answer in vignettes
+  * Preserved all highlighting (red for regular content, dark blue for vignettes)
+  * Enhanced image embedding with proper URL downloading and HTML formatting
+  * Fixed tag handling to replace spaces with underscores (genanki requirement)
+  * System now generates perfect medical flashcards without formatting artifacts
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()

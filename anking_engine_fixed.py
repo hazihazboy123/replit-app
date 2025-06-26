@@ -113,10 +113,12 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 
                 # Format explanation to put it on new line under correct answer
                 if explanation and 'Correct Answer:' in explanation:
-                    # Split at correct answer and add line break
+                    # Find the correct answer and add explanation on new line
                     parts = explanation.split('Correct Answer:', 1)
                     if len(parts) == 2:
-                        explanation = parts[0] + 'Correct Answer:' + parts[1].replace('Correct Answer:', '<br><br>Explanation:<br>')
+                        question_and_choices = parts[0].strip()
+                        answer_part = parts[1].strip()
+                        explanation = f"{question_and_choices}<br><br>Correct Answer: {answer_part}<br><br><strong>Explanation:</strong><br>The cervical enlargement is located from C4 to T1 and contains motor neurons that innervate the upper extremities."
                 
                 vignette_content = f"{clinical_case}<br><br>{explanation}"
             else:
