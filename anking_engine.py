@@ -1251,11 +1251,8 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 front_content = convert_cloze_placeholder(back_content)
                 back_content = ''
 
-        # Handle image embedding
-        if image_ref:
-            image_path = os.path.join('media', image_ref)
-            if os.path.exists(image_path):
-                media_files.append(image_path)
+        # Handle image embedding - use the processed image_content, not image_ref for display
+        # image_ref is for file reference, image_content is for display
 
         # Create the note fields
         fields_data = [
@@ -1264,7 +1261,7 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
             extra_content,
             vignette_content,
             mnemonic_content,
-            image_content  # Use formatted image content instead of just ref
+            image_content or ''  # Use formatted image content, ensure not None
         ]
 
         # Handle tags - convert to list if string and sanitize for genanki

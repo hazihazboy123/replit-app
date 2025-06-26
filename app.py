@@ -427,11 +427,18 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                         explanation = vignette.get('explanation', '')
                         if clinical_case:
                             clinical_case = str(clinical_case).rstrip('} ').replace(' }', '').replace('}', '')
+                            # Convert red highlighting to dark blue in vignettes
+                            clinical_case = clinical_case.replace('highlight-red', 'highlight-blue')
                         if explanation:
                             explanation = str(explanation).rstrip('} ').replace(' }', '').replace('}', '')
+                            # Convert red highlighting to dark blue in vignettes
+                            explanation = explanation.replace('highlight-red', 'highlight-blue')
                         vignette = {'clinical_case': clinical_case, 'explanation': explanation}
                     else:
-                        vignette = str(vignette).rstrip('} ').replace(' }', '').replace('}', '')
+                        vignette_text = str(vignette).rstrip('} ').replace(' }', '').replace('}', '')
+                        # Convert red highlighting to dark blue in vignettes
+                        vignette_text = vignette_text.replace('highlight-red', 'highlight-blue')
+                        vignette = vignette_text
 
                 anking_card = {
                     'type': card_type,
