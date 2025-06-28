@@ -131,16 +131,17 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 26, 2025: MAJOR FIX - Resolved template syntax issues and user-reported bugs:
-  * Fixed template syntax error causing "Tags not closed" chevron errors in AnKing engine
-  * Created anking_engine_fixed.py with completely rewritten templates without f-string issues
-  * CRITICAL FIX: Identified root cause of extra } characters in app.py aggressive brace removal
-  * Fixed explanation formatting to appear on new line under correct answer in vignettes
+- June 28, 2025: COMPLETE SYSTEM ENHANCEMENT - Major improvements for n8n integration:
+  * CRITICAL FIX: Identified and resolved root cause of extra } characters in app.py aggressive brace removal
+  * Added automatic single-to-double brace conversion for cloze cards ({c1::text} → {{c1::text}})
+  * Simplified vignette structure: clinical_case + explanation (removed redundant fields)
+  * Enhanced clinical vignette formatting with proper A, B, C, D, E choice layout
   * Changed vignette answer colors from dark blue to readable blue (#1976d2) for better visibility
   * Added interactive click-to-reveal functionality for answers and explanations in clinical vignettes
-  * Enhanced image embedding with proper URL downloading and HTML formatting
+  * Enhanced image embedding with automatic URL downloading and HTML formatting
   * Fixed tag handling to replace spaces with underscores (genanki requirement)
-  * System now generates perfect medical flashcards without any formatting artifacts
+  * Created comprehensive n8n output specifications and documentation
+  * System now perfectly handles all card types with n8n-friendly input formats
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()

@@ -9,6 +9,18 @@ from typing import List, Dict
 # Import the CSS from the original file
 from anking_engine import ANKING_CSS, ANKING_JS
 
+def convert_single_to_double_braces(text):
+    """Convert single curly braces {c1::text} to double curly braces {{c1::text}} for cloze cards"""
+    import re
+    
+    # Pattern to match single brace cloze format: {c1::text}
+    pattern = r'\{(c\d+::[^}]+)\}'
+    
+    # Replace with double braces
+    result = re.sub(pattern, r'{{\1}}', text)
+    
+    return result
+
 def get_anking_model():
     """Create the complete AnKing model with all fields and templates - FIXED VERSION"""
     

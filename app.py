@@ -387,9 +387,13 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
                 answer = card_data.get('answer', card_data.get('back', '')).strip()
                 card_type = card_data.get('type', 'basic').lower()
                 
-                # Clean up only trailing extra braces, preserve legitimate HTML/CSS braces
+                # Clean up only trailing extra braces, but preserve cloze deletion braces
                 if question:
-                    question = str(question).rstrip('} ')
+                    # Don't clean braces from cloze cards
+                    if card_type != 'cloze':
+                        question = str(question).rstrip('} ')
+                    else:
+                        question = str(question)
                 if answer:
                     answer = str(answer).rstrip('} ')
                 
