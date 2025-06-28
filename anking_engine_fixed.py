@@ -109,34 +109,40 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         if vignette_data:
             if isinstance(vignette_data, dict):
                 clinical_case = vignette_data.get('clinical_case', '')
-                explanation = vignette_data.get('explanation', '')
+                explanation_text = vignette_data.get('explanation', '')
                 
-                # Get the teaching explanation 
-                teaching_explanation = vignette_data.get('teaching_explanation', '')
-                
-                # Combine clinical case with explanation (which contains choices)
-                if clinical_case and explanation:
-                    # Format the choices to have proper line breaks
-                    formatted_content = explanation
+                # Format clinical case with proper choice layout
+                if clinical_case:
+                    import re
                     
-                    # If explanation contains answer choices, format them properly
-                    if 'A.' in explanation or 'A)' in explanation:
-                        import re
-                        # Replace common choice patterns with proper line breaks
-                        formatted_content = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_content)
-                        formatted_content = formatted_content.lstrip('<br>')  # Remove leading break
-                    
-                    # Add line breaks for "Correct Answer:"
-                    formatted_content = formatted_content.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
-                    
-                    # Build the complete clinical case with embedded choices
-                    complete_case = f'{clinical_case}<br><br>{formatted_content}'
-                    
-                    # Add the teaching explanation if provided
-                    if teaching_explanation:
-                        complete_case += f'<br><br><strong>Explanation:</strong><br>{teaching_explanation}'
-                    
-                    vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_case}</div>'
+                    # Split the clinical case to separate patient presentation from choices
+                    case_parts = clinical_case.split('?', 1)
+                    if len(case_parts) == 2:
+                        patient_case = case_parts[0].strip() + '?'
+                        choices_section = case_parts[1].strip()
+                        
+                        # Format the choices with proper line breaks (A, B, C, D, E)
+                        formatted_choices = choices_section
+                        formatted_choices = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_choices)
+                        formatted_choices = formatted_choices.lstrip('<br>')
+                        
+                        # Add proper formatting for "Correct Answer:"
+                        formatted_choices = formatted_choices.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
+                        
+                        # Build the complete vignette
+                        complete_case = f'{patient_case}<br><br>{formatted_choices}'
+                        
+                        # Add the explanation if provided
+                        if explanation_text:
+                            complete_case += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
+                        
+                        vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_case}</div>'
+                    else:
+                        # Fallback for cases without question mark
+                        vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{clinical_case}'
+                        if explanation_text:
+                            vignette_content += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
+                        vignette_content += '</div>'
             else:
                 vignette_content = str(vignette_data)
         

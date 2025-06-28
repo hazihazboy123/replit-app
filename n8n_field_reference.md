@@ -42,8 +42,8 @@ Hierarchical tags for organization
 Clinical scenarios with questions
 ```json
 "vignette": {
-  "clinical_case": "Patient presentation + question + A. B. C. D. + Correct Answer: X",
-  "teaching_explanation": "Educational explanation of why the answer is correct"
+  "clinical_case": "Patient presentation + question + A. B. C. D. E. + Correct Answer: X",
+  "explanation": "Educational explanation of why the answer is correct"
 }
 ```
 
@@ -87,8 +87,8 @@ The system accepts these variations:
       "notes": "Leading cause of death in developed countries",
       "tags": ["Cardiology", "Pathophysiology", "Emergency_Medicine"],
       "vignette": {
-        "clinical_case": "A 55-year-old male with chest pain and diaphoresis presents to the ER. ECG shows ST elevation in leads II, III, aVF. What is the most likely diagnosis? A. Pulmonary embolism B. Myocardial infarction C. Panic attack D. Gastroesophageal reflux Correct Answer: B. Myocardial infarction",
-        "teaching_explanation": "ST elevation in leads II, III, aVF indicates an inferior wall myocardial infarction, typically caused by right coronary artery occlusion. The combination of chest pain, diaphoresis, and characteristic ECG changes confirms the diagnosis."
+        "clinical_case": "A 55-year-old male with chest pain and diaphoresis presents to the ER. ECG shows ST elevation in leads II, III, aVF. What is the most likely diagnosis? A. Pulmonary embolism B. Myocardial infarction C. Panic attack D. Gastroesophageal reflux E. Aortic dissection Correct Answer: B. Myocardial infarction",
+        "explanation": "ST elevation in leads II, III, aVF indicates an inferior wall myocardial infarction, typically caused by right coronary artery occlusion. The combination of chest pain, diaphoresis, and characteristic ECG changes confirms the diagnosis."
       },
       "image": {
         "url": "https://example.com/ecg_stemi.jpg",
