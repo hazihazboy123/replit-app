@@ -23,7 +23,12 @@ ANKING_CSS = """
 
 /* Highlighting classes */
 .highlight-red {
-    color: #1e3a8a !important;  /* Dark blue for better readability */
+    color: #d32f2f !important;  /* Red highlighting as requested */
+    font-weight: bold;
+}
+
+.highlight-blue {
+    color: #1976d2 !important;  /* Blue highlighting for vignettes */
     font-weight: bold;
 }
 
@@ -32,7 +37,7 @@ ANKING_CSS = """
     font-weight: bold;
 }
 
-/* Clinical vignette styling */
+/* Clinical vignette styling with blue box */
 .vignette-section {
     background-color: #e3f2fd;
     border: 2px solid #1976d2;
@@ -41,9 +46,33 @@ ANKING_CSS = """
     border-radius: 8px;
     line-height: 1.25;
     color: #1976d2;
+    text-align: left;
 }
 
-/* Mnemonic styling */
+/* Additional vignette ID styling */
+#vignette-section {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+    text-align: left;
+}
+
+#vignette-section h3 {
+    color: #1976d2;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.vignette-content {
+    line-height: 1.25;
+    color: #424242;
+}
+
+/* Mnemonic styling with golden background */
 .mnemonic-section {
     background-color: #fff8e1;
     border: 2px dashed #ffa000;
@@ -51,6 +80,20 @@ ANKING_CSS = """
     margin: 10px 0;
     border-radius: 8px;
     color: #e65100;
+    text-align: left;
+}
+
+/* Image styling */
+.image-section {
+    margin: 10px 0;
+    text-align: center;
+}
+
+.image-section img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Tags */
@@ -198,6 +241,14 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         if card_type == 'cloze' and front_content:
             front_content = convert_single_to_double_braces(front_content)
         
+        # Apply red highlighting to front content (questions)
+        if front_content and not card_type == 'cloze':
+            front_content = f'<span class="highlight-red">{front_content}</span>'
+        
+        # Apply blue highlighting to back content (answers)  
+        if back_content:
+            back_content = f'<span class="highlight-blue">{back_content}</span>'
+        
         # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''
@@ -241,31 +292,46 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
             else:
                 vignette_content = str(vignette_data)
         
-        # Handle mnemonic content
+        # Handle mnemonic content with proper highlighting
         mnemonic_data = card_info.get('mnemonic', '')
         mnemonic_content = ''
         if mnemonic_data:
             # Clean up any trailing extra braces from mnemonic processing
             mnemonic_text = str(mnemonic_data).rstrip('} ').strip()
             if mnemonic_text:
-                mnemonic_content = f'<div class="mnemonic-section"><strong>Mnemonic:</strong><br>{mnemonic_text}</div>'
+                # Apply red highlighting to mnemonic content as requested
+                highlighted_mnemonic = f'<span class="highlight-pink">{mnemonic_text}</span>'
+                mnemonic_content = f'<div class="mnemonic-section"><strong>Mnemonic:</strong><br>{highlighted_mnemonic}</div>'
         
-        # Handle image content
+        # Handle image content with proper URL processing
         image_content = ''
         if 'image' in card_info and card_info['image']:
             image_data = card_info['image']
             if isinstance(image_data, dict) and 'url' in image_data:
-                # Download and embed the image
+                # Download and embed the image from URL
                 image_filename = download_image_from_url(image_data['url'], media_files)
                 if image_filename:
                     caption = image_data.get('caption', '')
                     if caption:
-                        image_content = f'<img src="{image_filename}" alt="{caption}" style="max-width: 100%; height: auto;"><br><small>{caption}</small>'
+                        image_content = f'<div class="image-section"><img src="{image_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 5px;"><br><small style="color: #666; font-style: italic;">{caption}</small></div>'
                     else:
-                        image_content = f'<img src="{image_filename}" style="max-width: 100%; height: auto;">'
+                        image_content = f'<div class="image-section"><img src="{image_filename}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
+                else:
+                    # If download fails, show the URL
+                    image_content = f'<div class="image-section"><p style="color: #666;">Image: <a href="{image_data["url"]}" target="_blank">{image_data["url"]}</a></p></div>'
             elif isinstance(image_data, str):
-                # Simple filename format
-                image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto;">'
+                # Handle URL strings or local filenames
+                if image_data.startswith('http'):
+                    # It's a URL, try to download
+                    image_filename = download_image_from_url(image_data, media_files)
+                    if image_filename:
+                        image_content = f'<div class="image-section"><img src="{image_filename}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
+                    else:
+                        # If download fails, show the URL
+                        image_content = f'<div class="image-section"><p style="color: #666;">Image: <a href="{image_data}" target="_blank">{image_data}</a></p></div>'
+                else:
+                    # Simple filename format
+                    image_content = f'<div class="image-section"><img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
         
         # Content is now clean - debug logging no longer needed
         
