@@ -162,6 +162,15 @@ Changelog:
   * STYLING: Upgraded to enhanced AnKing model with better CSS and medical card templates
   * PERFORMANCE: Improved image handling and media file management
   * Enhanced system now provides superior medical flashcard generation with all requested formatting
+- June 28, 2025: ADVANCED ENHANCEMENTS - Applied user's advanced improvements:
+  * ENHANCED IMAGE HANDLING: Improved AWS S3 compatibility with comprehensive headers and chunked downloads
+  * EXPANDED MEDICAL HIGHLIGHTING: Added more specific anatomical terms, spinal levels, and clinical concepts
+  * IMPROVED VIGNETTE FORMATTING: Enhanced duplicate answer choice removal and better question stem cleaning
+  * BETTER ERROR HANDLING: Added detailed logging for image downloads and content verification
+  * REFINED STYLING: Updated image containers with improved centering and shadow effects
+  * OPTIMIZED TEMPLATES: Restructured Anki templates for better image placement and content flow
+  * ENHANCED EXPLANATIONS: Added contextual medical explanations in click-to-reveal sections
+  * System now provides even more robust and professional medical flashcard generation
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
