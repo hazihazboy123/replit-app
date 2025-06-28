@@ -111,32 +111,32 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 clinical_case = vignette_data.get('clinical_case', '')
                 explanation = vignette_data.get('explanation', '')
                 
-                # Get the actual explanation (separate from choices)
-                actual_explanation = vignette_data.get('actual_explanation', '')
+                # Get the teaching explanation 
+                teaching_explanation = vignette_data.get('teaching_explanation', '')
                 
-                # Combine clinical case with the current explanation (which contains choices)
+                # Combine clinical case with explanation (which contains choices)
                 if clinical_case and explanation:
                     # Format the choices to have proper line breaks
-                    formatted_choices = explanation
+                    formatted_content = explanation
                     
                     # If explanation contains answer choices, format them properly
                     if 'A.' in explanation or 'A)' in explanation:
                         import re
                         # Replace common choice patterns with proper line breaks
-                        formatted_choices = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_choices)
-                        formatted_choices = formatted_choices.lstrip('<br>')  # Remove leading break
+                        formatted_content = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_content)
+                        formatted_content = formatted_content.lstrip('<br>')  # Remove leading break
                     
                     # Add line breaks for "Correct Answer:"
-                    formatted_choices = formatted_choices.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
+                    formatted_content = formatted_content.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
                     
-                    # Build the complete clinical case section
-                    complete_clinical_case = f'{clinical_case}<br><br>{formatted_choices}'
+                    # Build the complete clinical case with embedded choices
+                    complete_case = f'{clinical_case}<br><br>{formatted_content}'
                     
-                    # Add the actual explanation if provided
-                    if actual_explanation:
-                        complete_clinical_case += f'<br><br><strong>Explanation:</strong><br>{actual_explanation}'
+                    # Add the teaching explanation if provided
+                    if teaching_explanation:
+                        complete_case += f'<br><br><strong>Explanation:</strong><br>{teaching_explanation}'
                     
-                    vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_clinical_case}</div>'
+                    vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_case}</div>'
             else:
                 vignette_content = str(vignette_data)
         
