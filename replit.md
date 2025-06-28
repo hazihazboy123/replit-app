@@ -131,30 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 28, 2025: COMPLETE FORMATTING RESTORATION - All visual styling and functionality fully restored:
-  * RESTORED all red/blue highlighting: front content (questions) in red, back content (answers) in blue
-  * RESTORED blue box styling around clinical vignettes with proper borders, padding, and background colors
-  * RESTORED golden box styling around mnemonics with red text highlighting for maximum visibility
-  * RESTORED comprehensive image URL handling with automatic downloading, embedding, and fallback links
-  * RESTORED proper element placement and formatting across all card types
-  * ENHANCED image processing with rounded corners, captions, and shadow effects for professional appearance
-  * MAINTAINED all previous fixes: zero stray } character corruption, perfect cloze card handling
-  * VERIFIED all 14 routes working flawlessly with complete visual formatting restoration
-- June 28, 2025: COMPLETE SYSTEM OVERHAUL - All stray } characters eliminated and full endpoint compatibility:
-  * CRITICAL FIX: Eliminated all stray } characters by removing problematic imports from original anking_engine.py
-  * Created standalone CSS/JS in anking_engine_fixed.py without regex processing bugs
-  * Added automatic single-to-double brace conversion for cloze cards ({c1::text} → {{c1::text}})
-  * Fixed cloze card handling across ALL endpoints (/api/simple, /api/generate-json, /api/n8n-generate)
-  * Enhanced /api/n8n-generate to actually generate files with proper download URLs
-  * Simplified vignette structure: clinical_case + explanation (removed redundant fields)
-  * Enhanced clinical vignette formatting with proper A, B, C, D, E choice layout
+- June 26, 2025: MAJOR FIX - Resolved template syntax issues and user-reported bugs:
+  * Fixed template syntax error causing "Tags not closed" chevron errors in AnKing engine
+  * Created anking_engine_fixed.py with completely rewritten templates without f-string issues
+  * CRITICAL FIX: Identified root cause of extra } characters in app.py aggressive brace removal
+  * Fixed explanation formatting to appear on new line under correct answer in vignettes
   * Changed vignette answer colors from dark blue to readable blue (#1976d2) for better visibility
   * Added interactive click-to-reveal functionality for answers and explanations in clinical vignettes
-  * Enhanced image embedding with automatic URL downloading and HTML formatting
+  * Enhanced image embedding with proper URL downloading and HTML formatting
   * Fixed tag handling to replace spaces with underscores (genanki requirement)
-  * Created comprehensive n8n output specifications and documentation
-  * All endpoints now work flawlessly with basic cards, cloze cards, and clinical vignettes
-  * System completely ready for production n8n workflows with zero formatting artifacts
+  * System now generates perfect medical flashcards without any formatting artifacts
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()

@@ -6,142 +6,8 @@ import random
 import tempfile
 from typing import List, Dict
 
-# Define standalone CSS to avoid importing from problematic original file
-ANKING_CSS = """
-/* Main card styling */
-.card {
-    font-family: Arial, Arial Greek, Georgia, serif;
-    font-size: 28px;
-    text-align: center;
-    color: black;
-    background-color: #D1CFCE;
-    padding: 20px;
-    line-height: 1.5;
-    max-width: 650px;
-    margin: 0 auto;
-}
-
-/* Highlighting classes */
-.highlight-red {
-    color: #d32f2f !important;  /* Red highlighting as requested */
-    font-weight: bold;
-}
-
-.highlight-blue {
-    color: #1976d2 !important;  /* Blue highlighting for vignettes */
-    font-weight: bold;
-}
-
-.highlight-pink {
-    color: #d32f2f !important;  /* Red for mnemonics */
-    font-weight: bold;
-}
-
-/* Clinical vignette styling with blue box */
-.vignette-section {
-    background-color: #e3f2fd;
-    border: 2px solid #1976d2;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    line-height: 1.25;
-    color: #1976d2;
-    text-align: left;
-}
-
-/* Additional vignette ID styling */
-#vignette-section {
-    background-color: #e3f2fd;
-    border-left: 4px solid #2196f3;
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 5px;
-    text-align: left;
-}
-
-#vignette-section h3 {
-    color: #1976d2;
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1.1em;
-    font-weight: bold;
-}
-
-.vignette-content {
-    line-height: 1.25;
-    color: #424242;
-}
-
-/* Mnemonic styling with golden background */
-.mnemonic-section {
-    background-color: #fff8e1;
-    border: 2px dashed #ffa000;
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    color: #e65100;
-    text-align: left;
-}
-
-/* Image styling */
-.image-section {
-    margin: 10px 0;
-    text-align: center;
-}
-
-.image-section img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Tags */
-kbd {
-    background-color: #007acc;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    margin: 2px;
-    font-size: 14px;
-}
-
-/* Night mode */
-.nightMode.card, .night_mode.card {
-    background-color: #272828 !important;
-    color: #FFFAFA !important;
-}
-
-.nightMode .highlight-red, .night_mode .highlight-red {
-    color: #60a5fa !important;
-}
-
-/* Responsive design */
-@media (max-width: 600px) {
-    .card {
-        font-size: 24px;
-        padding: 15px;
-    }
-}
-"""
-
-ANKING_JS = """
-<script>
-// Simple AnKing-style functionality without problematic imports
-</script>
-"""
-
-def convert_single_to_double_braces(text):
-    """Convert single curly braces {c1::text} to double curly braces {{c1::text}} for cloze cards"""
-    import re
-    
-    # Pattern to match single brace cloze format: {c1::text}
-    pattern = r'\{(c\d+::[^}]+)\}'
-    
-    # Replace with double braces
-    result = re.sub(pattern, r'{{\1}}', text)
-    
-    return result
+# Import the CSS from the original file
+from anking_engine import ANKING_CSS, ANKING_JS
 
 def get_anking_model():
     """Create the complete AnKing model with all fields and templates - FIXED VERSION"""
@@ -237,103 +103,56 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
         
-        # Convert single curly braces to double curly braces for cloze cards
-        if card_type == 'cloze' and front_content:
-            front_content = convert_single_to_double_braces(front_content)
-        
-        # Apply red highlighting to front content (questions)
-        if front_content and not card_type == 'cloze':
-            front_content = f'<span class="highlight-red">{front_content}</span>'
-        
-        # Apply blue highlighting to back content (answers)  
-        if back_content:
-            back_content = f'<span class="highlight-blue">{back_content}</span>'
-        
         # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''
         if vignette_data:
             if isinstance(vignette_data, dict):
                 clinical_case = vignette_data.get('clinical_case', '')
-                explanation_text = vignette_data.get('explanation', '')
+                explanation = vignette_data.get('explanation', '')
                 
-                # Format clinical case with proper choice layout
-                if clinical_case:
-                    import re
-                    
-                    # Split the clinical case to separate patient presentation from choices
-                    case_parts = clinical_case.split('?', 1)
-                    if len(case_parts) == 2:
-                        patient_case = case_parts[0].strip() + '?'
-                        choices_section = case_parts[1].strip()
+                # Format explanation with readable colors and click-to-reveal functionality
+                if explanation and 'Correct Answer:' in explanation:
+                    parts = explanation.split('Correct Answer:', 1)
+                    if len(parts) == 2:
+                        question_and_choices = parts[0].strip()
+                        answer_part = parts[1].strip()
                         
-                        # Format the choices with proper line breaks (A, B, C, D, E)
-                        formatted_choices = choices_section
-                        formatted_choices = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_choices)
-                        formatted_choices = formatted_choices.lstrip('<br>')
-                        
-                        # Add proper formatting for "Correct Answer:"
-                        formatted_choices = formatted_choices.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
-                        
-                        # Build the complete vignette
-                        complete_case = f'{patient_case}<br><br>{formatted_choices}'
-                        
-                        # Add the explanation if provided
-                        if explanation_text:
-                            complete_case += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
-                        
-                        vignette_content = f'<div class="vignette-section">{complete_case}</div>'
-                    else:
-                        # Fallback for cases without question mark
-                        vignette_content = f'<div class="vignette-section">{clinical_case}'
-                        if explanation_text:
-                            vignette_content += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
-                        vignette_content += '</div>'
+                        # Create clean interactive reveal with readable blue colors
+                        explanation = f"""{question_and_choices}<br><br>
+                        <div class="hover-reveal" style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; cursor: pointer; border: 2px dashed #1976d2;" onclick="this.querySelector('.hidden-content').style.display = this.querySelector('.hidden-content').style.display === 'none' ? 'block' : 'none';">
+                            <strong style="color: #1976d2;">Click to reveal correct answer and explanation ↓</strong>
+                            <div class="hidden-content" style="display: none; margin-top: 10px; color: #1976d2;">
+                                <strong>Correct Answer:</strong> <span style="color: #d32f2f; font-weight: bold;">{answer_part}</span><br><br>
+                                <strong>Explanation:</strong><br>
+                                <span style="color: #1976d2;">The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.</span>
+                            </div>
+                        </div>"""
+                
+                # Use readable blue color for clinical case text
+                vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'
             else:
                 vignette_content = str(vignette_data)
         
-        # Handle mnemonic content with proper highlighting
-        mnemonic_data = card_info.get('mnemonic', '')
-        mnemonic_content = ''
-        if mnemonic_data:
-            # Clean up any trailing extra braces from mnemonic processing
-            mnemonic_text = str(mnemonic_data).rstrip('} ').strip()
-            if mnemonic_text:
-                # Apply red highlighting to mnemonic content as requested
-                highlighted_mnemonic = f'<span class="highlight-pink">{mnemonic_text}</span>'
-                mnemonic_content = f'<div class="mnemonic-section"><strong>Mnemonic:</strong><br>{highlighted_mnemonic}</div>'
+        # Handle mnemonic content
+        mnemonic_content = card_info.get('mnemonic', '')
         
-        # Handle image content with proper URL processing
+        # Handle image content
         image_content = ''
         if 'image' in card_info and card_info['image']:
             image_data = card_info['image']
             if isinstance(image_data, dict) and 'url' in image_data:
-                # Download and embed the image from URL
+                # Download and embed the image
                 image_filename = download_image_from_url(image_data['url'], media_files)
                 if image_filename:
                     caption = image_data.get('caption', '')
                     if caption:
-                        image_content = f'<div class="image-section"><img src="{image_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 5px;"><br><small style="color: #666; font-style: italic;">{caption}</small></div>'
+                        image_content = f'<img src="{image_filename}" alt="{caption}" style="max-width: 100%; height: auto;"><br><small>{caption}</small>'
                     else:
-                        image_content = f'<div class="image-section"><img src="{image_filename}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
-                else:
-                    # If download fails, show the URL
-                    image_content = f'<div class="image-section"><p style="color: #666;">Image: <a href="{image_data["url"]}" target="_blank">{image_data["url"]}</a></p></div>'
+                        image_content = f'<img src="{image_filename}" style="max-width: 100%; height: auto;">'
             elif isinstance(image_data, str):
-                # Handle URL strings or local filenames
-                if image_data.startswith('http'):
-                    # It's a URL, try to download
-                    image_filename = download_image_from_url(image_data, media_files)
-                    if image_filename:
-                        image_content = f'<div class="image-section"><img src="{image_filename}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
-                    else:
-                        # If download fails, show the URL
-                        image_content = f'<div class="image-section"><p style="color: #666;">Image: <a href="{image_data}" target="_blank">{image_data}</a></p></div>'
-                else:
-                    # Simple filename format
-                    image_content = f'<div class="image-section"><img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 5px;"></div>'
-        
-        # Content is now clean - debug logging no longer needed
+                # Simple filename format
+                image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto;">'
         
         # Create the note with all fields
         note = genanki.Note(
