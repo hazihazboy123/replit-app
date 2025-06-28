@@ -1354,36 +1354,8 @@ def api_simple():
         deck_name = f"{base_deck_name}_{timestamp}"
         app.logger.info(f"Final deck name with timestamp: '{deck_name}'")
         
-        # CRITICAL: Clean up ALL content BEFORE processing
-        app.logger.info(f"Cleaning up {len(cards)} cards before processing")
-        for i, card in enumerate(cards):
-            # Clean all text fields to remove only trailing extra } characters
-            for field in ['front', 'back', 'question', 'answer', 'note', 'notes', 'extra', 'mnemonic']:
-                if field in card and card[field]:
-                    original = card[field]
-                    # Only remove trailing braces and spaces, preserve legitimate content
-                    cleaned = str(original).rstrip('} ')
-                    if original != cleaned:
-                        app.logger.info(f"Cleaned {field}: '{original}' -> '{cleaned}'")
-                    card[field] = cleaned
-            
-            # Clean vignette content
-            if 'vignette' in card and card['vignette']:
-                vignette = card['vignette']
-                if isinstance(vignette, dict):
-                    for vfield in ['clinical_case', 'explanation']:
-                        if vfield in vignette and vignette[vfield]:
-                            original = vignette[vfield]
-                            cleaned = str(original).rstrip('} ')
-                            if original != cleaned:
-                                app.logger.info(f"Cleaned vignette.{vfield}: '{original}' -> '{cleaned}'")
-                            vignette[vfield] = cleaned
-                else:
-                    original = vignette
-                    cleaned = str(original).rstrip('} ')
-                    if original != cleaned:
-                        app.logger.info(f"Cleaned vignette: '{original}' -> '{cleaned}'")
-                    card['vignette'] = cleaned
+        # CRITICAL: NO MORE AGGRESSIVE CLEANING - Let anking_engine_fixed handle it properly
+        app.logger.info(f"Processing {len(cards)} cards without aggressive cleaning")
         
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
         
