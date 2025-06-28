@@ -231,10 +231,10 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                         if explanation_text:
                             complete_case += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
                         
-                        vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_case}</div>'
+                        vignette_content = f'<div class="vignette-section">{complete_case}</div>'
                     else:
                         # Fallback for cases without question mark
-                        vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{clinical_case}'
+                        vignette_content = f'<div class="vignette-section">{clinical_case}'
                         if explanation_text:
                             vignette_content += f'<br><br><strong>Explanation:</strong><br>{explanation_text}'
                         vignette_content += '</div>'
