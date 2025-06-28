@@ -667,6 +667,9 @@ def api_simple():
         
         app.logger.info(f"Generated enhanced file: {file_path} (size: {file_size} bytes)")
         
+        download_url = f"/download/{filename}"
+        full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
+        
         return jsonify({
             'success': True,
             'status': 'completed',
@@ -674,7 +677,8 @@ def api_simple():
             'cards_processed': len(cards),
             'file_size': file_size,
             'filename': filename,
-            'download_url': f'/download/{filename}',
+            'download_url': download_url,
+            'full_download_url': full_url,
             'message': f'Generated enhanced Anki deck with {len(cards)} cards'
         })
         
