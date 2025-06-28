@@ -190,6 +190,15 @@ Changelog:
   * BLUE THEME RETURN: Reverted vignettes to light blue theme (#e3f2fd) for better medical readability
   * TEMPLATE ENHANCEMENT: Improved image placement in both front and back card templates
   * System now provides superior AWS S3 compatibility and medical image handling
+- June 28, 2025: EVIDENCE-BASED MEDICAL LEARNING COLORS - Applied scientific color psychology for optimal learning:
+  * PROFESSIONAL MEDICAL TRUST PALETTE: Vignettes use warm cream gradients (#F7F3E9 to #F1E7D0) with trustworthy blue borders (#2980B9)
+  * HEALING GREEN MNEMONICS: Evidence-based memory enhancement with healing green accents (#F0FDF4 to #DCFCE7, border #27AE60)
+  * ULTRA-AGGRESSIVE VIGNETTE FORMATTING: Complete restructuring of content parsing for better readability
+  * STRUCTURED CONTENT PARSING: Intelligent separation of question stems, answer choices, and correct answers
+  * ENHANCED CHOICE FORMATTING: Clear line breaks and structured presentation of multiple choice options
+  * IMPROVED CLICK-TO-REVEAL: Green accent colors for answer reveals promoting positive learning associations
+  * COMPREHENSIVE CONTENT CLEANUP: Removes ALL problematic characters, braces, newlines, and formatting issues
+  * System now provides scientifically-optimized visual design based on medical education color psychology
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
