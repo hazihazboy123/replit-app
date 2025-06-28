@@ -103,6 +103,10 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
         back_content = card_info.get('back', card_info.get('answer', ''))
         extra_content = card_info.get('extra', card_info.get('additional_notes', card_info.get('notes', '')))
         
+        # Convert single curly braces to double curly braces for cloze cards
+        if card_type == 'cloze' and front_content:
+            front_content = convert_single_to_double_braces(front_content)
+        
         # Handle vignette content with proper formatting
         vignette_data = card_info.get('vignette', '')
         vignette_content = ''

@@ -20,9 +20,10 @@ Container for all flashcard data
 ```json
 {
   "type": "cloze",
-  "front": "The {{c1::heart}} pumps {{c2::blood}}"
+  "front": "The {c1::heart} pumps {c2::blood}"
 }
 ```
+**Note**: Use single curly braces `{c1::text}` - the system automatically converts to double braces `{{c1::text}}` for Anki compatibility.
 
 ## Optional Fields
 

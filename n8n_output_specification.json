@@ -19,8 +19,8 @@
       }
     },
     {
-      "type": "cloze",
-      "front": "The {{c1::heart}} pumps {{c2::blood}} through the {{c3::circulatory system}}",
+      "type": "cloze", 
+      "front": "The {c1::heart} pumps {c2::blood} through the {c3::circulatory system}",
       "notes": "Basic cardiovascular physiology",
       "tags": ["Cardiology", "Cloze"]
     },
