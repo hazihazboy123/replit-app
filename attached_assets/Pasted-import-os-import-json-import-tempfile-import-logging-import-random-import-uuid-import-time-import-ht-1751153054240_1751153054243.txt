@@ -161,13 +161,11 @@ def format_vignette_content(vignette_data):
     highlighted_content = combined_content
     
     # Handle duplicate answer choices - remove inline choices if they exist separately
-    # Look for pattern where choices appear both inline and listed separately
     if re.search(r'Answer Choices:\s*[A-F]\.', highlighted_content):
         # Remove inline answer choices that appear before "Answer Choices:"
         highlighted_content = re.sub(r'[A-F]\.\s+[^A-F]*?(?=[A-F]\.|Answer Choices:|Correct Answer:|$)', '', highlighted_content)
     
     # Clean up the question stem - remove duplicate answer choices
-    # Pattern: question text with inline choices followed by "Answer Choices:"
     if 'Answer Choices:' in highlighted_content:
         parts = highlighted_content.split('Answer Choices:', 1)
         if len(parts) == 2:
@@ -629,114 +627,6 @@ def generate_synaptic_recall_name(cards):
     
     return f"synapticrecall_{detected_topic}"
 
-# Flask Routes
-@app.route('/')
-def index():
-    """Main page"""
-    return """
-    <html>
-    <head><title>Enhanced Medical Anki Generator</title></head>
-    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
-        <h1>🩺 Enhanced Medical Anki Generator</h1>
-        <p>Send POST requests to <code>/api/enhanced-medical</code> with your n8n JSON data.</p>
-        <h3>Features:</h3>
-        <ul>
-            <li>✅ Beautiful medical card styling</li>
-            <li>✅ Clinical vignettes with click-to-reveal answers</li>
-            <li>✅ Automatic medical term highlighting</li>
-            <li>✅ Image download and embedding</li>
-            <li>✅ Enhanced mnemonic and vignette sections</li>
-        </ul>
-    </body>
-    </html>
-    """
-
-@app.route('/api/health')
-@app.route('/health')
-def api_health():
-    """Health check endpoint for monitoring"""
-    return jsonify({
-        'status': 'healthy',
-        'service': 'Enhanced Medical JSON to Anki Converter',
-        'version': '4.0.0',
-        'features': ['enhanced_medical_cards', 'image_download', 'click_reveal', 'medical_highlighting'],
-        'timestamp': int(time.time())
-    }), 200
-
-@app.route('/api/simple', methods=['POST'])
-def api_simple():
-    """Enhanced endpoint for processing medical flashcards"""
-    try:
-        app.logger.info("=== ENHANCED SIMPLE API CALLED ===")
-        app.logger.info(f"Content-Type: {request.content_type}")
-        app.logger.info(f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}")
-        
-        # Get JSON data
-        data = request.get_json()
-        if not data:
-            return jsonify({'success': False, 'error': 'No JSON data provided'}), 400
-        
-        app.logger.info(f"Received data: {data}")
-        
-        # Extract cards
-        if isinstance(data, list):
-            cards = data
-        elif isinstance(data, dict) and 'cards' in data:
-            cards = data['cards']
-        else:
-            return jsonify({'success': False, 'error': 'Invalid data format'}), 400
-        
-        if not cards:
-            return jsonify({'success': False, 'error': 'No cards found'}), 400
-        
-        # Generate deck name
-        base_name = generate_synaptic_recall_name(cards)
-        timestamp = str(int(time.time()))
-        deck_name = f"{base_name}_{timestamp}"
-        
-        app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
-        
-        # Process cards with enhanced processor
-        processor = EnhancedFlashcardProcessor()
-        deck, media_files = processor.process_cards(cards, deck_name)
-        
-        # Generate file
-        filename = f"{deck_name}_{timestamp}.apkg"
-        file_path = os.path.join(tempfile.gettempdir(), filename)
-        
-        if media_files:
-            package = genanki.Package(deck)
-            package.media_files = media_files
-            package.write_to_file(file_path)
-        else:
-            deck.write_to_file(file_path)
-        
-        file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
-        
-        app.logger.info(f"Generated enhanced file: {file_path} (size: {file_size} bytes)")
-        
-        download_url = f"/download/{filename}"
-        full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"
-        
-        return jsonify({
-            'success': True,
-            'status': 'completed',
-            'deck_name': deck_name,
-            'cards_processed': len(cards),
-            'file_size': file_size,
-            'filename': filename,
-            'download_url': download_url,
-            'full_download_url': full_url,
-            'message': f'Generated enhanced Anki deck with {len(cards)} cards'
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Enhanced API error: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': f'Processing failed: {str(e)}'
-        }), 500
-
 @app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
 def api_enhanced_medical():
     """Enhanced endpoint for beautiful medical flashcards"""
@@ -830,6 +720,18 @@ def api_enhanced_medical():
             'traceback': traceback.format_exc()
         }, 500
 
+# Keep existing endpoints for compatibility
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    """Health check endpoint for monitoring"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'Enhanced Medical JSON to Anki Converter',
+        'version': '4.0.0',
+        'features': ['enhanced_medical_cards', 'image_download', 'click_reveal', 'medical_highlighting'],
+        'timestamp': int(time.time())
+    }), 200
+
 @app.route('/download/<path:filename>')
 def download_file(filename):
     """Serve generated .apkg files for download"""
@@ -848,6 +750,27 @@ def download_file(filename):
     except Exception as e:
         app.logger.error(f"Download error: {e}")
         return "Download failed", 500
+
+@app.route('/')
+def index():
+    """Main page"""
+    return """
+    <html>
+    <head><title>Enhanced Medical Anki Generator</title></head>
+    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>🩺 Enhanced Medical Anki Generator</h1>
+        <p>Send POST requests to <code>/api/enhanced-medical</code> with your n8n JSON data.</p>
+        <h3>Features:</h3>
+        <ul>
+            <li>✅ Beautiful medical card styling</li>
+            <li>✅ Clinical vignettes with click-to-reveal answers</li>
+            <li>✅ Automatic medical term highlighting</li>
+            <li>✅ Image download and embedding</li>
+            <li>✅ Enhanced mnemonic and vignette sections</li>
+        </ul>
+    </body>
+    </html>
+    """
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

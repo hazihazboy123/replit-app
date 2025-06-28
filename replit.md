@@ -171,6 +171,15 @@ Changelog:
   * OPTIMIZED TEMPLATES: Restructured Anki templates for better image placement and content flow
   * ENHANCED EXPLANATIONS: Added contextual medical explanations in click-to-reveal sections
   * System now provides even more robust and professional medical flashcard generation
+- June 28, 2025: LEARNING-OPTIMIZED STYLING - Applied optimal learning color scheme improvements:
+  * CRITICAL FIX: Removed medical highlighting from vignette content to improve readability
+  * VIGNETTE STYLING: Changed from blue theme to neutral gray learning-optimized colors (#f8f9fa gradient)
+  * MNEMONIC STYLING: Enhanced warm colors with better contrast and readability
+  * CLICK-TO-REVEAL: Improved with optimal learning colors and better visual hierarchy
+  * IMAGE STYLING: Enhanced with better borders, shadows, and extensive debugging logging
+  * NIGHT MODE: Added comprehensive dark theme support for all new styling elements
+  * COLOR PSYCHOLOGY: Applied evidence-based color choices for optimal medical education learning
+  * System now provides scientifically-optimized visual design for enhanced learning retention
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
