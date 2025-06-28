@@ -111,26 +111,32 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 clinical_case = vignette_data.get('clinical_case', '')
                 explanation = vignette_data.get('explanation', '')
                 
-                # Format explanation with readable colors and click-to-reveal functionality
-                if explanation and 'Correct Answer:' in explanation:
-                    parts = explanation.split('Correct Answer:', 1)
-                    if len(parts) == 2:
-                        question_and_choices = parts[0].strip()
-                        answer_part = parts[1].strip()
-                        
-                        # Create clean interactive reveal with readable blue colors
-                        explanation = f"""{question_and_choices}<br><br>
-                        <div class="hover-reveal" style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; cursor: pointer; border: 2px dashed #1976d2;" onclick="this.querySelector('.hidden-content').style.display = this.querySelector('.hidden-content').style.display === 'none' ? 'block' : 'none';">
-                            <strong style="color: #1976d2;">Click to reveal correct answer and explanation ↓</strong>
-                            <div class="hidden-content" style="display: none; margin-top: 10px; color: #1976d2;">
-                                <strong>Correct Answer:</strong> <span style="color: #d32f2f; font-weight: bold;">{answer_part}</span><br><br>
-                                <strong>Explanation:</strong><br>
-                                <span style="color: #1976d2;">The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.</span>
-                            </div>
-                        </div>"""
+                # Get the actual explanation (separate from choices)
+                actual_explanation = vignette_data.get('actual_explanation', '')
                 
-                # Use readable blue color for clinical case text
-                vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'
+                # Combine clinical case with the current explanation (which contains choices)
+                if clinical_case and explanation:
+                    # Format the choices to have proper line breaks
+                    formatted_choices = explanation
+                    
+                    # If explanation contains answer choices, format them properly
+                    if 'A.' in explanation or 'A)' in explanation:
+                        import re
+                        # Replace common choice patterns with proper line breaks
+                        formatted_choices = re.sub(r'\s*([A-E]\.?\)?\s*)', r'<br>\1 ', formatted_choices)
+                        formatted_choices = formatted_choices.lstrip('<br>')  # Remove leading break
+                    
+                    # Add line breaks for "Correct Answer:"
+                    formatted_choices = formatted_choices.replace('Correct Answer:', '<br><br><strong>Correct Answer:</strong>')
+                    
+                    # Build the complete clinical case section
+                    complete_clinical_case = f'{clinical_case}<br><br>{formatted_choices}'
+                    
+                    # Add the actual explanation if provided
+                    if actual_explanation:
+                        complete_clinical_case += f'<br><br><strong>Explanation:</strong><br>{actual_explanation}'
+                    
+                    vignette_content = f'<div style="color: #1976d2; line-height: 1.25;">{complete_clinical_case}</div>'
             else:
                 vignette_content = str(vignette_data)
         
