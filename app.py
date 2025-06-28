@@ -1342,7 +1342,7 @@ def api_simple():
                             vignette[vfield] = cleaned
                 else:
                     original = vignette
-                    cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                    cleaned = str(original).rstrip('} ')
                     if original != cleaned:
                         app.logger.info(f"Cleaned vignette: '{original}' -> '{cleaned}'")
                     card['vignette'] = cleaned
