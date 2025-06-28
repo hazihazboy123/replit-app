@@ -572,6 +572,7 @@ def test_validation():
         processor.validate_json_structure(test_data)
         
         return jsonify({
+            'success': True,
             'validation': 'success',
             'message': 'API supports front/back format',
             'test_data': test_data
