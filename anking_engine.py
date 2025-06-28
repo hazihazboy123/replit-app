@@ -532,6 +532,7 @@ ul ul, table ul, ol ol, table ol {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
 
 /* Clinical Vignette Styling */
 #vignette-section {
