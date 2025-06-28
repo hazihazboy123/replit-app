@@ -775,6 +775,15 @@ def api_generate_json():
         
         app.logger.info(f"Processing {json_data.get('deck_name', 'Unknown')} with {len(json_data.get('cards', []))} cards")
         
+        # Pre-process cloze cards before validation (convert single braces to double)
+        if 'cards' in json_data:
+            for card in json_data['cards']:
+                if card.get('type') == 'cloze' and 'front' in card:
+                    from anking_engine_fixed import convert_single_to_double_braces
+                    # Move content from front to cloze_text for proper validation
+                    card['cloze_text'] = convert_single_to_double_braces(card['front'])
+                    card.pop('front', None)  # Remove front field for cloze cards
+        
         processor = FlashcardProcessor()
         processor.validate_json_structure(json_data)
         
@@ -968,28 +977,51 @@ def api_n8n_generate():
     if request.method == 'OPTIONS':
         return '', 200
     
-    # Always return JSON for n8n regardless of headers
     try:
         data = request.get_json(force=True)
         if not data or 'cards' not in data:
             return {'error': 'Invalid data'}, 400
+        
+        # Add deck_name if missing
+        if 'deck_name' not in data:
+            data['deck_name'] = 'Medical Flashcards'
             
-        deck_name = data.get('deck_name', 'Medical Flashcards')
-        card_count = len(data.get('cards', []))
+        # Pre-process cloze cards (convert single braces to double)
+        if 'cards' in data:
+            for card in data['cards']:
+                if card.get('type') == 'cloze' and 'front' in card:
+                    from anking_engine_fixed import convert_single_to_double_braces
+                    # Move content from front to cloze_text for proper validation
+                    card['cloze_text'] = convert_single_to_double_braces(card['front'])
+                    card.pop('front', None)  # Remove front field for cloze cards
         
-        # Just validate basic structure
-        for card in data['cards']:
-            if not (('front' in card and 'back' in card) or ('question' in card and 'answer' in card)):
-                return {'error': 'Invalid card format'}, 400
+        # Generate actual deck using FlashcardProcessor
+        processor = FlashcardProcessor()
+        processor.validate_json_structure(data)
+        deck = processor.create_anki_deck(data)
         
-        # Return simple success JSON
-        return {
-            'success': True,
-            'status': 'completed',
-            'deck_name': deck_name,
-            'cards_processed': card_count,
-            'message': f'Generated {card_count} cards'
-        }, 200
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.apkg') as tmp_file:
+            genanki.Package(deck).write_to_file(tmp_file.name)
+            file_size = os.path.getsize(tmp_file.name)
+            
+            # Move file to accessible location
+            download_filename = f"{data['deck_name'].replace(' ', '_')}_{int(time.time())}.apkg"
+            download_path = f"/tmp/{download_filename}"
+            import shutil
+            shutil.move(tmp_file.name, download_path)
+            
+            return {
+                'success': True,
+                'status': 'completed',
+                'deck_name': data['deck_name'],
+                'cards_processed': len(data['cards']),
+                'file_size': file_size,
+                'filename': download_filename,
+                'download_url': f'/download/{download_filename}',
+                'full_download_url': f'https://flashcard-converter-haziqmakesai.replit.app/download/{download_filename}',
+                'message': f'Generated Anki deck with {len(data["cards"])} cards'
+            }, 200
         
     except Exception as e:
         return {'error': str(e), 'success': False}, 500
