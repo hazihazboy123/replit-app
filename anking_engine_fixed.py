@@ -141,8 +141,43 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                             </div>
                         </div>""".rstrip()
                 
-                # Use readable blue color for clinical case text
-                vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'.rstrip()
+                # Use readable blue color for clinical case text  
+                # Process explanation for vertical formatting if needed
+                if 'Correct Answer:' in explanation and 'Answer Choices:' in explanation:
+                    # Apply the same vertical formatting logic to dict-based vignettes
+                    parts = explanation.split('Correct Answer:', 1)
+                    if len(parts) == 2:
+                        question_and_choices = parts[0].strip()
+                        answer_part = parts[1].strip()
+                        
+                        # Format answer choices vertically (A, B, C, D, E on separate lines)
+                        import re
+                        if 'Answer Choices:' in question_and_choices:
+                            choices_part = question_and_choices.split('Answer Choices:', 1)[1]
+                            # Format choices vertically: A. text B. text -> A. text<br>B. text
+                            formatted_choices = re.sub(r'([A-E]\.)', r'<br>\1', choices_part.strip())
+                            if formatted_choices.startswith('<br>'):
+                                formatted_choices = formatted_choices[4:]  # Remove leading <br>
+                            question_part = question_and_choices.split('Answer Choices:')[0]
+                            question_and_choices = f"{question_part}Answer Choices:<br>{formatted_choices}"
+                        
+                        # Create formatted explanation with new lines
+                        formatted_explanation = f"""{question_and_choices}<br><br>
+                        <div class="hover-reveal" style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; cursor: pointer; border: 2px dashed #1976d2;" onclick="this.querySelector('.hidden-content').style.display = this.querySelector('.hidden-content').style.display === 'none' ? 'block' : 'none';">
+                            <strong style="color: #1976d2;">Click to reveal correct answer and explanation ↓</strong>
+                            <div class="hidden-content" style="display: none; margin-top: 10px; color: #1976d2;">
+                                <strong>Correct Answer:</strong><br>
+                                <span style="color: #d32f2f; font-weight: bold;">{answer_part}</span><br><br>
+                                <strong>Explanation:</strong><br>
+                                <span style="color: #1976d2;">The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.</span>
+                            </div>
+                        </div>""".rstrip()
+                        
+                        vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{formatted_explanation}'.rstrip()
+                    else:
+                        vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'.rstrip()
+                else:
+                    vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'.rstrip()
             else:
                 # Handle simple string vignette data by formatting it similar to dict format
                 vignette_str = str(vignette_data)

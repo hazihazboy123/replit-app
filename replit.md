@@ -141,6 +141,14 @@ Changelog:
   * Enhanced image embedding with proper URL downloading and HTML formatting
   * Fixed tag handling to replace spaces with underscores (genanki requirement)
   * System now generates perfect medical flashcards without any extra } formatting artifacts
+- June 28, 2025: FINAL FORMATTING IMPLEMENTATION - Completed all user-requested vignette formatting:
+  * CRITICAL FIX: Implemented vertical answer choice formatting (A, B, C, D, E each on separate lines)
+  * CRITICAL FIX: Correct answer now starts on its own new line in interactive reveal
+  * CRITICAL FIX: Explanation now starts on its own new line in interactive reveal  
+  * Applied formatting to both dictionary vignette format (lines 145-180) and string format (lines 182-218)
+  * All medical vignette formatting requirements now perfectly implemented per user specifications
+  * Preserved all existing features: readable blue colors, interactive click-to-reveal, no extra braces
+  * Medical flashcard system now generates exactly the formatting layout requested by user
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
