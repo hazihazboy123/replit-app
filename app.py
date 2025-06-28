@@ -1324,11 +1324,12 @@ def api_simple():
         # CRITICAL: Clean up ALL content BEFORE processing
         app.logger.info(f"Cleaning up {len(cards)} cards before processing")
         for i, card in enumerate(cards):
-            # Clean all text fields to remove extra } characters
+            # Clean all text fields to remove only trailing extra } characters
             for field in ['front', 'back', 'question', 'answer', 'note', 'notes', 'extra', 'mnemonic']:
                 if field in card and card[field]:
                     original = card[field]
-                    cleaned = str(original).rstrip('} ').replace(' }', '').replace('}', '')
+                    # Only remove trailing braces and spaces, preserve legitimate content
+                    cleaned = str(original).rstrip('} ')
                     if original != cleaned:
                         app.logger.info(f"Cleaned {field}: '{original}' -> '{cleaned}'")
                     card[field] = cleaned

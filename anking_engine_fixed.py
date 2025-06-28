@@ -163,7 +163,13 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                 vignette_content = str(vignette_data)
         
         # Handle mnemonic content
-        mnemonic_content = card_info.get('mnemonic', '')
+        mnemonic_data = card_info.get('mnemonic', '')
+        mnemonic_content = ''
+        if mnemonic_data:
+            # Clean up any trailing extra braces from mnemonic processing
+            mnemonic_text = str(mnemonic_data).rstrip('} ').strip()
+            if mnemonic_text:
+                mnemonic_content = f'<div class="mnemonic-section"><strong>Mnemonic:</strong><br>{mnemonic_text}</div>'
         
         # Handle image content
         image_content = ''
