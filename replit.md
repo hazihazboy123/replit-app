@@ -131,6 +131,15 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- June 28, 2025: COMPLETE FORMATTING RESTORATION - All visual styling and functionality fully restored:
+  * RESTORED all red/blue highlighting: front content (questions) in red, back content (answers) in blue
+  * RESTORED blue box styling around clinical vignettes with proper borders, padding, and background colors
+  * RESTORED golden box styling around mnemonics with red text highlighting for maximum visibility
+  * RESTORED comprehensive image URL handling with automatic downloading, embedding, and fallback links
+  * RESTORED proper element placement and formatting across all card types
+  * ENHANCED image processing with rounded corners, captions, and shadow effects for professional appearance
+  * MAINTAINED all previous fixes: zero stray } character corruption, perfect cloze card handling
+  * VERIFIED all 14 routes working flawlessly with complete visual formatting restoration
 - June 28, 2025: COMPLETE SYSTEM OVERHAUL - All stray } characters eliminated and full endpoint compatibility:
   * CRITICAL FIX: Eliminated all stray } characters by removing problematic imports from original anking_engine.py
   * Created standalone CSS/JS in anking_engine_fixed.py without regex processing bugs
