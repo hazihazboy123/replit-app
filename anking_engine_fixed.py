@@ -6,8 +6,87 @@ import random
 import tempfile
 from typing import List, Dict
 
-# Import the CSS from the original file  
-from anking_engine import ANKING_CSS, ANKING_JS
+# Define standalone CSS to avoid importing from problematic original file
+ANKING_CSS = """
+/* Main card styling */
+.card {
+    font-family: Arial, Arial Greek, Georgia, serif;
+    font-size: 28px;
+    text-align: center;
+    color: black;
+    background-color: #D1CFCE;
+    padding: 20px;
+    line-height: 1.5;
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+/* Highlighting classes */
+.highlight-red {
+    color: #1e3a8a !important;  /* Dark blue for better readability */
+    font-weight: bold;
+}
+
+.highlight-pink {
+    color: #d32f2f !important;  /* Red for mnemonics */
+    font-weight: bold;
+}
+
+/* Clinical vignette styling */
+.vignette-section {
+    background-color: #e3f2fd;
+    border: 2px solid #1976d2;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    line-height: 1.25;
+    color: #1976d2;
+}
+
+/* Mnemonic styling */
+.mnemonic-section {
+    background-color: #fff8e1;
+    border: 2px dashed #ffa000;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    color: #e65100;
+}
+
+/* Tags */
+kbd {
+    background-color: #007acc;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin: 2px;
+    font-size: 14px;
+}
+
+/* Night mode */
+.nightMode.card, .night_mode.card {
+    background-color: #272828 !important;
+    color: #FFFAFA !important;
+}
+
+.nightMode .highlight-red, .night_mode .highlight-red {
+    color: #60a5fa !important;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .card {
+        font-size: 24px;
+        padding: 15px;
+    }
+}
+"""
+
+ANKING_JS = """
+<script>
+// Simple AnKing-style functionality without problematic imports
+</script>
+"""
 
 def convert_single_to_double_braces(text):
     """Convert single curly braces {c1::text} to double curly braces {{c1::text}} for cloze cards"""
@@ -187,6 +266,8 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
             elif isinstance(image_data, str):
                 # Simple filename format
                 image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto;">'
+        
+        # Content is now clean - debug logging no longer needed
         
         # Create the note with all fields
         note = genanki.Note(
