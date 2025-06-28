@@ -180,6 +180,16 @@ Changelog:
   * NIGHT MODE: Added comprehensive dark theme support for all new styling elements
   * COLOR PSYCHOLOGY: Applied evidence-based color choices for optimal medical education learning
   * System now provides scientifically-optimized visual design for enhanced learning retention
+- June 28, 2025: ENHANCED AWS S3 IMAGE HANDLING - Applied comprehensive image downloader improvements:
+  * AWS S3 COMPATIBILITY: Enhanced headers specifically for AWS S3 URLs with X-Amz-Signature detection
+  * ADVANCED HEADERS: Added Chrome 120 User-Agent, Sec-Fetch headers, and cross-site request support
+  * SESSION HANDLING: Implemented session-based requests for better connection management
+  * TIMEOUT OPTIMIZATION: Increased timeout to 60 seconds for large medical images
+  * AGGRESSIVE CLEANUP: Enhanced brace removal using regex for ALL braces in vignette content
+  * VISUAL FEEDBACK: Added comprehensive emoji-based logging for better debugging
+  * BLUE THEME RETURN: Reverted vignettes to light blue theme (#e3f2fd) for better medical readability
+  * TEMPLATE ENHANCEMENT: Improved image placement in both front and back card templates
+  * System now provides superior AWS S3 compatibility and medical image handling
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
