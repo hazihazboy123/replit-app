@@ -127,10 +127,10 @@ def create_anki_deck(cards_data, output_filename="AnKing_Medical_Deck.apkg", dec
                                 <strong>Explanation:</strong><br>
                                 <span style="color: #1976d2;">The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.</span>
                             </div>
-                        </div>"""
+                        </div>""".rstrip()
                 
                 # Use readable blue color for clinical case text
-                vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'
+                vignette_content = f'<div style="color: #1976d2;">{clinical_case}</div><br><br>{explanation}'.rstrip()
             else:
                 vignette_content = str(vignette_data)
         
