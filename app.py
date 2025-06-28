@@ -50,7 +50,131 @@ class FlashcardProcessor:
             self.use_anking_engine = False
     
     def _create_medical_model(self):
-        """Create advanced Anki model for medical students with perfect styling and multiple card types"""
+        """Process cards with enhanced medical formatting"""
+        
+        # Generate unique deck ID
+        deck_id = random.randrange(1 << 30, 1 << 31)
+        deck = genanki.Deck(deck_id, deck_name)
+        media_files = []
+        
+        for card_info in cards_data:
+            # Extract basic fields
+            front_content = card_info.get('front', '')
+            back_content = card_info.get('back', '')
+            extra_content = card_info.get('extra', '')
+            
+            # Apply medical highlighting to front and back
+            if front_content:
+                front_content = apply_medical_highlighting(front_content)
+            if back_content:
+                back_content = apply_medical_highlighting(back_content)
+            if extra_content:
+                extra_content = apply_medical_highlighting(extra_content)
+            
+            # Process vignette with special formatting
+            vignette_content = format_vignette_content(card_info.get('vignette', ''))
+            
+            # Process mnemonic with highlighting
+            mnemonic_data = card_info.get('mnemonic', '')
+            mnemonic_content = ''
+            if mnemonic_data:
+                mnemonic_content = apply_medical_highlighting(str(mnemonic_data))
+            
+            # Handle image download and formatting
+            image_content = ''
+            image_data = card_info.get('image', '')
+            if image_data:
+                if isinstance(image_data, dict):
+                    url = image_data.get('url', '')
+                    caption = image_data.get('caption', '')
+                    if url:
+                        downloaded_filename = download_image_from_url(url, media_files)
+                        if downloaded_filename:
+                            image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                            if caption:
+                                image_content += f'<div style="text-align: center; font-style: italic; margin-top: 10px; color: #666; font-size: 0.9em;">{caption}</div>'
+                elif isinstance(image_data, str) and image_data.strip():
+                    # Simple filename or URL
+                    if image_data.startswith('http'):
+                        downloaded_filename = download_image_from_url(image_data, media_files)
+                        if downloaded_filename:
+                            image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                    else:
+                        image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+            
+            # Create the note
+            note = genanki.Note(
+                model=self.model,
+                fields=[
+                    front_content,
+                    back_content,
+                    extra_content,
+                    vignette_content,
+                    mnemonic_content,
+                    image_content
+                ],
+                tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
+            )
+            
+            deck.add_note(note)
+        
+        return deck, media_files
+
+def generate_synaptic_recall_name(cards):
+    """Generate SynapticRecall deck name based on card content analysis"""
+    import re
+    
+    # Collect all text content from cards
+    all_text = []
+    for card in cards:
+        front_text = card.get('front', '')
+        back_text = card.get('back', '')
+        tags = card.get('tags', [])
+        
+        all_text.extend([front_text, back_text])
+        
+        if isinstance(tags, list):
+            all_text.extend([str(tag) for tag in tags])
+        elif isinstance(tags, str):
+            all_text.append(tags)
+    
+    # Combine all text and convert to lowercase
+    combined_text = ' '.join(all_text).lower()
+    
+    # Medical topic keywords with priority order
+    topic_keywords = {
+        'spinothalamic': 'spinothalmictract',
+        'spinal cord': 'spinalcord',
+        'cervical enlargement': 'cervicalenlargement',
+        'lumbosacral enlargement': 'lumbosacralenlargement',
+        'brachial plexus': 'brachialplexus',
+        'neuroanatomy': 'neuroanatomy',
+        'anatomy': 'anatomy',
+        'physiology': 'physiology',
+        'pathology': 'pathology',
+    }
+    
+    # Find the most relevant topic
+    detected_topic = None
+    for keyword, topic in topic_keywords.items():
+        if keyword in combined_text:
+            detected_topic = topic
+            break
+    
+    if not detected_topic:
+        detected_topic = 'medicalcards'
+    
+    return f"synapticrecall_{detected_topic}"
+
+# Legacy compatibility functions
+class FlashcardProcessor:
+    """Legacy compatibility wrapper"""
+    
+    def __init__(self):
+        self.enhanced_processor = EnhancedFlashcardProcessor()
+        
+    def create_anki_deck(self, data, deck_name=None):
+        """Legacy compatibility method"""
         
         # AnKing-inspired perfect CSS styling for medical cards
         model_css = """
@@ -528,8 +652,25 @@ kbd:nth-of-type(10n+0) { border-color: #607D8B; color: #607D8B!important; }
 
 @app.route('/')
 def index():
-    """Main page with the form for JSON input"""
-    return render_template('index.html')
+    """Main page"""
+    return """
+    <html>
+    <head><title>Enhanced Medical Anki Generator</title></head>
+    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>🩺 Enhanced Medical Anki Generator</h1>
+        <p>Send POST requests to <code>/api/enhanced-medical</code> or <code>/api/simple</code> with your JSON data.</p>
+        <h3>Features:</h3>
+        <ul>
+            <li>✅ Beautiful medical card styling</li>
+            <li>✅ Clinical vignettes with click-to-reveal answers</li>
+            <li>✅ Automatic medical term highlighting</li>
+            <li>✅ Image download and embedding</li>
+            <li>✅ Enhanced mnemonic and vignette sections</li>
+            <li>✅ Vertical answer choice formatting</li>
+        </ul>
+    </body>
+    </html>
+    """
 
 @app.route('/api/health', methods=['GET'])
 def api_health():

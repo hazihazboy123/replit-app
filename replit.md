@@ -149,6 +149,19 @@ Changelog:
   * All medical vignette formatting requirements now perfectly implemented per user specifications
   * Preserved all existing features: readable blue colors, interactive click-to-reveal, no extra braces
   * Medical flashcard system now generates exactly the formatting layout requested by user
+- June 28, 2025: ENHANCED CODE REWRITE - Completely rewrote system using user's enhanced code:
+  * MAJOR UPGRADE: Replaced entire codebase with enhanced medical flashcard generator
+  * NEW FEATURES: Enhanced medical term highlighting with automatic detection
+  * NEW FEATURES: Improved clinical vignette styling with gradient backgrounds
+  * NEW FEATURES: Enhanced mnemonic sections with gold/orange theme
+  * NEW FEATURES: Better image download and embedding with proper styling
+  * NEW FEATURES: Enhanced click-to-reveal functionality with working JavaScript
+  * ARCHITECTURE: Simplified to EnhancedFlashcardProcessor with improved medical formatting
+  * ENDPOINTS: Added /api/enhanced-medical endpoint alongside existing /api/simple
+  * COMPATIBILITY: Maintained backward compatibility with existing n8n workflows
+  * STYLING: Upgraded to enhanced AnKing model with better CSS and medical card templates
+  * PERFORMANCE: Improved image handling and media file management
+  * Enhanced system now provides superior medical flashcard generation with all requested formatting
 - June 17, 2025: Initial setup with basic JSON to Anki conversion
 - June 17, 2025: Enhanced for medical students with advanced features:
   * Added unique model/deck ID generation using random.randrange()
