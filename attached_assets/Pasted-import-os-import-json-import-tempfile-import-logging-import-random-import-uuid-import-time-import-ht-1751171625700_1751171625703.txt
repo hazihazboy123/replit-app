@@ -33,40 +33,93 @@ CORS(app, resources={
 def download_image_from_url(url, media_files_list):
     """Download image from URL and return local filename for Anki embedding"""
     try:
+        app.logger.info(f"🔄 Attempting to download image from: {url}")
+        
+        # Handle AWS S3 URLs - they often have authentication parameters that might expire
+        if 'amazonaws.com' in url and 'X-Amz-Signature' in url:
+            app.logger.info("🔍 Detected AWS S3 URL with signature")
+            
         # Create a safe filename from URL
         parsed_url = urlparse(url)
         filename = os.path.basename(parsed_url.path)
         
-        # If no filename in URL, generate one from URL hash
-        if not filename or '.' not in filename:
-            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            filename = f"image_{url_hash}.jpg"
+        # Handle AWS S3 URLs and other complex URLs
+        if not filename or '.' not in filename or len(filename) < 4:
+            # Generate filename from URL hash
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:12]
+            filename = f"medical_image_{url_hash}.jpg"
         
         # Ensure we have a valid extension
         valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
             filename += '.jpg'
         
-        # Download the image with proper headers for AWS S3
+        app.logger.info(f"📁 Generated filename: {filename}")
+        
+        # Enhanced headers specifically for AWS S3 and general compatibility
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'image',
+            'Sec-Fetch-Mode': 'no-cors',
+            'Sec-Fetch-Site': 'cross-site',
         }
-        response = requests.get(url, headers=headers, timeout=30)
+        
+        app.logger.info(f"📡 Making request with enhanced headers")
+        
+        # Use session for better connection handling
+        session = requests.Session()
+        session.headers.update(headers)
+        
+        response = session.get(url, timeout=60, stream=True, allow_redirects=True)
         response.raise_for_status()
+        
+        app.logger.info(f"✅ Response received - Status: {response.status_code}")
+        app.logger.info(f"📋 Content-Type: {response.headers.get('Content-Type', 'unknown')}")
+        app.logger.info(f"📏 Content-Length: {response.headers.get('Content-Length', 'unknown')}")
+        
+        # Verify we got image content
+        content_type = response.headers.get('content-type', '').lower()
+        if not any(img_type in content_type for img_type in ['image/', 'jpeg', 'png', 'gif', 'webp']):
+            app.logger.warning(f"⚠️ Content-Type doesn't look like image: {content_type}")
+            # But continue anyway - sometimes servers don't set proper content-type
         
         # Save to temporary file
         temp_path = os.path.join(tempfile.gettempdir(), filename)
+        app.logger.info(f"💾 Saving to: {temp_path}")
+        
+        total_size = 0
         with open(temp_path, 'wb') as f:
-            f.write(response.content)
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    total_size += len(chunk)
         
-        # Add to media files list for Anki package
-        media_files_list.append(temp_path)
+        # Verify file was created and has content
+        if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+            file_size = os.path.getsize(temp_path)
+            # Add to media files list for genanki
+            media_files_list.append(temp_path)
+            app.logger.info(f"🎉 Successfully saved image: {temp_path} ({file_size} bytes)")
+            return filename
+        else:
+            app.logger.error(f"❌ File not created or empty: {temp_path}")
+            return None
         
-        # Return just the filename for Anki reference
-        return filename
-        
+    except requests.exceptions.Timeout as e:
+        app.logger.error(f"⏰ Timeout downloading image from {url}: {e}")
+        return None
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"🌐 Request error downloading image from {url}: {e}")
+        return None
     except Exception as e:
-        print(f"Error downloading image from {url}: {e}")
+        app.logger.error(f"💥 General error downloading image from {url}: {e}")
+        import traceback
+        app.logger.error(f"📜 Traceback: {traceback.format_exc()}")
         return None
 
 def apply_medical_highlighting(text):
@@ -74,21 +127,27 @@ def apply_medical_highlighting(text):
     if not text:
         return text
     
-    # Medical terms that should be highlighted in red
+    # Medical terms that should be highlighted in red - expanded and more specific
     medical_terms = [
-        # Anatomical terms
-        r'\b(cervical enlargement|lumbosacral enlargement|brachial plexus|lumbosacral plexus)\b',
-        r'\b(spinal cord|spinal nerves|vertebral levels?)\b',
-        r'\b([CLT]\d+-[CLT]\d+|[CLT]\d+)\b',  # Spinal level patterns like C4-T1, L2-S3
+        # Anatomical terms (specific)
+        r'\b(cervical enlargement|lumbosacral enlargement|lumbo?sacral enlargement)\b',
+        r'\b(brachial plexus|lumbosacral plexus|lumbo?sacral plexus)\b',
+        r'\b(spinal cord|spinal nerves?|vertebral levels?)\b',
         r'\b(dorsal horn|substantia gelatinosa|spinothalamic tract)\b',
         
-        # Key medical concepts
-        r'\b(weakness|sensation|abduction|flexion|extension)\b',
-        r'\b(neurological examination|imaging|injury)\b',
-        r'\b(epidural|anesthesia|analgesia)\b',
+        # Spinal level patterns - more comprehensive
+        r'\b([CLT]\d+-[CLT]\d+)\b',  # C4-T1, L2-S3 format
+        r'\b([CLT]\d+)\b',          # Individual levels C4, L2, etc.
+        r'\b(L1-L2|L2-L3|L3-L4|L2-S3|L5-S1|C4-T1|T1-T12)\b',  # Common specific ranges
         
-        # Answer patterns
-        r'\b(Correct Answer:?\s*[A-F]\.?\s*[^<\n]*)\b',
+        # Key medical concepts
+        r'\b(weakness|sensation|abduction|flexion|extension|reflexes)\b',
+        r'\b(neurological examination|neurological assessment|imaging|injury|MRI)\b',
+        r'\b(epidural|anesthesia|analgesia|lower limb|upper limb)\b',
+        r'\b(diminished reflexes|lower limb weakness|difficulty walking)\b',
+        
+        # Clinical terms
+        r'\b(presents with|assessment reveals|crucial for)\b',
     ]
     
     highlighted_text = text
@@ -117,46 +176,75 @@ def format_vignette_content(vignette_data):
     if not combined_content:
         return ''
     
-    # Apply medical highlighting to the content
-    highlighted_content = apply_medical_highlighting(combined_content)
+    # ULTRA AGGRESSIVE cleanup - remove ALL problematic characters
+    combined_content = re.sub(r'[{}]', '', combined_content)  # Remove ALL braces
+    combined_content = re.sub(r'\s+', ' ', combined_content).strip()  # Clean spaces
+    combined_content = combined_content.replace('\\n', ' ').replace('\n', ' ')  # Remove newlines
     
-    # Format answer choices vertically (A, B, C, D, E on separate lines)
-    highlighted_content = re.sub(r'([A-F]\.)', r'<br>\1', highlighted_content)
-    if highlighted_content.startswith('<br>'):
-        highlighted_content = highlighted_content[4:]  # Remove leading <br>
+    app.logger.info(f"After cleanup: {combined_content[:200]}...")
     
-    # Handle "Correct Answer:" section with click-to-reveal
-    if 'Correct Answer:' in highlighted_content:
-        parts = highlighted_content.split('Correct Answer:', 1)
-        if len(parts) == 2:
-            question_part = parts[0].strip()
-            answer_part = parts[1].strip()
-            
-            # Create click-to-reveal section with working JavaScript
-            reveal_section = f'''
-            <div class="answer-reveal-container" style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border: 2px dashed #1976d2; cursor: pointer;" onclick="this.querySelector('.hidden-answer').style.display = this.querySelector('.hidden-answer').style.display === 'none' ? 'block' : 'none';">
-                <div style="color: #1976d2; font-weight: bold; font-size: 1.1em;">
-                    🔍 Click to reveal correct answer and explanation ↓
+    # Split into question and choices/answer parts
+    question_part = ""
+    choices_part = ""
+    answer_part = ""
+    
+    if 'Answer Choices:' in combined_content and 'Correct Answer:' in combined_content:
+        # Split the content properly
+        parts = combined_content.split('Answer Choices:', 1)
+        question_part = parts[0].strip()
+        
+        if len(parts) > 1:
+            choices_and_answer = parts[1]
+            if 'Correct Answer:' in choices_and_answer:
+                choice_parts = choices_and_answer.split('Correct Answer:', 1)
+                choices_part = choice_parts[0].strip()
+                answer_part = choice_parts[1].strip() if len(choice_parts) > 1 else ""
+            else:
+                choices_part = choices_and_answer.strip()
+    else:
+        question_part = combined_content
+    
+    app.logger.info(f"Question part: {question_part}")
+    app.logger.info(f"Choices part: {choices_part}")
+    app.logger.info(f"Answer part: {answer_part}")
+    
+    # Build the formatted content
+    formatted_content = question_part
+    
+    if choices_part:
+        # Format choices properly - ensure they show
+        formatted_content += "<br><br><strong>Answer Choices:</strong><br>"
+        # Split choices and format them
+        choice_lines = re.findall(r'[A-F]\.[^A-F]*?(?=[A-F]\.|$)', choices_part)
+        for choice in choice_lines:
+            choice = choice.strip()
+            if choice:
+                formatted_content += f"{choice}<br>"
+    
+    if answer_part:
+        # Create click-to-reveal for answer with evidence-based medical color scheme
+        reveal_section = f'''<br><div class="answer-reveal-container" style="background: linear-gradient(135deg, #F7F3E9 0%, #FFFFFF 100%); padding: 20px; border-radius: 10px; margin: 20px 0; border: 3px solid #2980B9; cursor: pointer; box-shadow: 0 4px 12px rgba(41, 128, 185, 0.2);" onclick="this.querySelector('.hidden-answer').style.display = this.querySelector('.hidden-answer').style.display === 'none' ? 'block' : 'none';">
+            <div style="color: #1A1A1A; font-weight: bold; font-size: 1.1em; text-align: center;">
+                🔍 Click to reveal correct answer and explanation ↓
+            </div>
+            <div class="hidden-answer" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #2980B9;">
+                <div style="color: #E74C3C; font-weight: bold; font-size: 1.1em; margin-bottom: 15px;">
+                    Correct Answer:
                 </div>
-                <div class="hidden-answer" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #1976d2;">
-                    <div style="color: #d32f2f; font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">
-                        Correct Answer:
-                    </div>
-                    <div style="color: #d32f2f; font-weight: bold; margin-bottom: 15px;">
-                        {answer_part.split('.')[0] if '.' in answer_part else answer_part}
-                    </div>
-                    <div style="color: #1976d2; font-weight: bold; margin-bottom: 8px;">
-                        Explanation:
-                    </div>
-                    <div style="color: #424242; line-height: 1.4;">
-                        The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.
-                    </div>
+                <div style="color: #E74C3C; font-weight: bold; margin-bottom: 20px; font-size: 1.05em;">
+                    {answer_part}
                 </div>
-            </div>'''
-            
-            highlighted_content = f"{question_part}<br><br>{reveal_section}"
+                <div style="color: #2C3E50; font-weight: bold; margin-bottom: 10px;">
+                    Explanation:
+                </div>
+                <div style="color: #2C2C2C; line-height: 1.6; font-size: 0.95em;">
+                    The correct answer demonstrates the key anatomical concept being tested in this clinical scenario.
+                </div>
+            </div>
+        </div>'''
+        formatted_content += reveal_section
     
-    return highlighted_content
+    return formatted_content
 
 def create_enhanced_anking_model():
     """Create enhanced AnKing model with improved styling for medical cards"""
@@ -218,63 +306,68 @@ img {
   border-radius: 3px;
 }
 
-/* Clinical Vignette Styling - Blue Theme */
+/* Evidence-Based Medical Learning Color Scheme - Optimized for Cognitive Performance */
+
+/* Clinical Vignette Styling - Professional Medical Trust Palette */
 #vignette-section {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border: 3px solid #1976d2;
+  background: linear-gradient(135deg, #F7F3E9 0%, #F1E7D0 100%);
+  border: 3px solid #2980B9;
   border-radius: 12px;
-  padding: 20px;
+  padding: 22px;
   margin: 20px 0;
   text-align: left;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+  box-shadow: 0 6px 20px rgba(41, 128, 185, 0.15);
 }
 
 #vignette-section h3 {
-  color: #0d47a1;
+  color: #1A1A1A;
   margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2em;
+  margin-bottom: 16px;
+  font-size: 1.3em;
   font-weight: bold;
   text-align: center;
-  background-color: rgba(255,255,255,0.7);
-  padding: 8px;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F7F3E9 100%);
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #2980B9;
 }
 
 .vignette-content {
-  line-height: 1.5;
-  color: #1565c0;
-  font-size: 0.95em;
+  line-height: 1.6;
+  color: #2C2C2C;
+  font-size: 1em;
+  font-weight: 500;
 }
 
-/* Mnemonic Styling - Gold/Orange Theme */
+/* Mnemonic Styling - Healing Green Accent (Evidence-Based Memory Enhancement) */
 #mnemonic-section {
-  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-  border: 3px solid #ff9800;
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+  border: 3px solid #27AE60;
   border-radius: 12px;
-  padding: 20px;
+  padding: 22px;
   margin: 20px 0;
   text-align: left;
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+  box-shadow: 0 6px 20px rgba(39, 174, 96, 0.15);
 }
 
 #mnemonic-section h3 {
-  color: #e65100;
+  color: #166534;
   margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2em;
+  margin-bottom: 16px;
+  font-size: 1.3em;
   font-weight: bold;
   text-align: center;
-  background-color: rgba(255,255,255,0.7);
-  padding: 8px;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%);
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #27AE60;
 }
 
 .mnemonic-content {
   font-weight: bold;
-  color: #bf360c;
-  line-height: 1.4;
-  font-size: 0.95em;
+  color: #059669;
+  line-height: 1.5;
+  font-size: 1em;
 }
 
 /* Extra field styling */
@@ -301,14 +394,35 @@ img {
   background-color: #272828!important;
 }
 
+/* Night mode vignette and mnemonic styling */
 .nightMode #vignette-section, .night_mode #vignette-section {
-  background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
-  border-color: #3f51b5;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-color: #95a5a6;
+}
+
+.nightMode #vignette-section h3, .night_mode #vignette-section h3 {
+  color: #ecf0f1;
+  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  border-color: #7f8c8d;
+}
+
+.nightMode .vignette-content, .night_mode .vignette-content {
+  color: #ecf0f1;
 }
 
 .nightMode #mnemonic-section, .night_mode #mnemonic-section {
-  background: linear-gradient(135deg, #3e2723 0%, #5d4037 100%);
-  border-color: #ff9800;
+  background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+  border-color: #deb887;
+}
+
+.nightMode #mnemonic-section h3, .night_mode #mnemonic-section h3 {
+  color: #f4a460;
+  background: linear-gradient(135deg, #a0522d 0%, #8b4513 100%);
+  border-color: #cd853f;
+}
+
+.nightMode .mnemonic-content, .night_mode .mnemonic-content {
+  color: #ffd700;
 }
 
 .nightMode .highlight-red, .night_mode .highlight-red {
@@ -334,11 +448,6 @@ img {
             'qfmt': '''
                 <div class="card-content">
                     <div id="text">{{Front}}</div>
-                    {{#Image}}
-                    <div class="image-container" style="text-align: center; margin: 20px 0;">
-                        {{{Image}}}
-                    </div>
-                    {{/Image}}
                 </div>
             ''',
             'afmt': '''
@@ -355,6 +464,12 @@ img {
                     <div class="vignette-content">{{{Vignette}}}</div>
                 </div>
                 {{/Vignette}}
+
+                {{#Image}}
+                <div class="image-container" style="margin: 20px 0;">
+                    {{{Image}}}
+                </div>
+                {{/Image}}
 
                 {{#Mnemonic}}
                 <div id="mnemonic-section">
@@ -418,27 +533,64 @@ class EnhancedFlashcardProcessor:
             if mnemonic_data:
                 mnemonic_content = apply_medical_highlighting(str(mnemonic_data))
             
-            # Handle image download and formatting
+            # Handle image download and formatting with extensive debugging
             image_content = ''
             image_data = card_info.get('image', '')
             if image_data:
+                app.logger.info(f"Processing image data for card: {card_info.get('front', 'Unknown')[:50]}...")
+                app.logger.info(f"Image data type: {type(image_data)}")
+                app.logger.info(f"Image data content: {image_data}")
+                
                 if isinstance(image_data, dict):
                     url = image_data.get('url', '')
                     caption = image_data.get('caption', '')
+                    app.logger.info(f"Dictionary format - URL: {url}")
+                    app.logger.info(f"Dictionary format - Caption: {caption}")
+                    
                     if url:
+                        app.logger.info(f"Attempting to download image from: {url}")
                         downloaded_filename = download_image_from_url(url, media_files)
                         if downloaded_filename:
-                            image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                            app.logger.info(f"✅ Successfully downloaded: {downloaded_filename}")
+                            # Create properly formatted image HTML
+                            image_content = f'''<div style="text-align: center; margin: 20px 0;">
+                                <img src="{downloaded_filename}" alt="{caption}" style="max-width: 90%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 2px solid #dee2e6;">
+                            </div>'''
                             if caption:
-                                image_content += f'<div style="text-align: center; font-style: italic; margin-top: 10px; color: #666; font-size: 0.9em;">{caption}</div>'
+                                image_content += f'<div style="text-align: center; font-style: italic; margin-top: 12px; color: #6c757d; font-size: 0.9em; line-height: 1.4; max-width: 90%; margin-left: auto; margin-right: auto;">{caption}</div>'
+                        else:
+                            app.logger.error(f"❌ Failed to download image from: {url}")
+                            # Create placeholder for failed download
+                            image_content = f'<div style="text-align: center; padding: 20px; background-color: #f8f9fa; border: 2px dashed #6c757d; border-radius: 8px; color: #6c757d;">Image failed to download: {url[:100]}...</div>'
+                    else:
+                        app.logger.warning("No URL found in image dictionary")
+                        
                 elif isinstance(image_data, str) and image_data.strip():
+                    app.logger.info(f"String format image data: {image_data}")
                     # Simple filename or URL
                     if image_data.startswith('http'):
+                        app.logger.info(f"String URL detected, downloading: {image_data}")
                         downloaded_filename = download_image_from_url(image_data, media_files)
                         if downloaded_filename:
-                            image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                            app.logger.info(f"✅ Successfully downloaded from string URL: {downloaded_filename}")
+                            image_content = f'''<div style="text-align: center; margin: 20px 0;">
+                                <img src="{downloaded_filename}" style="max-width: 90%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 2px solid #dee2e6;">
+                            </div>'''
+                        else:
+                            app.logger.error(f"❌ Failed to download from string URL: {image_data}")
+                            image_content = f'<div style="text-align: center; padding: 20px; background-color: #f8f9fa; border: 2px dashed #6c757d; border-radius: 8px; color: #6c757d;">Image failed to download: {image_data[:100]}...</div>'
                     else:
-                        image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                        app.logger.info(f"Local filename detected: {image_data}")
+                        image_content = f'''<div style="text-align: center; margin: 20px 0;">
+                            <img src="{image_data}" style="max-width: 90%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 2px solid #dee2e6;">
+                        </div>'''
+                else:
+                    app.logger.warning(f"Unexpected image data format: {type(image_data)} - {image_data}")
+                
+                app.logger.info(f"Final image_content length: {len(image_content)}")
+                app.logger.info(f"Final image_content preview: {image_content[:200]}...")
+            else:
+                app.logger.info("No image data found in card")
             
             # Create the note
             note = genanki.Note(
