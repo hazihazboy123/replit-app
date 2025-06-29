@@ -656,92 +656,6 @@ def generate_synaptic_recall_name(cards):
     
     return f"synapticrecall_{detected_topic}"
 
-@app.route('/')
-def index():
-    """Main page with enhanced medical form"""
-    return render_template('index.html')
-
-@app.route('/process_flashcards', methods=['POST'])
-def process_flashcards():
-    """Process the submitted JSON data and generate Anki deck"""
-    try:
-        app.logger.info("Processing flashcards request")
-        
-        # Get JSON data from form
-        json_text = request.form.get('json_text', '').strip()
-        if not json_text:
-            flash('Please provide JSON data', 'error')
-            return redirect(url_for('index'))
-        
-        # Parse the JSON
-        try:
-            data = json.loads(json_text)
-        except json.JSONDecodeError as e:
-            flash(f'Invalid JSON format: {str(e)}', 'error')
-            return redirect(url_for('index'))
-        
-        # Extract cards
-        cards = []
-        deck_name = "Enhanced Medical Deck"
-        
-        if isinstance(data, dict):
-            if 'cards' in data:
-                cards = data['cards']
-                deck_name = data.get('deck_name', deck_name)
-            else:
-                # Assume it's a single card
-                cards = [data]
-        elif isinstance(data, list):
-            cards = data
-        
-        if not cards:
-            flash('No cards found in JSON data', 'error')
-            return redirect(url_for('index'))
-        
-        # Generate intelligent deck name
-        base_deck_name = generate_synaptic_recall_name(cards)
-        timestamp = int(time.time())
-        final_deck_name = f"{base_deck_name}_{timestamp}"
-        
-        app.logger.info(f"Processing {len(cards)} cards for deck '{final_deck_name}'")
-        
-        # Process with enhanced formatting
-        processor = EnhancedFlashcardProcessor()
-        deck, media_files = processor.process_cards(cards, final_deck_name)
-        
-        # Create package and save
-        package = genanki.Package(deck)
-        if media_files:
-            package.media_files = media_files
-        
-        safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
-        if not safe_name:
-            safe_name = "enhanced_medical_cards"
-        
-        filename = f"{safe_name}_{timestamp}.apkg"
-        file_path = f"/tmp/{filename}"
-        
-        package.write_to_file(file_path)
-        
-        if os.path.exists(file_path):
-            flash(f'Successfully generated Anki deck with {len(cards)} cards!', 'success')
-            return send_file(
-                file_path,
-                as_attachment=True,
-                download_name=filename,
-                mimetype='application/octet-stream'
-            )
-        else:
-            flash('Error creating deck file', 'error')
-            return redirect(url_for('index'))
-        
-    except Exception as e:
-        app.logger.error(f"Processing error: {str(e)}")
-        import traceback
-        app.logger.error(f"Traceback: {traceback.format_exc()}")
-        flash(f'Error processing flashcards: {str(e)}', 'error')
-        return redirect(url_for('index'))
-
 @app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
 def api_enhanced_medical():
     """Enhanced endpoint for beautiful medical flashcards"""
@@ -847,11 +761,6 @@ def api_health():
         'timestamp': int(time.time())
     }), 200
 
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
-
 @app.route('/download/<path:filename>')
 def download_file(filename):
     """Serve generated .apkg files for download"""
@@ -861,18 +770,36 @@ def download_file(filename):
         if not os.path.exists(file_path):
             return f"File not found: {filename}", 404
         
-        app.logger.info(f"Serving file: {file_path}")
-        
         return send_file(
             file_path,
             as_attachment=True,
             download_name=filename,
             mimetype='application/octet-stream'
         )
-        
     except Exception as e:
-        app.logger.error(f"Download error: {str(e)}")
-        return f"Error downloading file: {str(e)}", 500
+        app.logger.error(f"Download error: {e}")
+        return "Download failed", 500
+
+@app.route('/')
+def index():
+    """Main page"""
+    return """
+    <html>
+    <head><title>Enhanced Medical Anki Generator</title></head>
+    <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>🩺 Enhanced Medical Anki Generator</h1>
+        <p>Send POST requests to <code>/api/enhanced-medical</code> with your n8n JSON data.</p>
+        <h3>Features:</h3>
+        <ul>
+            <li>✅ Beautiful medical card styling</li>
+            <li>✅ Clinical vignettes with click-to-reveal answers</li>
+            <li>✅ Automatic medical term highlighting</li>
+            <li>✅ Image download and embedding</li>
+            <li>✅ Enhanced mnemonic and vignette sections</li>
+        </ul>
+    </body>
+    </html>
+    """
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
