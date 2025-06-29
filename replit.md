@@ -131,6 +131,17 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- June 29, 2025: ENHANCED MEDICAL CARD SYSTEM - Updated entire codebase with comprehensive feature improvements:
+  * AUTOMATIC CLOZE DETECTION: Intelligent detection and processing of {{c1::cloze}} syntax with dedicated cloze model
+  * ENHANCED VIGNETTE PROCESSING: Advanced click-to-reveal functionality with structured answer extraction
+  * PROFESSIONAL STYLING: Complete AnKing-inspired CSS with clinical vignette and mnemonic sections
+  * IMPROVED MEDICAL HIGHLIGHTING: Enhanced pattern matching for anatomical terms and medical concepts
+  * DUAL MODEL SYSTEM: Separate models for regular cards and cloze cards with optimized templates
+  * ADVANCED ANSWER FORMATTING: Vertical answer choice formatting with interactive reveal sections
+  * COMPREHENSIVE NIGHT MODE: Full dark theme support for all styling elements
+  * PROFESSIONAL IMAGE HANDLING: Enhanced download process with AWS S3 compatibility
+  * NULL-SAFE PROCESSING: Comprehensive error handling for None values and malformed data
+  * System now provides enterprise-grade medical flashcard generation with automatic format detection
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))

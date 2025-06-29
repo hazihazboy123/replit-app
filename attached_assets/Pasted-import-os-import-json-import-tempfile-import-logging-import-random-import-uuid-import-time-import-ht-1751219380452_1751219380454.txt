@@ -645,11 +645,6 @@ def api_enhanced_medical():
             'traceback': traceback.format_exc()
         }, 500
 
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
-
 # Keep existing endpoints for compatibility
 @app.route('/api/health', methods=['GET'])
 def api_health():
@@ -697,11 +692,10 @@ def index():
             <li>✅ Automatic medical term highlighting</li>
             <li>✅ Image download and embedding</li>
             <li>✅ Enhanced mnemonic and vignette sections</li>
-            <li>✅ Automatic cloze detection and processing</li>
         </ul>
     </body>
     </html>
     """
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True) 
