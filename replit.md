@@ -211,6 +211,14 @@ Changelog:
   * IMPROVED CLOZE PROCESSING: Automatic conversion from single braces to proper Anki double brace format
   * RESPONSIVE DESIGN: Mobile-friendly cards with proper scaling and media queries for different screen sizes
   * The new generator completely resolves the formatting issues identified by user testing
+- June 29, 2025: ADVANCED VIGNETTE PROCESSING SYSTEM - Second code replacement with sophisticated answer extraction:
+  * INTELLIGENT ANSWER PARSING: New extract_answer_and_explanation() function with regex pattern matching
+  * ENHANCED VIGNETTE FORMATTING: Improved parsing of "Correct Answer: X" patterns with proper separation
+  * TARGETED MEDICAL HIGHLIGHTING: Red highlights now only applied to answer/explanation sections, not vignette text
+  * STRUCTURED CONTENT EXTRACTION: Better handling of question/answer/explanation separation from mixed content
+  * IMPROVED CLICK-TO-REVEAL: Enhanced interactive sections with proper formatting and medical term highlighting
+  * MAINTAINED COMPATIBILITY: All existing endpoints and functionality preserved while upgrading core processing
+  * System now provides superior clinical vignette formatting with precise answer extraction and highlighting
 - June 29, 2025: STREAMLINED CODE REPLACEMENT - Updated entire codebase with user's optimized implementation:
   * SIMPLIFIED ARCHITECTURE: Cleaner, more maintainable code structure with focused functionality
   * ENHANCED VIGNETTE PROCESSING: Improved click-to-reveal functionality with better formatting
