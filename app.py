@@ -3,6 +3,7 @@ import json
 import tempfile
 import logging
 import random
+import uuid
 import time
 import html
 import re
@@ -13,17 +14,24 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import genanki
 
+# Configure logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
-CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
 
-def strip_trailing_braces(text):
-    if not text:
-        return text
-    return re.sub(r'\}+$', '', text).rstrip()
+# Configure CORS for API endpoints
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 def download_image_from_url(url, media_files_list):
+    """Download image from URL and return local filename for Anki embedding"""
     try:
         parsed_url = urlparse(url)
         filename = os.path.basename(parsed_url.path)
@@ -33,20 +41,22 @@ def download_image_from_url(url, media_files_list):
         valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
             filename += '.jpg'
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         temp_path = os.path.join(tempfile.gettempdir(), filename)
         with open(temp_path, 'wb') as f:
             f.write(response.content)
-        if temp_path not in media_files_list:
-            media_files_list.append(temp_path)
+        media_files_list.append(temp_path)
         return filename
     except Exception as e:
         print(f"Error downloading image from {url}: {e}")
         return None
 
 def apply_medical_highlighting(text):
+    """Apply red highlighting to medical terms and key concepts"""
     if not text:
         return text
     medical_terms = [
@@ -61,218 +71,77 @@ def apply_medical_highlighting(text):
     highlighted_text = text
     for pattern in medical_terms:
         highlighted_text = re.sub(
-            pattern, 
-            r'<span class="highlight-red">\1</span>', 
-            highlighted_text, 
+            pattern,
+            r'<span class="highlight-red">\1</span>',
+            highlighted_text,
             flags=re.IGNORECASE
         )
     return highlighted_text
 
-def extract_answer_and_explanation(vignette_text):
-    vignette_text = strip_trailing_braces(vignette_text)
-    match = re.search(r'Correct Answer:?\s*([A-F])\.?\s*(.*)', vignette_text, re.IGNORECASE)
-    if match:
-        answer_letter = match.group(1).strip()
-        rest = match.group(2).strip()
-        explanation = ""
-        if "Explanation:" in rest:
-            rest_parts = rest.split("Explanation:", 1)
-            answer_text = rest_parts[0].strip()
-            explanation = rest_parts[1].strip()
-        else:
-            answer_text = rest
-        question_part = vignette_text[:match.start()].strip()
-        return question_part, answer_letter, answer_text, explanation
+def extract_correct_answer(vignette):
+    """Extract and highlight the correct answer in the vignette"""
+    if not vignette:
+        return '', vignette
+    if isinstance(vignette, dict):
+        clinical_case = vignette.get('clinical_case', '')
+        explanation = vignette.get('explanation', '')
+        combined = f"{clinical_case} {explanation}".strip()
     else:
-        return vignette_text, "", "", ""
+        combined = str(vignette).strip()
+    # Remove trailing curly brace if present
+    combined = combined.rstrip('}').strip()
+    # Extract correct answer
+    match = re.search(r'Correct Answer:\s*([A-E]\.?\s*[^\.]+)', combined)
+    correct = match.group(1).strip() if match else ''
+    # Remove the correct answer from the vignette text
+    vignette_text = re.sub(r'Correct Answer:\s*[A-E]\.?\s*[^\.]+', '', combined).strip()
+    return correct, vignette_text
 
 def format_vignette_content(vignette_data):
-    if not vignette_data:
-        return ''
-    if isinstance(vignette_data, dict):
-        clinical_case = vignette_data.get('clinical_case', '')
-        explanation = vignette_data.get('explanation', '')
-        combined_content = f"{clinical_case} {explanation}".strip()
-    else:
-        combined_content = str(vignette_data).strip()
-    combined_content = strip_trailing_braces(combined_content)
-    question_part, answer_letter, answer_text, explanation = extract_answer_and_explanation(combined_content)
-    question_html = html.escape(question_part).replace('\n', '<br>')
-    question_html = re.sub(r'([A-F]\.)', r'<br>\1', question_html)
-    if question_html.startswith('<br>'):
-        question_html = question_html[4:]
-    answer_html = ""
-    if answer_letter:
-        answer_html = f'<span class="highlight-red">{answer_letter}</span>'
-        if answer_text:
-            answer_html += f". {apply_medical_highlighting(html.escape(answer_text))}"
-    explanation_html = ""
-    if explanation:
-        explanation_html = apply_medical_highlighting(html.escape(explanation))
-    if answer_letter:
-        reveal_section = f'''
-        <div class="answer-reveal-container" style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border: 2px dashed #1976d2; cursor: pointer;" onclick="this.querySelector('.hidden-answer').style.display = this.querySelector('.hidden-answer').style.display === 'none' ? 'block' : 'none';">
-            <div style="color: #1976d2; font-weight: bold; font-size: 1.1em;">
-                🔍 Click to reveal correct answer and explanation ↓
-            </div>
-            <div class="hidden-answer" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #1976d2;">
-                <div style="color: #d32f2f; font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">
-                    Correct Answer:
-                </div>
-                <div style="color: #d32f2f; font-weight: bold; margin-bottom: 15px;">
-                    {answer_html}
-                </div>
-                <div style="color: #1976d2; font-weight: bold; margin-bottom: 8px;">
-                    Explanation:
-                </div>
-                <div style="color: #424242; line-height: 1.4;">
-                    {explanation_html if explanation_html else "The correct answer demonstrates the key anatomical concept being tested in this clinical scenario."}
-                </div>
-            </div>
-        </div>'''
-        vignette_html = f"{question_html}<br><br>{reveal_section}"
-    else:
-        vignette_html = question_html
+    """Format clinical vignette with proper structure and click-to-reveal functionality"""
+    correct, vignette_text = extract_correct_answer(vignette_data)
+    # Remove any trailing curly brace
+    vignette_text = vignette_text.rstrip('}').strip()
+    # No red highlights in vignette
+    vignette_html = f'''
+    <div style="color: #fff; background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); border-radius: 12px; padding: 20px; margin: 20px 0; font-size: 0.95em;">
+        {vignette_text}
+        <br><br>
+        <div style="color: #fff; background: #0d47a1; border-radius: 8px; padding: 10px; margin-top: 10px; font-weight: bold; cursor: pointer;" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'block' ? 'none' : 'block');">
+            🔍 Click to reveal correct answer and explanation ↓
+        </div>
+        <div style="display: none; margin-top: 10px; color: #d32f2f; font-weight: bold;">
+            Correct Answer: <span class="highlight-red">{correct}</span>
+        </div>
+    </div>
+    '''
     return vignette_html
 
 def create_enhanced_anking_model():
+    """Create enhanced AnKing model with improved styling for medical cards"""
     enhanced_css = """
 html { font-size: 28px; }
-.mobile { font-size: 28px; }
 .card, kbd { font-family: Arial Greek, Arial; }
-.card {
-  text-align: center;
-  font-size: 1rem;
-  color: black;
-  background-color: #D1CFCE;
-  height: 100%;
-  margin: 0px 15px;
-  flex-grow: 1;
-  padding-bottom: 1em;
-  margin-top: 15px;
-}
-.mobile.card { padding-bottom: 5em; margin: 1ex.3px; }
+.card { text-align: center; font-size: 1rem; color: black; background-color: #D1CFCE; height: 100%; margin: 0px 15px; flex-grow: 1; padding-bottom: 1em; margin-top: 15px; }
 hr { opacity:.7; margin: 20px 0; }
-img {
-  max-width: 85%;
-  max-height: 400px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  margin: 10px 0;
-}
-.image-caption-magenta {
-  color: #d500f9 !important;
-  font-style: italic;
-  margin-top: 10px;
-  font-size: 1.1em;
-  text-align: center;
-}
-.highlight-red {
-  color: #d32f2f !important;
-  font-weight: bold;
-  background-color: rgba(211, 47, 47, 0.1);
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-#vignette-section {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-  border: 3px solid #1976d2;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  text-align: left;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
-  color: #fff !important;
-}
-#vignette-section * {
-  color: #fff !important;
-  background: none !important;
-  font-weight: normal !important;
-}
-#vignette-section .highlight-red {
-  color: #fff !important;
-  background: none !important;
-  font-weight: normal !important;
-}
-#vignette-section h3 {
-  color: #fff;
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2em;
-  font-weight: bold;
-  text-align: center;
-  background-color: rgba(25, 118, 210, 0.7);
-  padding: 8px;
-  border-radius: 6px;
-}
-.vignette-content {
-  line-height: 1.5;
-  color: #fff;
-  font-size: 0.95em;
-}
-#mnemonic-section {
-  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-  border: 3px solid #ff9800;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  text-align: left;
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
-}
-#mnemonic-section h3 {
-  color: #e65100;
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.2em;
-  font-weight: bold;
-  text-align: center;
-  background-color: rgba(255,255,255,0.7);
-  padding: 8px;
-  border-radius: 6px;
-}
-.mnemonic-content {
-  font-weight: bold;
-  color: #bf360c;
-  line-height: 1.4;
-  font-size: 0.95em;
-}
-#extra {
-  font-style: italic;
-  font-size: 1rem;
-  color: navy;
-  margin-top: 25px;
-  padding-top: 15px;
-  border-top: 1px dashed #ccc;
-  text-align: left;
-}
-.answer-reveal-container:hover {
-  background-color: #bbdefb !important;
-  border-color: #0d47a1 !important;
-}
-.nightMode.card, .night_mode.card {
-  color: #FFFAFA!important;
-  background-color: #272828!important;
-}
-.nightMode #vignette-section, .night_mode #vignette-section {
-  background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
-  border-color: #3f51b5;
-}
-.nightMode #mnemonic-section, .night_mode #mnemonic-section {
-  background: linear-gradient(135deg, #3e2723 0%, #5d4037 100%);
-  border-color: #ff9800;
-}
-.nightMode .highlight-red, .night_mode .highlight-red {
-  color: #ff6b6b !important;
-  background-color: rgba(255, 107, 107, 0.2);
-}
+img { max-width: 85%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 10px 0; }
+.highlight-red { color: #d32f2f !important; font-weight: bold; background-color: rgba(211, 47, 47, 0.1); padding: 2px 4px; border-radius: 3px; }
+#vignette-section { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border: 3px solid #1976d2; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2); }
+#vignette-section h3 { color: #0d47a1; margin-top: 0; margin-bottom: 15px; font-size: 1.2em; font-weight: bold; text-align: center; background-color: rgba(255,255,255,0.7); padding: 8px; border-radius: 6px; }
+.vignette-content { line-height: 1.5; color: #fff; font-size: 0.95em; }
+#mnemonic-header { color: #e65100; font-size: 1.2em; font-weight: bold; text-align: center; margin: 20px 0 10px 0; }
+.mnemonic-content { font-weight: bold; color: #bf360c; line-height: 1.4; font-size: 0.95em; }
+#extra { font-style: italic; font-size: 1rem; color: navy; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: left; }
+.nightMode.card, .night_mode.card { color: #FFFAFA!important; background-color: #272828!important; }
+.nightMode .highlight-red, .night_mode .highlight-red { color: #ff6b6b !important; background-color: rgba(255, 107, 107, 0.2); }
 """
     fields = [
         {'name': 'Front'},
-        {'name': 'Back'}, 
-        {'name': 'Extra'},
+        {'name': 'Back'},
+        {'name': 'Image'},
         {'name': 'Vignette'},
         {'name': 'Mnemonic'},
-        {'name': 'Image'}
+        {'name': 'Extra'}
     ]
     templates = [
         {
@@ -300,10 +169,8 @@ img {
                 </div>
                 {{/Vignette}}
                 {{#Mnemonic}}
-                <div id="mnemonic-section">
-                    <h3>🧠 Memory Aid</h3>
-                    <div class="mnemonic-content">{{{Mnemonic}}}</div>
-                </div>
+                <div id="mnemonic-header">🧠 Memory Aid</div>
+                <div class="mnemonic-content">{{{Mnemonic}}}</div>
                 {{/Mnemonic}}
                 {{#Extra}}
                 <div id="extra">{{{Extra}}}</div>
@@ -328,33 +195,24 @@ class EnhancedFlashcardProcessor:
         deck = genanki.Deck(deck_id, deck_name)
         media_files = []
         for card_info in cards_data:
-            front_content = strip_trailing_braces(card_info.get('front', ''))
-            back_content = strip_trailing_braces(card_info.get('back', ''))
-            extra_content = strip_trailing_braces(card_info.get('extra', ''))
-            if front_content:
-                front_content = apply_medical_highlighting(front_content)
-            if back_content:
-                back_content = apply_medical_highlighting(back_content)
-            if extra_content:
-                extra_content = apply_medical_highlighting(extra_content)
+            front_content = apply_medical_highlighting(card_info.get('front', ''))
+            back_content = apply_medical_highlighting(card_info.get('back', ''))
+            extra_content = apply_medical_highlighting(card_info.get('extra', ''))
             vignette_content = format_vignette_content(card_info.get('vignette', ''))
             mnemonic_data = card_info.get('mnemonic', '')
-            mnemonic_content = ''
-            if mnemonic_data:
-                mnemonic_content = apply_medical_highlighting(strip_trailing_braces(str(mnemonic_data)))
+            mnemonic_content = apply_medical_highlighting(str(mnemonic_data)) if mnemonic_data else ''
             image_content = ''
             image_data = card_info.get('image', '')
             if image_data:
-                caption_html = ''
                 if isinstance(image_data, dict):
                     url = image_data.get('url', '')
-                    caption = strip_trailing_braces(image_data.get('caption', ''))
+                    caption = image_data.get('caption', '')
                     if url:
                         downloaded_filename = download_image_from_url(url, media_files)
                         if downloaded_filename:
-                            image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                            image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
                             if caption:
-                                caption_html = f'<div class="image-caption-magenta">{html.escape(caption)}</div>'
+                                image_content += f'<div style="text-align: center; font-style: italic; margin-top: 10px; color: magenta; font-size: 0.9em;">{caption}</div>'
                 elif isinstance(image_data, str) and image_data.strip():
                     if image_data.startswith('http'):
                         downloaded_filename = download_image_from_url(image_data, media_files)
@@ -362,16 +220,15 @@ class EnhancedFlashcardProcessor:
                             image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
                     else:
                         image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
-                image_content += caption_html
             note = genanki.Note(
                 model=self.model,
                 fields=[
                     front_content,
                     back_content,
-                    extra_content,
+                    image_content,
                     vignette_content,
                     mnemonic_content,
-                    image_content
+                    extra_content
                 ],
                 tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
             )
@@ -379,6 +236,7 @@ class EnhancedFlashcardProcessor:
         return deck, media_files
 
 def generate_synaptic_recall_name(cards):
+    import re
     all_text = []
     for card in cards:
         front_text = card.get('front', '')
