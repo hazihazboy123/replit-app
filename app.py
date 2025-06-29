@@ -81,27 +81,51 @@ def apply_medical_highlighting(text):
 def extract_correct_answer(vignette):
     """Extract and highlight the correct answer in the vignette"""
     if not vignette:
-        return '', vignette
+        return '', ''
+    
+    # Handle None or empty values safely
+    if vignette is None:
+        return '', ''
+        
     if isinstance(vignette, dict):
-        clinical_case = vignette.get('clinical_case', '')
-        explanation = vignette.get('explanation', '')
+        clinical_case = vignette.get('clinical_case', '') or ''
+        explanation = vignette.get('explanation', '') or ''
         combined = f"{clinical_case} {explanation}".strip()
     else:
-        combined = str(vignette).strip()
-    # Remove trailing curly brace if present
-    combined = combined.rstrip('}').strip()
+        # Safely convert to string and handle None
+        combined = str(vignette) if vignette is not None else ''
+        combined = combined.strip()
+    
+    # Remove trailing curly brace if present - safely handle empty strings
+    if combined:
+        combined = combined.rstrip('}').strip()
+    
     # Extract correct answer
-    match = re.search(r'Correct Answer:\s*([A-E]\.?\s*[^\.]+)', combined)
+    match = re.search(r'Correct Answer:\s*([A-E]\.?\s*[^\.]+)', combined) if combined else None
     correct = match.group(1).strip() if match else ''
+    
     # Remove the correct answer from the vignette text
-    vignette_text = re.sub(r'Correct Answer:\s*[A-E]\.?\s*[^\.]+', '', combined).strip()
+    vignette_text = re.sub(r'Correct Answer:\s*[A-E]\.?\s*[^\.]+', '', combined).strip() if combined else ''
+    
     return correct, vignette_text
 
 def format_vignette_content(vignette_data):
     """Format clinical vignette with proper structure and click-to-reveal functionality"""
+    if not vignette_data:
+        return ''
+        
     correct, vignette_text = extract_correct_answer(vignette_data)
-    # Remove any trailing curly brace
-    vignette_text = vignette_text.rstrip('}').strip()
+    
+    # Remove any trailing curly brace - safely handle None/empty strings
+    if vignette_text:
+        vignette_text = vignette_text.rstrip('}').strip()
+    else:
+        vignette_text = ''
+    
+    # If we have no meaningful content, return empty string
+    if not vignette_text and not correct:
+        return ''
+    
     # No red highlights in vignette
     vignette_html = f'''
     <div style="color: #fff; background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%); border-radius: 12px; padding: 20px; margin: 20px 0; font-size: 0.95em;">
@@ -195,12 +219,22 @@ class EnhancedFlashcardProcessor:
         deck = genanki.Deck(deck_id, deck_name)
         media_files = []
         for card_info in cards_data:
-            front_content = apply_medical_highlighting(card_info.get('front', ''))
-            back_content = apply_medical_highlighting(card_info.get('back', ''))
-            extra_content = apply_medical_highlighting(card_info.get('extra', ''))
-            vignette_content = format_vignette_content(card_info.get('vignette', ''))
+            # Safely get and process text fields
+            front_text = card_info.get('front', '') or card_info.get('question', '') or ''
+            back_text = card_info.get('back', '') or card_info.get('answer', '') or ''
+            extra_text = card_info.get('extra', '') or ''
+            
+            front_content = apply_medical_highlighting(str(front_text) if front_text else '')
+            back_content = apply_medical_highlighting(str(back_text) if back_text else '')
+            extra_content = apply_medical_highlighting(str(extra_text) if extra_text else '')
+            
+            # Safely process vignette content
+            vignette_data = card_info.get('vignette', '')
+            vignette_content = format_vignette_content(vignette_data) if vignette_data else ''
+            
+            # Safely process mnemonic content
             mnemonic_data = card_info.get('mnemonic', '')
-            mnemonic_content = apply_medical_highlighting(str(mnemonic_data)) if mnemonic_data else ''
+            mnemonic_content = apply_medical_highlighting(str(mnemonic_data) if mnemonic_data else '') if mnemonic_data else ''
             image_content = ''
             image_data = card_info.get('image', '')
             if image_data:
@@ -239,15 +273,24 @@ def generate_synaptic_recall_name(cards):
     import re
     all_text = []
     for card in cards:
-        front_text = card.get('front', '')
-        back_text = card.get('back', '')
-        tags = card.get('tags', [])
-        all_text.extend([front_text, back_text])
+        # Safely get text fields and convert None to empty string
+        front_text = card.get('front', '') or card.get('question', '') or ''
+        back_text = card.get('back', '') or card.get('answer', '') or ''
+        tags = card.get('tags', []) or []
+        
+        # Only add non-empty strings
+        if front_text:
+            all_text.append(str(front_text))
+        if back_text:
+            all_text.append(str(back_text))
+            
         if isinstance(tags, list):
-            all_text.extend([str(tag) for tag in tags])
-        elif isinstance(tags, str):
+            all_text.extend([str(tag) for tag in tags if tag is not None])
+        elif isinstance(tags, str) and tags:
             all_text.append(tags)
-    combined_text = ' '.join(all_text).lower()
+    
+    # Join only non-empty strings
+    combined_text = ' '.join([text for text in all_text if text]).lower()
     topic_keywords = {
         'spinothalamic': 'spinothalmictract',
         'spinal cord': 'spinalcord',
@@ -320,7 +363,10 @@ def api_enhanced_medical():
                 return {'error': f'Card {i} must be a dictionary object'}, 400
             
             # Ensure basic required fields exist or can be created
-            if not card.get('front') and not card.get('question'):
+            front_field = card.get('front') or card.get('question')
+            back_field = card.get('back') or card.get('answer')
+            
+            if not front_field:
                 app.logger.error(f"Card {i} missing front/question field: {card}")
                 return {'error': f'Card {i} must have either "front" or "question" field'}, 400
                 
