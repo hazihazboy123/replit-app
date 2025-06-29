@@ -33,6 +33,8 @@ CORS(app, resources={
 def download_image_from_url(url, media_files_list):
     """Download image from URL and return local filename for Anki embedding"""
     try:
+        app.logger.info(f"📥 Starting image download from: {url}")
+        
         # Create a safe filename from URL
         parsed_url = urlparse(url)
         filename = os.path.basename(parsed_url.path)
@@ -47,6 +49,8 @@ def download_image_from_url(url, media_files_list):
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
             filename += '.jpg'
         
+        app.logger.info(f"📁 Generated filename: {filename}")
+        
         # Download the image with proper headers for AWS S3
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -54,19 +58,37 @@ def download_image_from_url(url, media_files_list):
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         
-        # Save to temporary file
-        temp_path = os.path.join(tempfile.gettempdir(), filename)
+        app.logger.info(f"✅ Downloaded {len(response.content)} bytes, Content-Type: {response.headers.get('content-type', 'unknown')}")
+        
+        # Save to temporary file with unique name to avoid conflicts
+        import time
+        timestamp = int(time.time())
+        base_name, ext = os.path.splitext(filename)
+        unique_filename = f"{base_name}_{timestamp}{ext}"
+        temp_path = os.path.join(tempfile.gettempdir(), unique_filename)
+        
         with open(temp_path, 'wb') as f:
             f.write(response.content)
         
-        # Add to media files list for Anki package
-        media_files_list.append(temp_path)
-        
-        # Return just the filename for Anki reference
-        return filename
+        # Verify file was created and has content
+        if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+            file_size = os.path.getsize(temp_path)
+            app.logger.info(f"💾 Saved image to: {temp_path} ({file_size} bytes)")
+            
+            # Add to media files list for Anki package (full path required)
+            media_files_list.append(temp_path)
+            app.logger.info(f"📋 Added to media files list. Total media files: {len(media_files_list)}")
+            
+            # Return just the filename for HTML reference
+            return unique_filename
+        else:
+            app.logger.error(f"❌ Failed to save file or file is empty: {temp_path}")
+            return None
         
     except Exception as e:
-        print(f"Error downloading image from {url}: {e}")
+        app.logger.error(f"💥 Error downloading image from {url}: {e}")
+        import traceback
+        app.logger.error(f"📜 Traceback: {traceback.format_exc()}")
         return None
 
 def apply_medical_highlighting(text):
@@ -418,27 +440,51 @@ class EnhancedFlashcardProcessor:
             if mnemonic_data:
                 mnemonic_content = apply_medical_highlighting(str(mnemonic_data))
             
-            # Handle image download and formatting
+            # Handle image download and formatting with enhanced debugging
             image_content = ''
             image_data = card_info.get('image', '')
             if image_data:
+                app.logger.info(f"🖼️ Processing image data: {type(image_data)} - {str(image_data)[:100]}...")
+                
                 if isinstance(image_data, dict):
                     url = image_data.get('url', '')
                     caption = image_data.get('caption', '')
+                    app.logger.info(f"📋 Dictionary format - URL: {url}, Caption: {caption}")
+                    
                     if url:
+                        app.logger.info(f"🌐 Attempting to download image from URL: {url}")
                         downloaded_filename = download_image_from_url(url, media_files)
                         if downloaded_filename:
+                            app.logger.info(f"✅ Successfully downloaded image: {downloaded_filename}")
                             image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
                             if caption:
                                 image_content += f'<div style="text-align: center; font-style: italic; margin-top: 10px; color: #666; font-size: 0.9em;">{caption}</div>'
+                            app.logger.info(f"📝 Generated image HTML: {image_content[:100]}...")
+                        else:
+                            app.logger.error(f"❌ Failed to download image from URL: {url}")
+                    else:
+                        app.logger.warning("⚠️ No URL found in image dictionary")
+                        
                 elif isinstance(image_data, str) and image_data.strip():
+                    app.logger.info(f"📝 String format image data: {image_data}")
                     # Simple filename or URL
                     if image_data.startswith('http'):
+                        app.logger.info(f"🌐 String URL detected, downloading: {image_data}")
                         downloaded_filename = download_image_from_url(image_data, media_files)
                         if downloaded_filename:
+                            app.logger.info(f"✅ Successfully downloaded from string URL: {downloaded_filename}")
                             image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                            app.logger.info(f"📝 Generated image HTML from string: {image_content[:100]}...")
+                        else:
+                            app.logger.error(f"❌ Failed to download from string URL: {image_data}")
                     else:
+                        app.logger.info(f"📁 Local filename detected: {image_data}")
                         image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">'
+                        app.logger.info(f"📝 Generated local image HTML: {image_content[:100]}...")
+                else:
+                    app.logger.warning(f"⚠️ Unexpected image data format: {type(image_data)} - {image_data}")
+            else:
+                app.logger.info("ℹ️ No image data found in card")
             
             # Create the note
             note = genanki.Note(
@@ -552,9 +598,22 @@ def api_enhanced_medical():
         processor = EnhancedFlashcardProcessor()
         deck, media_files = processor.process_cards(cards, final_deck_name)
         
-        # Create package and save
+        # Create package and save with enhanced debugging
         package = genanki.Package(deck)
-        package.media_files = media_files
+        
+        # Verify media files before packaging
+        app.logger.info(f"📦 Preparing to package {len(media_files)} media files:")
+        valid_media_files = []
+        for i, media_file in enumerate(media_files):
+            if os.path.exists(media_file):
+                file_size = os.path.getsize(media_file)
+                app.logger.info(f"  📁 {i+1}. {media_file} ({file_size} bytes) ✅")
+                valid_media_files.append(media_file)
+            else:
+                app.logger.error(f"  ❌ {i+1}. {media_file} - FILE NOT FOUND!")
+        
+        package.media_files = valid_media_files
+        app.logger.info(f"📋 Final media files count: {len(valid_media_files)}")
         
         safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
         if not safe_name:
@@ -563,10 +622,17 @@ def api_enhanced_medical():
         filename = f"{safe_name}_{timestamp}.apkg"
         file_path = f"/tmp/{filename}"
         
+        app.logger.info(f"💾 Writing package to: {file_path}")
         package.write_to_file(file_path)
-        file_size = os.path.getsize(file_path)
         
-        app.logger.info(f"Generated enhanced medical deck: {file_path} (size: {file_size} bytes)")
+        if os.path.exists(file_path):
+            file_size = os.path.getsize(file_path)
+            app.logger.info(f"✅ Package created successfully: {file_path} ({file_size} bytes)")
+        else:
+            app.logger.error(f"❌ Package file not created: {file_path}")
+            raise Exception(f"Failed to create package file: {file_path}")
+        
+        app.logger.info(f"🎉 Generated enhanced medical deck: {file_path} (size: {file_size} bytes)")
         
         download_url = f"/download/{filename}"
         full_url = f"https://flashcard-converter-haziqmakesai.replit.app{download_url}"

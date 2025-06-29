@@ -1,0 +1,47 @@
+1. Your Backend Output
+Your backend is outputting a list of cards, each with:
+front, back, tags
+image (with url and caption)
+mnemonic
+vignette (with clinical_case and explanation)
+This matches the expected input for your Flask/genanki backend.
+2. Your Card Screenshot
+The card displays the question, answer, vignette, and click-to-reveal explanation.
+However, there is no image visible on the card.
+3. Does the Current System Work?
+What Works:
+The backend is correctly parsing and formatting the card data.
+The clinical vignette, answer, and explanation are rendered as expected.
+The JSON structure is correct for your backend.
+What’s Not Working:
+Images are not appearing on the cards.
+4. Why Aren’t Images Appearing?
+Based on your code and the backend output, here are the most likely reasons:
+A. Image Download/Embedding Issues
+The backend downloads the image to a temp directory and adds the full path to media_files.
+The HTML in the card references the image by its filename (e.g., <img src="image_xxx.jpg">).
+If the image is not included in the .apkg media, or the filename in the HTML does not match the filename in the media, the image will not show.
+B. genanki Media Handling
+genanki.Package.media_files should be a list of file paths (not filenames).
+The HTML in the card should reference only the filename, not the full path.
+C. Anki Import
+If the .apkg is imported into Anki and the media is missing or the filename is mismatched, the image will not display.
+5. How to Fix
+Checklist:
+Ensure the image is downloaded and saved to a temp file.
+Add the full temp file path to media_files.
+Reference only the filename in the HTML (<img src="image_xxx.jpg">).
+After generating the .apkg, open it with a tool like Anki or an apkg explorer and check if the image file is present.
+If you use a temp directory, make sure the file is not deleted before the .apkg is created.
+Your Code Already Does This:
+Apply to medical_flas...
+)
+This is correct.
+6. Debugging Steps
+Check the .apkg file: After generating, open it with a zip tool. Is the image file present?
+Check the HTML: In Anki, right-click the card and select "Edit HTML" or "Show Source"—is the <img src="..."> referencing the correct filename?
+Check the temp directory: Are the images being deleted before the package is created?
+7. Conclusion
+Your backend output is correct.
+Your system should work, but images are not showing due to a packaging or filename mismatch.
+If you follow the checklist above, images should appear.
