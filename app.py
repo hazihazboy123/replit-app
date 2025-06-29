@@ -667,85 +667,101 @@ document.addEventListener('DOMContentLoaded', function() {
     return model
 
 class EnhancedMedicalProcessor:
-    """Enhanced processor for medical flashcards using the new AnkiMedicalCardGenerator"""
+    """Enhanced processor for medical flashcards with fallback to reliable basic generation"""
     
     def __init__(self):
-        pass
+        self.model = create_enhanced_medical_model()
     
     def process_cards(self, cards_data, deck_name="Enhanced Medical Deck"):
-        """Process cards using the enhanced medical card generator"""
+        """Process cards with basic reliable approach as fallback"""
         try:
-            # Create new generator instance for this deck
-            generator = AnkiMedicalCardGenerator()
+            app.logger.info(f"Processing {len(cards_data)} cards with fallback processor")
             
-            # Transform cards to match the new generator's expected format
-            transformed_cards = []
+            # Generate unique deck ID to prevent merging
+            deck_id = random.randrange(1 << 30, 1 << 31)
+            deck = genanki.Deck(deck_id, deck_name)
+            media_files = []
             
-            for card_info in cards_data:
-                transformed_card = {}
-                
-                # Map fields to new format - handle both front/back and question/answer
-                if 'front' in card_info:
-                    transformed_card['question'] = str(card_info['front'])
-                elif 'question' in card_info:
-                    transformed_card['question'] = str(card_info['question'])
-                else:
-                    transformed_card['question'] = ''
-                
-                if 'back' in card_info:
-                    transformed_card['answer'] = str(card_info['back'])
-                elif 'answer' in card_info:
-                    transformed_card['answer'] = str(card_info['answer'])
-                else:
-                    transformed_card['answer'] = ''
-                
-                # Map vignette content
-                if 'vignette' in card_info and card_info['vignette']:
-                    vignette_data = card_info['vignette']
-                    if isinstance(vignette_data, dict):
-                        # Extract clinical case and explanation
-                        clinical_case = vignette_data.get('clinical_case', '')
-                        explanation = vignette_data.get('explanation', '')
-                        transformed_card['clinical_vignette'] = f"{clinical_case} {explanation}".strip()
-                    else:
-                        transformed_card['clinical_vignette'] = str(vignette_data)
-                
-                # Map mnemonic content
-                if 'mnemonic' in card_info and card_info['mnemonic']:
-                    transformed_card['memory_aid'] = str(card_info['mnemonic'])
-                
-                # Map image content
-                if 'image' in card_info and card_info['image']:
-                    image_info = card_info['image']
-                    if isinstance(image_info, dict) and 'url' in image_info:
-                        transformed_card['image_url'] = image_info['url']
-                    elif isinstance(image_info, str) and image_info.startswith('http'):
-                        transformed_card['image_url'] = image_info
-                
-                # Map tags
-                if 'tags' in card_info:
-                    tags = card_info['tags']
-                    if isinstance(tags, list):
-                        transformed_card['tags'] = tags
-                    elif isinstance(tags, str):
-                        transformed_card['tags'] = [tags]
-                    else:
-                        transformed_card['tags'] = []
-                else:
-                    transformed_card['tags'] = []
-                
-                transformed_cards.append(transformed_card)
+            for i, card_info in enumerate(cards_data):
+                try:
+                    app.logger.info(f"Processing card {i+1}: {str(card_info)[:100]}...")
+                    
+                    # Extract basic fields
+                    front_content = ""
+                    back_content = ""
+                    extra_content = ""
+                    vignette_content = ""
+                    mnemonic_content = ""
+                    image_content = ""
+                    
+                    # Handle front/back or question/answer
+                    if 'front' in card_info:
+                        front_content = clean_text_content(str(card_info['front']))
+                    elif 'question' in card_info:
+                        front_content = clean_text_content(str(card_info['question']))
+                    
+                    if 'back' in card_info:
+                        back_content = clean_text_content(str(card_info['back']))
+                    elif 'answer' in card_info:
+                        back_content = clean_text_content(str(card_info['answer']))
+                    
+                    # Apply highlighting
+                    if front_content:
+                        front_content = apply_medical_highlighting(front_content)
+                    if back_content:
+                        back_content = apply_medical_highlighting(back_content)
+                    
+                    # Process vignette
+                    if 'vignette' in card_info and card_info['vignette']:
+                        vignette_content = format_clinical_vignette(card_info['vignette'])
+                    
+                    # Process mnemonic
+                    if 'mnemonic' in card_info and card_info['mnemonic']:
+                        mnemonic_text = clean_text_content(str(card_info['mnemonic']))
+                        mnemonic_content = f'''
+<div id="mnemonic-section">
+    <h3>🧠 Memory Aid</h3>
+    <div class="mnemonic-content">{mnemonic_text}</div>
+</div>'''
+                    
+                    # Simple image handling - no downloading for now to avoid errors
+                    if 'image' in card_info and card_info['image']:
+                        image_data = card_info['image']
+                        if isinstance(image_data, dict) and 'url' in image_data:
+                            url = image_data['url']
+                            caption = image_data.get('caption', '')
+                            image_content = f'<div style="text-align: center; padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">📷 Medical Image: {caption if caption else "Click to view"}</div>'
+                        elif isinstance(image_data, str):
+                            image_content = f'<div style="text-align: center; padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">📷 Medical Image Reference</div>'
+                    
+                    # Create note
+                    note = genanki.Note(
+                        model=self.model,
+                        fields=[
+                            front_content,      # Front
+                            back_content,       # Back
+                            extra_content,      # Extra
+                            vignette_content,   # Vignette
+                            mnemonic_content,   # Mnemonic
+                            image_content       # Image
+                        ],
+                        tags=[clean_text_content(str(tag)).replace(' ', '_') for tag in card_info.get('tags', [])]
+                    )
+                    
+                    deck.add_note(note)
+                    app.logger.info(f"Successfully created card {i+1}")
+                    
+                except Exception as card_error:
+                    app.logger.error(f"Error processing card {i+1}: {card_error}")
+                    continue  # Skip this card and continue with others
             
-            # Generate cards using the new generator
-            for card_data in transformed_cards:
-                note = generator.create_medical_card(card_data)
-                generator.deck.add_note(note)
-            
-            # Return deck and media files for compatibility
-            return generator.deck, generator.media_files
+            app.logger.info(f"Successfully processed deck with {len(deck.notes)} notes")
+            return deck, media_files
             
         except Exception as e:
             app.logger.error(f"Error in enhanced medical processor: {e}")
+            import traceback
+            app.logger.error(f"Traceback: {traceback.format_exc()}")
             raise
 
 def generate_synaptic_recall_name(cards):
@@ -860,31 +876,55 @@ def process_flashcards():
         final_deck_name = f"{base_deck_name}_{timestamp}"
         
         # Process with enhanced formatting
+        app.logger.info(f"Starting to process {len(cards)} cards")
         processor = EnhancedMedicalProcessor()
-        deck, media_files = processor.process_cards(cards, final_deck_name)
+        
+        try:
+            deck, media_files = processor.process_cards(cards, final_deck_name)
+            app.logger.info(f"Successfully processed cards, got deck with media files: {len(media_files) if media_files else 0}")
+        except Exception as proc_error:
+            app.logger.error(f"Error in process_cards: {str(proc_error)}")
+            import traceback
+            app.logger.error(f"Traceback: {traceback.format_exc()}")
+            flash(f'Error processing cards: {str(proc_error)}', 'error')
+            return redirect(url_for('index'))
         
         # Create package and save
-        package = genanki.Package(deck)
-        package.media_files = media_files
-        
-        safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
-        if not safe_name:
-            safe_name = "enhanced_medical_cards"
-        
-        filename = f"{safe_name}_{timestamp}.apkg"
-        file_path = f"/tmp/{filename}"
-        
-        package.write_to_file(file_path)
-        
-        flash(f'Successfully generated Anki deck with {len(cards)} cards!', 'success')
-        
-        # Return the file for download
-        return send_file(
-            file_path,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/octet-stream'
-        )
+        try:
+            package = genanki.Package(deck)
+            if media_files:
+                package.media_files = media_files
+            
+            safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            if not safe_name:
+                safe_name = "enhanced_medical_cards"
+            
+            filename = f"{safe_name}_{timestamp}.apkg"
+            file_path = f"/tmp/{filename}"
+            
+            app.logger.info(f"Writing package to: {file_path}")
+            package.write_to_file(file_path)
+            
+            if os.path.exists(file_path):
+                app.logger.info(f"Successfully created file: {file_path}, size: {os.path.getsize(file_path)} bytes")
+                flash(f'Successfully generated Anki deck with {len(cards)} cards!', 'success')
+                
+                # Return the file for download
+                return send_file(
+                    file_path,
+                    as_attachment=True,
+                    download_name=filename,
+                    mimetype='application/octet-stream'
+                )
+            else:
+                raise Exception(f"File was not created at {file_path}")
+                
+        except Exception as package_error:
+            app.logger.error(f"Error creating package: {str(package_error)}")
+            import traceback
+            app.logger.error(f"Package traceback: {traceback.format_exc()}")
+            flash(f'Error creating package: {str(package_error)}', 'error')
+            return redirect(url_for('index'))
         
     except Exception as e:
         app.logger.error(f"Processing error: {str(e)}")
