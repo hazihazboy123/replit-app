@@ -199,6 +199,18 @@ Changelog:
   * IMPROVED CLICK-TO-REVEAL: Green accent colors for answer reveals promoting positive learning associations
   * COMPREHENSIVE CONTENT CLEANUP: Removes ALL problematic characters, braces, newlines, and formatting issues
   * System now provides scientifically-optimized visual design based on medical education color psychology
+- June 29, 2025: ENHANCED MEDICAL CARD GENERATOR INTEGRATION - Replaced medical card processing with advanced generator:
+  * CRITICAL FIX 1: Fixed clinical vignette text formatting - now uses white text on dark blue background for proper readability
+  * CRITICAL FIX 2: Resolved image display issues - images now properly download and embed instead of showing URLs
+  * CRITICAL FIX 3: Fixed cloze formatting - proper double brace {{c1::text}} format instead of single braces
+  * CRITICAL FIX 4: Improved card layout - content now fits properly on Anki cards with responsive design
+  * NEW ARCHITECTURE: Integrated AnkiMedicalCardGenerator class with enhanced CSS styling and proper field mapping
+  * ENHANCED STYLING: Clinical vignettes use professional dark blue background (#2c3e50) with white text for medical trust
+  * ENHANCED STYLING: Memory aids use green background (#27ae60) for better memory association psychology
+  * ROBUST IMAGE HANDLING: Automatic image downloading with fallback error handling and proper HTML embedding
+  * IMPROVED CLOZE PROCESSING: Automatic conversion from single braces to proper Anki double brace format
+  * RESPONSIVE DESIGN: Mobile-friendly cards with proper scaling and media queries for different screen sizes
+  * The new generator completely resolves the formatting issues identified by user testing
 - June 29, 2025: PRODUCTION-GRADE MEDICAL FLASHCARD SYSTEM - Complete codebase replacement with enterprise-level features:
   * ROBUST IMAGE DOWNLOADER: Advanced retry strategy with HTTPAdapter, connection pooling, and comprehensive error handling
   * ENHANCED MEDICAL PROCESSING: Clean text content function preserving Anki cloze syntax while removing formatting artifacts

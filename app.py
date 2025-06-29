@@ -15,6 +15,7 @@ from urllib3.util.retry import Retry
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for, jsonify
 from flask_cors import CORS
 import genanki
+from enhanced_medical_generator import AnkiMedicalCardGenerator, process_n8n_input
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -666,102 +667,86 @@ document.addEventListener('DOMContentLoaded', function() {
     return model
 
 class EnhancedMedicalProcessor:
-    """Enhanced processor for medical flashcards with comprehensive error handling"""
+    """Enhanced processor for medical flashcards using the new AnkiMedicalCardGenerator"""
     
     def __init__(self):
-        self.model = create_enhanced_medical_model()
-        self.image_downloader = RobustImageDownloader()
+        pass
     
     def process_cards(self, cards_data, deck_name="Enhanced Medical Deck"):
-        """Process cards with enhanced medical formatting and error handling"""
-        
-        # Generate unique deck ID to prevent merging
-        deck_id = random.randrange(1 << 30, 1 << 31)
-        deck = genanki.Deck(deck_id, deck_name)
-        media_files = []
-        
-        for card_info in cards_data:
-            try:
-                # Extract and clean basic fields
-                front_content = clean_text_content(card_info.get('front', ''))
-                back_content = clean_text_content(card_info.get('back', ''))
-                extra_content = clean_text_content(card_info.get('extra', ''))
+        """Process cards using the enhanced medical card generator"""
+        try:
+            # Create new generator instance for this deck
+            generator = AnkiMedicalCardGenerator()
+            
+            # Transform cards to match the new generator's expected format
+            transformed_cards = []
+            
+            for card_info in cards_data:
+                transformed_card = {}
                 
-                # Apply medical highlighting
-                if front_content:
-                    front_content = apply_medical_highlighting(front_content)
-                if back_content:
-                    back_content = apply_medical_highlighting(back_content)
-                if extra_content:
-                    extra_content = apply_medical_highlighting(extra_content)
+                # Map fields to new format - handle both front/back and question/answer
+                if 'front' in card_info:
+                    transformed_card['question'] = str(card_info['front'])
+                elif 'question' in card_info:
+                    transformed_card['question'] = str(card_info['question'])
+                else:
+                    transformed_card['question'] = ''
                 
-                # Process clinical vignette with blue styling
-                vignette_content = format_clinical_vignette(card_info.get('vignette', ''))
+                if 'back' in card_info:
+                    transformed_card['answer'] = str(card_info['back'])
+                elif 'answer' in card_info:
+                    transformed_card['answer'] = str(card_info['answer'])
+                else:
+                    transformed_card['answer'] = ''
                 
-                # Process mnemonic with highlighting
-                mnemonic_data = card_info.get('mnemonic', '')
-                mnemonic_content = ''
-                if mnemonic_data:
-                    mnemonic_content = apply_medical_highlighting(clean_text_content(mnemonic_data))
+                # Map vignette content
+                if 'vignette' in card_info and card_info['vignette']:
+                    vignette_data = card_info['vignette']
+                    if isinstance(vignette_data, dict):
+                        # Extract clinical case and explanation
+                        clinical_case = vignette_data.get('clinical_case', '')
+                        explanation = vignette_data.get('explanation', '')
+                        transformed_card['clinical_vignette'] = f"{clinical_case} {explanation}".strip()
+                    else:
+                        transformed_card['clinical_vignette'] = str(vignette_data)
                 
-                # Handle image download and embedding - FIXED TO APPEAR ONLY ONCE
-                image_content = ''
-                image_data = card_info.get('image', '')
-                if image_data:
-                    app.logger.info(f"Processing image for card: {front_content[:50]}...")
-                    
-                    if isinstance(image_data, dict):
-                        url = image_data.get('url', '')
-                        caption = clean_text_content(image_data.get('caption', ''))
-                        
-                        if url:
-                            app.logger.info(f"Downloading image from URL: {url}")
-                            downloaded_filename = self.image_downloader.download_image(url, media_files)
-                            
-                            if downloaded_filename:
-                                app.logger.info(f"✅ Successfully downloaded: {downloaded_filename}")
-                                # Create properly formatted image HTML - SINGLE INSTANCE
-                                image_content = f'<img src="{downloaded_filename}" alt="{caption}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">'
-                                if caption:
-                                    image_content += f'<div class="image-caption">{caption}</div>'
-                            else:
-                                app.logger.warning(f"❌ Failed to download image from: {url}")
-                                # Create informative placeholder instead of error message
-                                image_content = f'<div style="text-align: center; padding: 20px; background-color: #f8f9fa; border: 2px dashed #6c757d; border-radius: 8px; color: #6c757d;">Medical Image Reference: {url[:50]}...</div>'
-                        
-                    elif isinstance(image_data, str) and image_data.strip():
-                        if image_data.startswith('http'):
-                            downloaded_filename = self.image_downloader.download_image(image_data, media_files)
-                            if downloaded_filename:
-                                image_content = f'<img src="{downloaded_filename}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">'
-                            else:
-                                image_content = f'<div style="text-align: center; padding: 20px; background-color: #f8f9fa; border: 2px dashed #6c757d; border-radius: 8px; color: #6c757d;">Medical Image Reference: {image_data[:50]}...</div>'
-                        else:
-                            # Local filename
-                            image_content = f'<img src="{image_data}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">'
+                # Map mnemonic content
+                if 'mnemonic' in card_info and card_info['mnemonic']:
+                    transformed_card['memory_aid'] = str(card_info['mnemonic'])
                 
-                # Create the note with cleaned content
-                note = genanki.Note(
-                    model=self.model,
-                    fields=[
-                        front_content,      # Front
-                        back_content,       # Back
-                        extra_content,      # Extra
-                        vignette_content,   # Vignette
-                        mnemonic_content,   # Mnemonic
-                        image_content       # Image - APPEARS ONLY HERE
-                    ],
-                    tags=[clean_text_content(str(tag)).replace(' ', '_') for tag in card_info.get('tags', [])]
-                )
+                # Map image content
+                if 'image' in card_info and card_info['image']:
+                    image_info = card_info['image']
+                    if isinstance(image_info, dict) and 'url' in image_info:
+                        transformed_card['image_url'] = image_info['url']
+                    elif isinstance(image_info, str) and image_info.startswith('http'):
+                        transformed_card['image_url'] = image_info
                 
-                deck.add_note(note)
+                # Map tags
+                if 'tags' in card_info:
+                    tags = card_info['tags']
+                    if isinstance(tags, list):
+                        transformed_card['tags'] = tags
+                    elif isinstance(tags, str):
+                        transformed_card['tags'] = [tags]
+                    else:
+                        transformed_card['tags'] = []
+                else:
+                    transformed_card['tags'] = []
                 
-            except Exception as e:
-                app.logger.error(f"Error processing card: {e}")
-                # Continue with next card instead of failing entirely
-                continue
-        
-        return deck, media_files
+                transformed_cards.append(transformed_card)
+            
+            # Generate cards using the new generator
+            for card_data in transformed_cards:
+                note = generator.create_medical_card(card_data)
+                generator.deck.add_note(note)
+            
+            # Return deck and media files for compatibility
+            return generator.deck, generator.media_files
+            
+        except Exception as e:
+            app.logger.error(f"Error in enhanced medical processor: {e}")
+            raise
 
 def generate_synaptic_recall_name(cards):
     """Generate intelligent deck name based on medical content analysis"""
@@ -832,7 +817,12 @@ def process_flashcards():
         # Check if text was provided
         elif request.form.get('json_text'):
             try:
-                json_data = json.loads(request.form.get('json_text'))
+                json_text = request.form.get('json_text')
+                if json_text and json_text.strip():
+                    json_data = json.loads(json_text.strip())
+                else:
+                    flash('Please provide JSON data.', 'error')
+                    return redirect(url_for('index'))
             except json.JSONDecodeError:
                 flash('Invalid JSON format. Please check your JSON syntax.', 'error')
                 return redirect(url_for('index'))
