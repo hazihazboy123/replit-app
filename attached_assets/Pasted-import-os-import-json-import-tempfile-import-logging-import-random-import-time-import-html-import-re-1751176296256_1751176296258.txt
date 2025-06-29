@@ -479,11 +479,6 @@ def api_enhanced_medical():
             'traceback': traceback.format_exc()
         }, 500
 
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
-
 @app.route('/api/health', methods=['GET'])
 def api_health():
     return jsonify({
