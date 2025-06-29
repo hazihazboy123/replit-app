@@ -21,9 +21,9 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
-# Configure CORS for API endpoints
+# Configure CORS for all endpoints
 CORS(app, resources={
-    r"/api/*": {
+    r"/*": {
         "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
@@ -675,6 +675,11 @@ def api_health():
         'timestamp': int(time.time())
     }), 200
 
+@app.route('/api/simple', methods=['POST', 'OPTIONS'])
+def api_simple():
+    """Legacy compatibility endpoint"""
+    return api_enhanced_medical()
+
 @app.route('/download/<path:filename>')
 def download_file(filename):
     """Serve generated .apkg files for download"""
@@ -703,6 +708,13 @@ def index():
     <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px;">
         <h1>🩺 Enhanced Medical Anki Generator</h1>
         <p>Send POST requests to <code>/api/enhanced-medical</code> with your n8n JSON data.</p>
+        <h3>Available Endpoints:</h3>
+        <ul>
+            <li><a href="/api/health">GET /api/health</a> - Health check</li>
+            <li>POST /api/enhanced-medical - Generate medical flashcards</li>
+            <li>POST /api/simple - Legacy compatibility endpoint</li>
+            <li>GET /download/&lt;filename&gt; - Download generated files</li>
+        </ul>
         <h3>Features:</h3>
         <ul>
             <li>✅ Beautiful medical card styling</li>
@@ -714,6 +726,23 @@ def index():
     </body>
     </html>
     """
+
+@app.errorhandler(404)
+def handle_404(e):
+    """Handle 404 errors with detailed information"""
+    return jsonify({
+        'error': '404 Not Found',
+        'message': f'The requested URL {request.url} was not found on the server.',
+        'available_endpoints': [
+            'GET /',
+            'GET /api/health', 
+            'POST /api/enhanced-medical',
+            'POST /api/simple',
+            'GET /download/<filename>'
+        ],
+        'method': request.method,
+        'path': request.path
+    }), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
