@@ -274,10 +274,23 @@ def api_enhanced_medical():
         return '', 200
     try:
         app.logger.info("=== ENHANCED MEDICAL API CALLED ===")
-        data = request.get_json(force=True)
+        app.logger.info(f"Request method: {request.method}")
+        app.logger.info(f"Request headers: {dict(request.headers)}")
+        app.logger.info(f"Request content type: {request.content_type}")
+        app.logger.info(f"Raw request data: {request.get_data()}")
+        
+        try:
+            data = request.get_json(force=True)
+        except Exception as json_error:
+            app.logger.error(f"JSON parsing error: {json_error}")
+            return {'error': f'Invalid JSON format: {str(json_error)}'}, 400
+            
         if not data:
+            app.logger.error("No JSON data provided")
             return {'error': 'No JSON data provided'}, 400
         app.logger.info(f"Received data: {data}")
+        app.logger.info(f"Data type: {type(data)}")
+        app.logger.info(f"Data keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
         if isinstance(data, list):
             if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
                 cards = data[0]['cards']
@@ -299,8 +312,26 @@ def api_enhanced_medical():
         timestamp = int(time.time())
         final_deck_name = f"{base_deck_name}_{timestamp}"
         app.logger.info(f"Processing {len(cards)} cards for deck '{final_deck_name}'")
+        
+        # Validate each card before processing
+        for i, card in enumerate(cards):
+            if not isinstance(card, dict):
+                app.logger.error(f"Card {i} is not a dictionary: {type(card)}")
+                return {'error': f'Card {i} must be a dictionary object'}, 400
+            
+            # Ensure basic required fields exist or can be created
+            if not card.get('front') and not card.get('question'):
+                app.logger.error(f"Card {i} missing front/question field: {card}")
+                return {'error': f'Card {i} must have either "front" or "question" field'}, 400
+                
         processor = EnhancedFlashcardProcessor()
-        deck, media_files = processor.process_cards(cards, final_deck_name)
+        try:
+            deck, media_files = processor.process_cards(cards, final_deck_name)
+        except Exception as processing_error:
+            app.logger.error(f"Card processing error: {processing_error}")
+            import traceback
+            app.logger.error(f"Processing traceback: {traceback.format_exc()}")
+            return {'error': f'Card processing failed: {str(processing_error)}'}, 500
         package = genanki.Package(deck)
         package.media_files = media_files
         safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
