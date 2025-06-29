@@ -813,6 +813,94 @@ def index():
     """Main page with enhanced medical form"""
     return render_template('index.html')
 
+@app.route('/process_flashcards', methods=['POST'])
+def process_flashcards():
+    """Process the submitted JSON data and generate Anki deck"""
+    try:
+        # Get JSON data from file upload or text input
+        json_data = None
+        
+        # Check if file was uploaded
+        if 'json_file' in request.files and request.files['json_file'].filename:
+            file = request.files['json_file']
+            try:
+                json_data = json.loads(file.read().decode('utf-8'))
+            except json.JSONDecodeError:
+                flash('Invalid JSON file. Please check your file format.', 'error')
+                return redirect(url_for('index'))
+        
+        # Check if text was provided
+        elif request.form.get('json_text'):
+            try:
+                json_data = json.loads(request.form.get('json_text'))
+            except json.JSONDecodeError:
+                flash('Invalid JSON format. Please check your JSON syntax.', 'error')
+                return redirect(url_for('index'))
+        
+        if not json_data:
+            flash('Please provide JSON data either through file upload or text input.', 'error')
+            return redirect(url_for('index'))
+        
+        # Handle different input formats
+        if isinstance(json_data, list):
+            if len(json_data) > 0 and isinstance(json_data[0], dict) and 'cards' in json_data[0]:
+                cards = json_data[0]['cards']
+                deck_name = json_data[0].get('deck_name', None)
+            else:
+                cards = json_data
+                deck_name = None
+        elif isinstance(json_data, dict):
+            cards = json_data.get('cards', [])
+            deck_name = json_data.get('deck_name', None)
+        else:
+            flash('Invalid data format. Please check your JSON structure.', 'error')
+            return redirect(url_for('index'))
+        
+        if not cards:
+            flash('No cards found in the provided data.', 'error')
+            return redirect(url_for('index'))
+        
+        # Generate intelligent deck name
+        if not deck_name:
+            base_deck_name = generate_synaptic_recall_name(cards)
+        else:
+            base_deck_name = deck_name
+        
+        timestamp = int(time.time())
+        final_deck_name = f"{base_deck_name}_{timestamp}"
+        
+        # Process with enhanced formatting
+        processor = EnhancedMedicalProcessor()
+        deck, media_files = processor.process_cards(cards, final_deck_name)
+        
+        # Create package and save
+        package = genanki.Package(deck)
+        package.media_files = media_files
+        
+        safe_name = "".join(c for c in final_deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        if not safe_name:
+            safe_name = "enhanced_medical_cards"
+        
+        filename = f"{safe_name}_{timestamp}.apkg"
+        file_path = f"/tmp/{filename}"
+        
+        package.write_to_file(file_path)
+        
+        flash(f'Successfully generated Anki deck with {len(cards)} cards!', 'success')
+        
+        # Return the file for download
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/octet-stream'
+        )
+        
+    except Exception as e:
+        app.logger.error(f"Processing error: {str(e)}")
+        flash(f'Error processing flashcards: {str(e)}', 'error')
+        return redirect(url_for('index'))
+
 @app.route('/api/health', methods=['GET'])
 def api_health():
     """Health check endpoint"""
