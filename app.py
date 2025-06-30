@@ -643,11 +643,26 @@ def api_enhanced_medical():
             for item in data:
                 if isinstance(item, dict) and 'cards' in item:
                     cards.extend(item['cards'])
-                elif isinstance(item, dict) and ('front' in item or 'raw_html' in item):
-                    cards.append(item)
+                elif isinstance(item, dict) and ('front' in item or 'raw_html' in item or 'raw_content' in item):
+                    # Parse raw content if present
+                    if 'raw_content' in item:
+                        parsed_card = parse_raw_content(item['raw_content'])
+                        cards.append(parsed_card)
+                    else:
+                        cards.append(item)
         elif isinstance(data, dict):
             if 'cards' in data:
-                cards = data['cards']
+                # Process each card in the array
+                for card in data['cards']:
+                    if 'raw_content' in card:
+                        parsed_card = parse_raw_content(card['raw_content'])
+                        cards.append(parsed_card)
+                    else:
+                        cards.append(card)
+            elif 'raw_content' in data:
+                # Parse single raw content
+                parsed_card = parse_raw_content(data['raw_content'])
+                cards = [parsed_card]
             elif 'front' in data or 'raw_html' in data:
                 cards = [data]
         
@@ -681,6 +696,124 @@ def api_enhanced_medical():
             'message': str(e)
         }), 500
 
+def parse_raw_content(raw_content: str) -> Dict:
+    """Parse raw text/code content and intelligently categorize into medical card fields"""
+    
+    # Initialize card fields
+    card_fields = {
+        'front': '',
+        'back': '',
+        'clinical_vignette': '',
+        'explanation': '',
+        'mnemonic': '',
+        'tags': []
+    }
+    
+    # Split content into lines for processing
+    lines = raw_content.strip().split('\n')
+    current_field = None
+    current_content = []
+    
+    # Field mapping patterns
+    field_patterns = {
+        'front': ['front:', 'question:', 'q:', 'prompt:', 'ask:'],
+        'back': ['back:', 'answer:', 'a:', 'response:', 'solution:'],
+        'clinical_vignette': ['clinical vignette:', 'vignette:', 'case:', 'clinical case:', 'patient:', 'scenario:'],
+        'explanation': ['explanation:', 'explain:', 'rationale:', 'reasoning:', 'why:', 'details:'],
+        'mnemonic': ['mnemonic:', 'memory aid:', 'remember:', 'acronym:', 'mnemonic device:'],
+        'tags': ['tags:', 'categories:', 'topics:', 'subjects:', 'keywords:']
+    }
+    
+    def get_field_from_line(line: str):
+        """Determine which field a line belongs to based on keywords"""
+        line_lower = line.lower().strip()
+        
+        # Check for explicit field markers
+        for field, patterns in field_patterns.items():
+            for pattern in patterns:
+                if line_lower.startswith(pattern):
+                    return field
+        
+        # Check for HTML-style markers
+        if '<div class="clinical-vignette"' in line_lower or 'clinical-vignette' in line_lower:
+            return 'clinical_vignette'
+        elif '<div class="question"' in line_lower or 'question' in line_lower:
+            return 'front'
+        elif '<div class="answer"' in line_lower or 'answer' in line_lower:
+            return 'back'
+        elif '<div class="explanation"' in line_lower or 'explanation' in line_lower:
+            return 'explanation'
+        elif '<div class="mnemonic"' in line_lower or 'mnemonic' in line_lower:
+            return 'mnemonic'
+        
+        return None
+    
+    def clean_field_marker(line: str, field: str) -> str:
+        """Remove field marker from the beginning of a line"""
+        line_lower = line.lower().strip()
+        for pattern in field_patterns.get(field, []):
+            if line_lower.startswith(pattern):
+                return line[len(pattern):].strip()
+        return line.strip()
+    
+    # Process each line
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Check if this line indicates a new field
+        detected_field = get_field_from_line(line)
+        
+        if detected_field:
+            # Save previous field content
+            if current_field and current_content:
+                content = '\n'.join(current_content).strip()
+                if current_field == 'tags':
+                    # Parse tags from content
+                    tags = [tag.strip() for tag in content.replace(',', ' ').split() if tag.strip()]
+                    card_fields['tags'].extend(tags)
+                else:
+                    card_fields[current_field] = content
+            
+            # Start new field
+            current_field = detected_field
+            current_content = []
+            
+            # Add content after field marker (if any)
+            cleaned_line = clean_field_marker(line, detected_field)
+            if cleaned_line:
+                current_content.append(cleaned_line)
+                
+        elif current_field:
+            # Continue adding to current field
+            current_content.append(line)
+        else:
+            # No field detected yet, assume it's front content
+            if not current_field:
+                current_field = 'front'
+                current_content = []
+            current_content.append(line)
+    
+    # Save final field content
+    if current_field and current_content:
+        content = '\n'.join(current_content).strip()
+        if current_field == 'tags':
+            tags = [tag.strip() for tag in content.replace(',', ' ').split() if tag.strip()]
+            card_fields['tags'].extend(tags)
+        else:
+            card_fields[current_field] = content
+    
+    # If no front content was explicitly marked, use the first substantial content
+    if not card_fields['front'] and not card_fields['clinical_vignette']:
+        # Find the first non-empty field that could be a question
+        for field in ['clinical_vignette', 'explanation']:
+            if card_fields[field]:
+                card_fields['front'] = card_fields[field][:200] + "..." if len(card_fields[field]) > 200 else card_fields[field]
+                break
+    
+    return card_fields
+
 @app.route('/api/raw-html', methods=['POST', 'OPTIONS'])
 def api_raw_html():
     """Dedicated endpoint for raw HTML content processing"""
@@ -703,20 +836,27 @@ def api_raw_html():
                 'back': data.get('back', ''),
                 'tags': data.get('tags', [])
             })
+        elif 'raw_content' in data:
+            # Parse raw text content intelligently
+            parsed_card = parse_raw_content(data['raw_content'])
+            cards.append(parsed_card)
+        elif 'content' in data:
+            # Parse general content
+            parsed_card = parse_raw_content(data['content'])
+            cards.append(parsed_card)
         elif 'cards' in data:
-            # Multiple cards with raw HTML
+            # Multiple cards with raw HTML or content
             for card in data['cards']:
                 if 'raw_html' in card:
                     cards.append(card)
+                elif 'raw_content' in card:
+                    parsed_card = parse_raw_content(card['raw_content'])
+                    cards.append(parsed_card)
+                elif 'content' in card:
+                    parsed_card = parse_raw_content(card['content'])
+                    cards.append(parsed_card)
                 elif 'front' in card:
                     cards.append(card)
-        elif 'content' in data:
-            # Alternative format for content
-            cards.append({
-                'front': data['content'],
-                'back': data.get('answer', ''),
-                'tags': data.get('tags', [])
-            })
         
         if not cards:
             return jsonify({'error': 'No valid HTML content found'}), 400
@@ -737,14 +877,14 @@ def api_raw_html():
             'file_size': file_size,
             'download_url': f"/download/{filename}",
             'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
-            'message': f'Successfully processed raw HTML into {len(cards)} cards',
+            'message': f'Successfully processed raw content into {len(cards)} cards',
             'version': '6.0.0',
-            'processing_type': 'raw_html'
+            'processing_type': 'intelligent_parsing'
         }), 200
         
     except Exception as e:
         return jsonify({
-            'error': 'HTML processing failed',
+            'error': 'Content parsing failed',
             'message': str(e)
         }), 500
 

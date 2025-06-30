@@ -76,7 +76,7 @@ This is an advanced Flask-based web application that transforms medical educatio
 }
 ```
 
-#### Raw HTML Format (New!)
+#### Raw HTML Format
 ```json
 {
   "raw_html": "<p style='color: red;'>What is <span style='background: yellow;'>Aspirin's</span> mechanism?</p>",
@@ -85,18 +85,43 @@ This is an advanced Flask-based web application that transforms medical educatio
 }
 ```
 
+#### Intelligent Raw Content Parsing (New!)
+```json
+{
+  "raw_content": "Front: What is the mechanism of action of Aspirin?\n\nClinical Vignette: A 65-year-old male presents with chest pain\n\nBack: Irreversibly inhibits COX-1 and COX-2 enzymes\n\nExplanation: Aspirin works by blocking cyclooxygenase enzymes\n\nMnemonic: ASA = Anti-platelet Super Agent\n\nTags: cardiology, pharmacology, emergency"
+}
+```
+
+#### Intelligent Content Parsing Keywords:
+The system automatically recognizes these field markers in raw content:
+
+**Front/Question Field:**
+- `front:`, `question:`, `q:`, `prompt:`, `ask:`
+
+**Back/Answer Field:**
+- `back:`, `answer:`, `a:`, `response:`, `solution:`
+
+**Clinical Vignette Field:**
+- `clinical vignette:`, `vignette:`, `case:`, `clinical case:`, `patient:`, `scenario:`
+
+**Explanation Field:**
+- `explanation:`, `explain:`, `rationale:`, `reasoning:`, `why:`, `details:`
+
+**Mnemonic Field:**
+- `mnemonic:`, `memory aid:`, `remember:`, `acronym:`, `mnemonic device:`
+
+**Tags Field:**
+- `tags:`, `categories:`, `topics:`, `subjects:`, `keywords:`
+
 #### Enhanced Field Options:
-- **deck_name**: Name of the Anki deck (required)
-- **question/answer**: For basic Q&A cards
-- **cloze_text**: For cloze deletion cards using {{c1::text}} format
-- **high_yield_flag**: Set to "high-yield" for red highlighting
-- **notes**: Additional context information
-- **tags**: Hierarchical tags using :: separator
-- **image**: Image support with automatic download and embedding:
-  - Simple: `"image": "filename.jpg"` (for local files)
-  - Object: `"image": {"caption": "Description", "url": "https://..."}` (downloads and embeds)
-  - URLs are automatically downloaded and embedded as local media files in .apkg
-  - Images work offline after deck creation with no internet dependencies
+- **front**: Question or prompt text
+- **back**: Answer or response text
+- **clinical_vignette**: Patient presentation or clinical scenario
+- **explanation**: Detailed explanation or teaching points
+- **mnemonic**: Memory aid or mnemonic device
+- **tags**: Categories for organization (array or comma-separated string)
+- **raw_content**: Unstructured text that gets intelligently parsed
+- **raw_html**: Pre-formatted HTML content with preserved styling
 
 ## External Dependencies
 
