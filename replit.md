@@ -1,8 +1,8 @@
-# Enhanced Medical Flashcard Generator
+# Medical JSON to Anki Converter
 
 ## Overview
 
-This is an advanced Flask-based web application that transforms medical education through sophisticated Anki flashcard generation. Featuring a beautiful modern UI with Tailwind CSS, the system supports clinical vignettes, mnemonics, explanations, and advanced medical formatting. Built for seamless n8n integration and manual input, it creates professional-grade Anki decks optimized for medical students and healthcare professionals.
+This is a Flask-based web application that converts JSON-formatted medical flashcard data into advanced Anki deck files (.apkg). Designed specifically for medical students, it supports high-yield card highlighting, cloze deletions, hierarchical tags, image embedding, and notes sections. Users can either upload a JSON file or paste JSON data directly into a web form to generate downloadable Anki flashcard decks optimized for medical education.
 
 ## System Architecture
 
@@ -131,16 +131,16 @@ This is an advanced Flask-based web application that transforms medical educatio
 
 ```
 Changelog:
-- June 30, 2025: ENHANCED MEDICAL FLASHCARD GENERATOR V6.0 - Complete transformation with beautiful UI and advanced features:
-  * GORGEOUS MODERN UI: Beautiful Tailwind CSS interface with gradient headers, professional styling, and responsive design
-  * COMPREHENSIVE MEDICAL FORMATTING: Advanced Anki card templates with clinical vignettes, explanations, mnemonics, and enhanced styling
-  * ENHANCED USER EXPERIENCE: Live preview, card management, animated elements, and intuitive form-based input
-  * PROFESSIONAL CARD STYLING: Gradient backgrounds, enhanced typography, night mode support, and medical-focused design
-  * ROBUST API SYSTEM: Enhanced medical endpoint (/api/enhanced-medical) with full backward compatibility for existing n8n workflows
-  * ADVANCED DATA PROCESSING: Intelligent card extraction, HTML escaping, tag handling, and flexible data format support
-  * MULTI-ENDPOINT SUPPORT: n8n webhook (/api/webhook/n8n), enhanced medical API, and legacy compatibility endpoints
-  * ENHANCED DECK GENERATION: Professional medical card model with clinical vignettes, explanations, mnemonics, and advanced CSS styling
-  * Version 6.0.0 provides a complete medical education platform with beautiful UI and professional Anki deck generation
+- June 30, 2025: STREAMLINED N8N INTEGRATION - Updated codebase with optimized n8n workflow compatibility:
+  * HTML PRESERVATION: Complete preservation of n8n HTML formatting including span styles and color attributes
+  * SIMPLIFIED ARCHITECTURE: Streamlined single-model approach for enhanced performance and maintainability
+  * IMPROVED VIGNETTE PROCESSING: Enhanced click-to-reveal with support for dict and string vignette formats
+  * MODERN STYLING: Updated CSS with modern system fonts, improved gradients, and responsive design
+  * CLOZE FORMATTING CLEANUP: Advanced trailing brace removal and text cleanup for perfect card formatting
+  * ENHANCED IMAGE HANDLING: Robust image download with proper error handling and caption support
+  * FLEXIBLE DATA EXTRACTION: Intelligent parsing of various n8n data formats and structures
+  * PROCESSING STATS LOGGING: Optional processing statistics tracking for workflow optimization
+  * Version 5.0.0 now provides optimal n8n integration with preserved formatting and enhanced reliability
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))

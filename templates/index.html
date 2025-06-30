@@ -1,171 +1,150 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Flashcard Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="mb-8">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-graduation-cap text-3xl text-blue-600"></i>
-                    <h1 class="text-3xl font-bold text-gray-800">Medical Flashcard Generator</h1>
-                </div>
-                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
-                    <i class="fas fa-moon text-gray-700"></i>
-                </button>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title mb-0">
+                    <i class="bi bi-file-earmark-code me-2"></i>
+                    Convert Medical JSON Flashcards to Anki Deck
+                </h1>
             </div>
-            <p class="mt-2 text-gray-600">Create beautiful Anki flashcards from n8n webhooks or manual input</p>
-        </header>
+            <div class="card-body">
+                <p class="card-text">
+                    Upload a JSON file or paste JSON data containing your medical flashcards to generate a downloadable Anki deck (.apkg file) with advanced features like high-yield highlighting, cloze deletions, and hierarchical tags.
+                </p>
 
-        <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Input Section -->
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold mb-4 flex items-center">
-                    <i class="fas fa-edit mr-2 text-blue-600"></i>
-                    Create Flashcard
-                </h2>
-                
-                <form id="flashcardForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Clinical Vignette (Optional)</label>
-                        <textarea id="vignette" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="A 65-year-old male presents with..."></textarea>
+                <form method="POST" action="{{ url_for('process_flashcards') }}" enctype="multipart/form-data" id="flashcard-form">
+                    <div class="mb-4">
+                        <label for="json_file" class="form-label">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                            Upload JSON File
+                        </label>
+                        <input type="file" class="form-control" id="json_file" name="json_file" accept=".json">
+                        <div class="form-text">Select a .json file containing your flashcard data</div>
                     </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Question <span class="text-red-500">*</span></label>
-                        <textarea id="question" rows="2" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="What is the diagnosis?"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Answer <span class="text-red-500">*</span></label>
-                        <textarea id="answer" rows="2" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Myocardial infarction"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
-                        <textarea id="explanation" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="The ST elevation in inferior leads indicates..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mnemonic</label>
-                        <input type="text" id="mnemonic" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="STEMI = ST Elevation Myocardial Infarction">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select id="category" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="General">General</option>
-                            <option value="Anatomy">Anatomy</option>
-                            <option value="Physiology">Physiology</option>
-                            <option value="Pathology">Pathology</option>
-                            <option value="Pharmacology">Pharmacology</option>
-                            <option value="Cardiology">Cardiology</option>
-                            <option value="Neurology">Neurology</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
-                        <input type="text" id="tags" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="cardiology, emergency, diagnosis">
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                        <i class="fas fa-plus mr-2"></i>Add Flashcard
-                    </button>
-                </form>
-            </div>
 
-            <!-- Preview Section -->
-            <div class="space-y-6">
-                <!-- Flashcard Preview -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fas fa-eye mr-2 text-blue-600"></i>
-                        Preview
-                    </h2>
-                    
-                    <div id="previewCard" class="flashcard-preview">
-                        <div class="text-center text-gray-400 py-12">
-                            <i class="fas fa-clipboard text-4xl mb-3"></i>
-                            <p>Your flashcard preview will appear here</p>
-                        </div>
+                    <div class="text-center my-3">
+                        <span class="badge bg-secondary">OR</span>
                     </div>
-                </div>
 
-                <!-- Added Cards List -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold flex items-center">
-                            <i class="fas fa-list mr-2 text-blue-600"></i>
-                            Added Cards (<span id="cardCount">0</span>)
-                        </h2>
-                        <button onclick="clearAllCards()" class="text-red-600 hover:text-red-700 text-sm">
-                            Clear All
+                    <div class="mb-4">
+                        <label for="json_text" class="form-label">
+                            <i class="bi bi-code-square me-1"></i>
+                            Paste JSON Data
+                        </label>
+                        <textarea class="form-control" id="json_text" name="json_text" rows="10" placeholder="Paste your JSON flashcard data here..."></textarea>
+                        <div class="form-text">Enter your flashcard data in JSON format</div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="loadSampleBtn">
+                            <i class="bi bi-clipboard me-1"></i>Load Sample Data
                         </button>
                     </div>
-                    
-                    <div id="cardsList" class="space-y-2 max-h-64 overflow-y-auto">
-                        <p class="text-gray-400 text-center py-4">No cards added yet</p>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-download me-2"></i>
+                            Generate Anki Deck
+                        </button>
                     </div>
-                    
-                    <button onclick="generateDeck()" id="generateBtn" disabled class="w-full mt-4 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed">
-                        <i class="fas fa-download mr-2"></i>Generate Anki Deck
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
 
-        <!-- Webhook Info -->
-        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-blue-900 mb-2">
-                <i class="fas fa-webhook mr-2"></i>n8n Webhook Integration
-            </h3>
-            <p class="text-blue-800 mb-3">Send your flashcard data to:</p>
-            <code class="bg-blue-100 text-blue-900 px-3 py-1 rounded text-sm">/api/webhook/n8n</code>
-            
-            <details class="mt-4">
-                <summary class="cursor-pointer text-blue-700 hover:text-blue-800">View example payload</summary>
-                <pre class="mt-2 bg-blue-100 p-3 rounded text-sm overflow-x-auto"><code>{
-  "workflow_id": "abc123",
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    JSON Format Guide
+                </h2>
+            </div>
+            <div class="card-body">
+                <p>Your JSON data should follow this structure for medical flashcards:</p>
+                <pre class="bg-dark p-3 rounded"><code>{
+  "deck_name": "Medical Terminology Deck",
   "cards": [
     {
-      "front": "What is hypertension?",
-      "back": "High blood pressure (≥130/80 mmHg)",
-      "explanation": "Chronic elevation of blood pressure",
-      "tags": ["cardiology", "diagnosis"],
-      "category": "Cardiology"
+      "question": "What is the mechanism of action of &lt;span class='highlight-red'&gt;Aspirin&lt;/span&gt;?",
+      "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes",
+      "notes": "Important for cardiology and pain management",
+      "tags": "Pharmacology::NSAIDs::Aspirin",
+      "image": ""
+    },
+    {
+      "cloze_text": "{% raw %}{{c1::Myocardial infarction}}{% endraw %} is caused by {% raw %}{{c2::coronary artery occlusion}}{% endraw %}",
+      "notes": "Key concept for USMLE Step 1",
+      "tags": "Cardiology::Pathophysiology",
+      "high_yield_flag": "high-yield"
     }
   ]
 }</code></pre>
-            </details>
+                <div class="mt-3">
+                    <h6>Field Options:</h6>
+                    <ul class="mb-0">
+                        <li><code>deck_name</code>: Name of your Anki deck (required)</li>
+                        <li><code>question</code> & <code>answer</code>: For basic Q&A cards</li>
+                        <li><code>cloze_text</code>: For cloze deletion cards (use {% raw %}{{c1::text}}{% endraw %} format)</li>
+                        <li><code>notes</code>: Additional context shown at bottom of card (optional)</li>
+                        <li><code>tags</code>: Hierarchical tags using :: separator (optional)</li>
+                        <li><code>image</code>: Image filename if uploading separately (optional)</li>
+                        <li><code>high_yield_flag</code>: Internal flagging field (optional)</li>
+                    </ul>
+                    <div class="mt-2">
+                        <p><strong>Note:</strong> Each card needs either question/answer OR cloze_text</p>
+                        <p><strong>Highlighting:</strong> Use HTML like <code>&lt;span class='highlight-red'&gt;text&lt;/span&gt;</code> for red highlighting</p>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Success Modal -->
-    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <div class="text-center">
-                <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
-                <h3 class="text-xl font-semibold mb-2">Deck Generated Successfully!</h3>
-                <p class="text-gray-600 mb-6">Your Anki deck is ready for download.</p>
-                <a id="downloadLink" href="#" class="inline-block bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
-                    <i class="fas fa-download mr-2"></i>Download Deck
-                </a>
-                <button onclick="closeModal()" class="block w-full mt-3 text-gray-600 hover:text-gray-800">
-                    Close
-                </button>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-question-circle me-2"></i>
+                    How to Use
+                </h2>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li>Prepare your flashcard data in the JSON format shown above</li>
+                    <li>Either upload a .json file or paste the JSON data directly</li>
+                    <li>Click "Generate Anki Deck" to process your data</li>
+                    <li>Download the generated .apkg file</li>
+                    <li>Import the .apkg file into Anki using File → Import</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2 class="card-title h5 mb-0">
+                    <i class="bi bi-code-slash me-2"></i>
+                    API Endpoints for n8n Integration
+                </h2>
+            </div>
+            <div class="card-body">
+                <p>Use these API endpoints for programmatic access and n8n workflows:</p>
+                <div class="mb-3">
+                    <h6><code>POST /api/generate</code></h6>
+                    <p class="mb-2">Generate Anki deck from JSON data. Send JSON in request body with <code>Content-Type: application/json</code></p>
+                    <p class="mb-2"><strong>Returns:</strong> Binary .apkg file for download</p>
+                </div>
+                <div class="mb-3">
+                    <h6><code>POST /api/validate</code></h6>
+                    <p class="mb-2">Validate JSON structure without generating deck</p>
+                    <p class="mb-2"><strong>Returns:</strong> JSON with validation results and card summary</p>
+                </div>
+                <div class="mb-3">
+                    <h6><code>GET /api/schema</code></h6>
+                    <p class="mb-2">Get the complete JSON schema and examples</p>
+                    <p class="mb-2"><strong>Returns:</strong> JSON schema with field descriptions</p>
+                </div>
+                <div>
+                    <h6><code>GET /api/health</code></h6>
+                    <p class="mb-0">Health check endpoint for monitoring</p>
+                </div>
             </div>
         </div>
     </div>
-
-    <script src="/static/script.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

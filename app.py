@@ -1,21 +1,21 @@
 import os
 import json
-import html
-import asyncio
-from datetime import datetime
-from typing import List, Dict, Any, Optional
-from flask import Flask, request, send_file, jsonify, render_template_string
+import tempfile
+import logging
+import random
+import time
+import re
+import requests
+import hashlib
+from urllib.parse import urlparse
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import genanki
-import random
-import tempfile
 
-# Create directories
-os.makedirs("temp", exist_ok=True)
-os.makedirs("static", exist_ok=True)
-os.makedirs("templates", exist_ok=True)
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
 
-# Create Flask app for compatibility with existing gunicorn setup
+# Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
 
@@ -28,595 +28,392 @@ CORS(app, resources={
     }
 })
 
-# Enhanced Medical Anki Generator
-class MedicalAnkiGenerator:
-    def __init__(self):
-        self.medical_model = self._create_medical_model()
-    
-    def _create_medical_model(self):
-        return genanki.Model(
-            1607392319,
-            'Medical Flashcard Model v6.0',
-            fields=[
-                {'name': 'Clinical_Vignette'},
-                {'name': 'Question'},
-                {'name': 'Answer'},
-                {'name': 'Explanation'},
-                {'name': 'Tags'},
-                {'name': 'Images'},
-                {'name': 'Mnemonics'}
-            ],
-            templates=[
-                {
-                    'name': 'Medical Card',
-                    'qfmt': '''
-                        <div class="card">
-                            {{#Clinical_Vignette}}
-                            <div class="clinical-vignette">{{Clinical_Vignette}}</div>
-                            {{/Clinical_Vignette}}
-                            <div class="question">{{Question}}</div>
-                            {{#Images}}<div class="image-container">{{{Images}}}</div>{{/Images}}
-                        </div>
-                    ''',
-                    'afmt': '''
-                        {{FrontSide}}
-                        <hr id="answer">
-                        <div class="answer">{{Answer}}</div>
-                        {{#Explanation}}<div class="explanation">{{Explanation}}</div>{{/Explanation}}
-                        {{#Mnemonics}}<div class="mnemonic">{{Mnemonics}}</div>{{/Mnemonics}}
-                        <div class="tags">{{Tags}}</div>
-                    '''
-                }
-            ],
-            css='''
-                .card {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, "Helvetica Neue", Arial, sans-serif;
-                    font-size: 18px;
-                    line-height: 1.6;
-                    color: #333;
-                    background-color: #fff;
-                    padding: 20px;
-                    max-width: 800px;
-                    margin: 0 auto;
-                }
-                
-                .clinical-vignette {
-                    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-                    border-left: 4px solid #007bff;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
-                }
-                
-                .question {
-                    font-weight: bold;
-                    font-size: 20px;
-                    margin-bottom: 15px;
-                    color: #2c3e50;
-                    background: #f8f9fa;
-                    padding: 15px;
-                    border-radius: 8px;
-                    border-left: 4px solid #17a2b8;
-                }
-                
-                .answer {
-                    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-                    padding: 20px;
-                    border-radius: 8px;
-                    margin-bottom: 15px;
-                    border-left: 4px solid #28a745;
-                    box-shadow: 0 2px 8px rgba(40,167,69,0.1);
-                }
-                
-                .explanation {
-                    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-                    border: 1px solid #ffc107;
-                    padding: 20px;
-                    border-radius: 8px;
-                    margin-bottom: 15px;
-                    box-shadow: 0 2px 8px rgba(255,193,7,0.1);
-                }
-                
-                .mnemonic {
-                    background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
-                    border-left: 4px solid #29b6f6;
-                    padding: 20px;
-                    font-style: italic;
-                    border-radius: 8px;
-                    margin-bottom: 15px;
-                    box-shadow: 0 2px 8px rgba(41,182,246,0.1);
-                }
-                
-                .image-container {
-                    text-align: center;
-                    margin: 20px 0;
-                }
-                
-                .image-container img {
-                    max-width: 100% !important;
-                    height: auto !important;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-                }
-                
-                .tags {
-                    font-size: 14px;
-                    color: #666;
-                    margin-top: 20px;
-                    padding: 10px;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                }
-                
-                /* Night mode support */
-                .nightMode .card {
-                    background-color: #2c2c2c;
-                    color: #e0e0e0;
-                }
-                
-                .nightMode .clinical-vignette {
-                    background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%);
-                    border-left-color: #5dade2;
-                }
-                
-                .nightMode .question {
-                    background: #3a3a3a;
-                    border-left-color: #17a2b8;
-                    color: #e0e0e0;
-                }
-                
-                .nightMode .answer {
-                    background: linear-gradient(135deg, #2e4a2e 0%, #3a5a3a 100%);
-                    border-left-color: #28a745;
-                }
-                
-                .nightMode .explanation {
-                    background: linear-gradient(135deg, #4a3d1f 0%, #5a4a2f 100%);
-                    border-color: #ffc107;
-                }
-                
-                .nightMode .mnemonic {
-                    background: linear-gradient(135deg, #1f3a4a 0%, #2f4a5a 100%);
-                    border-left-color: #29b6f6;
-                }
-                
-                .nightMode .tags {
-                    background: #3a3a3a;
-                    color: #b0b0b0;
-                }
-            '''
-        )
-    
-    def generate_deck(self, deck_name: str, cards_data: List[Dict]) -> str:
-        # Create deck with unique ID
-        deck_id = abs(hash(deck_name + str(datetime.now()))) % (10**9)
-        deck = genanki.Deck(deck_id, deck_name)
+def download_image_from_url(url, media_files_list):
+    """Download image from URL and return local filename for Anki embedding"""
+    try:
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path)
+        if not filename or '.' not in filename:
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+            filename = f"image_{url_hash}.jpg"
         
-        # Process cards
-        for card_data in cards_data:
-            # Extract and clean data
-            clinical_vignette = html.unescape(str(card_data.get('clinical_vignette', ''))).strip()
-            front = html.unescape(str(card_data.get('front', ''))).strip()
-            back = html.unescape(str(card_data.get('back', ''))).strip()
-            explanation = html.unescape(str(card_data.get('explanation', ''))).strip()
-            mnemonic = html.unescape(str(card_data.get('mnemonic', ''))).strip()
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
+        if not any(filename.lower().endswith(ext) for ext in valid_extensions):
+            filename += '.jpg'
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        temp_path = os.path.join(tempfile.gettempdir(), filename)
+        with open(temp_path, 'wb') as f:
+            f.write(response.content)
+        
+        media_files_list.append(temp_path)
+        return filename
+    except Exception as e:
+        app.logger.error(f"Error downloading image from {url}: {e}")
+        return None
+
+def clean_cloze_formatting(text):
+    """Remove trailing curly braces from cloze card formatting"""
+    if not text:
+        return text
+    # Remove trailing curly braces and clean up
+    text = text.rstrip('}').strip()
+    return text
+
+def process_vignette_content(vignette_data):
+    """Process vignette content with click-to-reveal functionality"""
+    if not vignette_data:
+        return ''
+    
+    # Handle both dict and string formats
+    if isinstance(vignette_data, dict):
+        clinical_case = vignette_data.get('clinical_case', '')
+        explanation = vignette_data.get('explanation', '')
+        # Clean up formatting issues
+        clinical_case = clean_cloze_formatting(clinical_case)
+        explanation = clean_cloze_formatting(explanation)
+    else:
+        # If it's a string, clean it up
+        vignette_text = clean_cloze_formatting(str(vignette_data))
+        clinical_case = vignette_text
+        explanation = ''
+    
+    # Build the vignette HTML with clinical case and explanation
+    vignette_html = '<div class="vignette-wrapper">'
+    vignette_html += '<div class="clinical-case">' + clinical_case + '</div>'
+    
+    if explanation:
+        vignette_html += '<div class="reveal-button" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\');">'
+        vignette_html += 'Click to reveal explanation'
+        vignette_html += '</div>'
+        vignette_html += '<div class="explanation" style="display: none;">'
+        vignette_html += explanation
+        vignette_html += '</div>'
+    
+    vignette_html += '</div>'
+    
+    return vignette_html
+
+def process_mnemonic_content(mnemonic_data):
+    """Process mnemonic content - preserve HTML formatting from n8n"""
+    if not mnemonic_data:
+        return ''
+    
+    # Handle both dict and string formats
+    if isinstance(mnemonic_data, dict):
+        mnemonic_text = mnemonic_data.get('mnemonic', str(mnemonic_data))
+    else:
+        mnemonic_text = str(mnemonic_data)
+    
+    # Clean up any formatting issues
+    mnemonic_text = clean_cloze_formatting(mnemonic_text)
+    
+    return mnemonic_text
+
+def create_enhanced_medical_model():
+    """Create enhanced medical model with modern styling"""
+    enhanced_css = """
+/* Base styles */
+html { font-size: 20px; }
+.card { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    text-align: center; 
+    font-size: 1rem; 
+    color: #333; 
+    background-color: #f5f5f5; 
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* Typography */
+h1, h2, h3 { margin: 0.5em 0; }
+hr { 
+    border: none;
+    border-top: 2px solid #e0e0e0;
+    margin: 2em 0;
+}
+
+/* Image styling */
+img { 
+    max-width: 90%; 
+    max-height: 500px; 
+    border-radius: 12px; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
+    margin: 20px auto;
+    display: block;
+}
+
+.image-caption {
+    text-align: center;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+/* Vignette section */
+#vignette-section {
+    background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 24px 0;
+    text-align: left;
+    box-shadow: 0 8px 32px rgba(21, 101, 192, 0.3);
+}
+
+#vignette-section h3 {
+    color: #fff;
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.vignette-wrapper {
+    color: #fff;
+    font-size: 0.95em;
+}
+
+.clinical-case {
+    margin-bottom: 16px;
+    line-height: 1.7;
+}
+
+.reveal-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.reveal-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.explanation {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    line-height: 1.7;
+}
+
+/* Mnemonic section */
+#mnemonic-section {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 24px 0;
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(238, 90, 36, 0.3);
+}
+
+#mnemonic-header {
+    font-size: 1.2em;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.mnemonic-content {
+    font-size: 0.95em;
+    line-height: 1.6;
+}
+
+/* Extra notes */
+#extra {
+    background: #f0f0f0;
+    border-left: 4px solid #2196f3;
+    padding: 16px;
+    margin: 24px 0;
+    text-align: left;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
+/* Night mode */
+.nightMode.card, .night_mode.card { 
+    color: #e0e0e0;
+    background-color: #1a1a1a;
+}
+
+.nightMode #vignette-section, .night_mode #vignette-section {
+    background: linear-gradient(135deg, #0d47a1 0%, #01579b 100%);
+}
+
+.nightMode #mnemonic-section, .night_mode #mnemonic-section {
+    background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+}
+
+.nightMode #extra, .night_mode #extra {
+    background: #2a2a2a;
+    border-left-color: #1976d2;
+}
+
+/* Preserve n8n HTML styling */
+span[style*="color: #dc2626"] {
+    color: #dc2626 !important;
+    font-weight: bold;
+}
+
+.nightMode span[style*="color: #dc2626"], 
+.night_mode span[style*="color: #dc2626"] {
+    color: #ff6b6b !important;
+}
+"""
+
+    fields = [
+        {'name': 'Front'},
+        {'name': 'Back'},
+        {'name': 'Image'},
+        {'name': 'Vignette'},
+        {'name': 'Mnemonic'},
+        {'name': 'Extra'}
+    ]
+    
+    templates = [
+        {
+            'name': 'Enhanced Medical Card',
+            'qfmt': '''{{Front}}''',
+            'afmt': '''
+                {{FrontSide}}
+                <hr id="answer">
+                
+                {{#Back}}
+                <div class="answer-section">{{Back}}</div>
+                {{/Back}}
+                
+                {{#Image}}
+                <div class="image-container">{{{Image}}}</div>
+                {{/Image}}
+                
+                {{#Vignette}}
+                <div id="vignette-section">
+                    <h3>Clinical Vignette</h3>
+                    {{{Vignette}}}
+                </div>
+                {{/Vignette}}
+                
+                {{#Mnemonic}}
+                <div id="mnemonic-section">
+                    <div id="mnemonic-header">Memory Aid</div>
+                    <div class="mnemonic-content">{{{Mnemonic}}}</div>
+                </div>
+                {{/Mnemonic}}
+                
+                {{#Extra}}
+                <div id="extra">{{{Extra}}}</div>
+                {{/Extra}}
+            ''',
+        }
+    ]
+    
+    model = genanki.Model(
+        1607392320,
+        'Enhanced Medical Cards',
+        fields=fields,
+        templates=templates,
+        css=enhanced_css
+    )
+    return model
+
+class EnhancedFlashcardProcessor:
+    def __init__(self):
+        self.model = create_enhanced_medical_model()
+    
+    def process_cards(self, cards_data, deck_name="Medical Deck"):
+        deck_id = random.randrange(1 << 30, 1 << 31)
+        deck = genanki.Deck(deck_id, deck_name)
+        media_files = []
+        
+        for card_info in cards_data:
+            # Process card type
+            card_type = card_info.get('type', 'basic')
             
-            # Handle tags
-            tags = card_data.get('tags', [])
-            if isinstance(tags, str):
-                tags = [tag.strip() for tag in tags.split(',') if tag.strip()]
+            # Get content - preserve HTML formatting from n8n
+            front_content = card_info.get('front', '')
+            back_content = card_info.get('back', '')
             
-            # Format images
-            images_html = ""
-            images = card_data.get('images', [])
-            if images:
-                images_html = "".join([f'<img src="{img}" alt="Medical Image">' for img in images])
+            # For cloze cards, clean up any formatting issues
+            if card_type == 'cloze':
+                front_content = clean_cloze_formatting(front_content)
+                back_content = clean_cloze_formatting(back_content)
+            
+            # Process other fields
+            notes_content = card_info.get('notes', '')
+            
+            # Process vignette with click-to-reveal
+            vignette_content = process_vignette_content(card_info.get('vignette', ''))
+            
+            # Process mnemonic
+            mnemonic_content = process_mnemonic_content(card_info.get('mnemonic', ''))
+            
+            # Process image
+            image_content = ''
+            image_data = card_info.get('image', '')
+            if image_data:
+                if isinstance(image_data, dict):
+                    url = image_data.get('url', '')
+                    caption = image_data.get('caption', '')
+                    if url:
+                        downloaded_filename = download_image_from_url(url, media_files)
+                        if downloaded_filename:
+                            image_content = f'<img src="{downloaded_filename}" alt="{caption}">'
+                            if caption:
+                                image_content += f'<div class="image-caption">{caption}</div>'
+                elif isinstance(image_data, str) and image_data.startswith('http'):
+                    downloaded_filename = download_image_from_url(image_data, media_files)
+                    if downloaded_filename:
+                        image_content = f'<img src="{downloaded_filename}">'
             
             # Create note
             note = genanki.Note(
-                model=self.medical_model,
+                model=self.model,
                 fields=[
-                    clinical_vignette,
-                    front,
-                    back,
-                    explanation,
-                    ", ".join(tags) if tags else "",
-                    images_html,
-                    mnemonic
+                    front_content,
+                    back_content,
+                    image_content,
+                    vignette_content,
+                    mnemonic_content,
+                    notes_content  # Using notes as Extra field
                 ],
-                tags=[tag.replace(' ', '_') for tag in tags] if tags else []
+                tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
             )
             deck.add_note(note)
         
-        # Generate filename and save
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"{deck_name.replace(' ', '_')}_{timestamp}.apkg"
-        filepath = os.path.join("temp", filename)
-        
-        package = genanki.Package(deck)
-        package.write_to_file(filepath)
-        
-        return filename
+        return deck, media_files
 
-# Initialize generator
-anki_generator = MedicalAnkiGenerator()
+def extract_deck_name(data):
+    """Extract deck name from various data formats"""
+    if isinstance(data, list) and len(data) > 0:
+        if isinstance(data[0], dict) and 'deck_name' in data[0]:
+            return data[0].get('deck_name')
+    elif isinstance(data, dict):
+        return data.get('deck_name')
+    return None
 
-# HTML template for the enhanced UI
-HTML_TEMPLATE = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Medical Flashcard Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .card-preview { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
-        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    </style>
-</head>
-<body class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- Header -->
-        <header class="mb-8 text-center">
-            <div class="gradient-bg rounded-2xl p-8 text-white">
-                <h1 class="text-4xl font-bold mb-4">
-                    <i class="fas fa-stethoscope mr-3"></i>
-                    Enhanced Medical Flashcard Generator
-                </h1>
-                <p class="text-xl opacity-90">Create beautiful Anki flashcards with advanced medical formatting</p>
-                <div class="mt-4 text-sm opacity-75">
-                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full mr-2">Version 6.0</span>
-                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full mr-2">n8n Compatible</span>
-                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full">Medical Focused</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Input Section -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-2xl font-semibold mb-6 flex items-center text-gray-800">
-                    <i class="fas fa-edit mr-3 text-blue-600"></i>
-                    Create Medical Flashcard
-                </h2>
-                
-                <form id="flashcardForm" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-hospital mr-1 text-blue-500"></i>
-                            Clinical Vignette (Optional)
-                        </label>
-                        <textarea id="vignette" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="A 65-year-old male presents with acute chest pain radiating to the left arm..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-question-circle mr-1 text-green-500"></i>
-                            Question <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="question" rows="2" required class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="What is the most likely diagnosis?"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-check-circle mr-1 text-green-500"></i>
-                            Answer <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="answer" rows="2" required class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="ST-elevation myocardial infarction (STEMI)"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-lightbulb mr-1 text-yellow-500"></i>
-                            Explanation
-                        </label>
-                        <textarea id="explanation" rows="3" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="The combination of chest pain, ECG changes, and elevated troponins indicates..."></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-brain mr-1 text-purple-500"></i>
-                            Mnemonic
-                        </label>
-                        <input type="text" id="mnemonic" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="STEMI = ST-elevation Teaches Emergency Medicine Importance">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-tag mr-1 text-indigo-500"></i>
-                            Tags (comma-separated)
-                        </label>
-                        <input type="text" id="tags" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="cardiology, emergency, ECG, STEMI">
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition duration-200 font-medium text-lg shadow-lg">
-                        <i class="fas fa-plus mr-2"></i>Add Medical Flashcard
-                    </button>
-                </form>
-            </div>
-
-            <!-- Preview and Cards Section -->
-            <div class="space-y-8">
-                <!-- Preview -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2 class="text-2xl font-semibold mb-6 flex items-center text-gray-800">
-                        <i class="fas fa-eye mr-3 text-green-600"></i>
-                        Live Preview
-                    </h2>
-                    
-                    <div id="previewCard" class="card-preview rounded-lg p-6 min-h-[200px]">
-                        <div class="text-center text-gray-500 py-12 animate-pulse-slow">
-                            <i class="fas fa-clipboard-list text-5xl mb-4"></i>
-                            <p class="text-lg">Your medical flashcard preview will appear here</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Added Cards -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-semibold flex items-center text-gray-800">
-                            <i class="fas fa-layer-group mr-3 text-purple-600"></i>
-                            Cards (<span id="cardCount">0</span>)
-                        </h2>
-                        <button onclick="clearAllCards()" class="text-red-600 hover:text-red-700 font-medium">
-                            <i class="fas fa-trash mr-1"></i>Clear All
-                        </button>
-                    </div>
-                    
-                    <div id="cardsList" class="space-y-3 max-h-64 overflow-y-auto">
-                        <p class="text-gray-400 text-center py-8">No cards added yet</p>
-                    </div>
-                    
-                    <button onclick="generateDeck()" id="generateBtn" disabled class="w-full mt-6 bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 px-6 rounded-lg hover:from-green-700 hover:to-blue-700 transition duration-200 font-medium text-lg shadow-lg disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed">
-                        <i class="fas fa-download mr-2"></i>Generate Anki Deck
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- API Documentation -->
-        <div class="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8">
-            <h3 class="text-2xl font-semibold text-blue-900 mb-4">
-                <i class="fas fa-code mr-2"></i>API Integration
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h4 class="font-semibold text-blue-800 mb-2">n8n Webhook Endpoint</h4>
-                    <code class="bg-blue-100 text-blue-900 px-4 py-2 rounded-lg block text-sm">POST /api/webhook/n8n</code>
-                </div>
-                
-                <div>
-                    <h4 class="font-semibold text-blue-800 mb-2">Enhanced Medical API</h4>
-                    <code class="bg-blue-100 text-blue-900 px-4 py-2 rounded-lg block text-sm">POST /api/enhanced-medical</code>
-                </div>
-            </div>
-            
-            <details class="mt-6">
-                <summary class="cursor-pointer text-blue-700 hover:text-blue-800 font-medium">
-                    <i class="fas fa-chevron-right mr-1"></i>View Example Payload
-                </summary>
-                <pre class="mt-4 bg-blue-900 text-blue-100 p-4 rounded-lg text-sm overflow-x-auto"><code>{
-  "cards": [
-    {
-      "front": "What is the mechanism of action of Aspirin?",
-      "back": "Irreversibly inhibits COX-1 and COX-2 enzymes",
-      "clinical_vignette": "A 65-year-old patient with chest pain",
-      "explanation": "Aspirin prevents platelet aggregation",
-      "mnemonic": "ASA = Anti-platelet Super Agent",
-      "tags": ["cardiology", "pharmacology", "emergency"]
-    }
-  ]
-}</code></pre>
-            </details>
-        </div>
-    </div>
-
-    <!-- Success Modal -->
-    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <div class="text-center">
-                <i class="fas fa-check-circle text-6xl text-green-600 mb-4"></i>
-                <h3 class="text-2xl font-semibold mb-3">Deck Generated Successfully!</h3>
-                <p class="text-gray-600 mb-6">Your enhanced medical Anki deck is ready for download.</p>
-                <a id="downloadLink" href="#" class="inline-block bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-8 rounded-lg hover:from-green-700 hover:to-blue-700 transition duration-200 font-medium shadow-lg">
-                    <i class="fas fa-download mr-2"></i>Download Deck
-                </a>
-                <button onclick="closeModal()" class="block w-full mt-4 text-gray-600 hover:text-gray-800 py-2">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let cards = [];
-
-        // Form submission
-        document.getElementById('flashcardForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const card = {
-                clinical_vignette: document.getElementById('vignette').value,
-                front: document.getElementById('question').value,
-                back: document.getElementById('answer').value,
-                explanation: document.getElementById('explanation').value,
-                mnemonic: document.getElementById('mnemonic').value,
-                tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(tag => tag)
-            };
-            
-            cards.push(card);
-            updateCardsList();
-            updatePreview(card);
-            
-            // Reset form
-            this.reset();
-            document.getElementById('generateBtn').disabled = false;
-        });
-
-        // Update preview
-        function updatePreview(card) {
-            const previewDiv = document.getElementById('previewCard');
-            
-            let html = '<div class="space-y-4">';
-            
-            if (card.clinical_vignette) {
-                html += `<div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">${escapeHtml(card.clinical_vignette)}</div>`;
-            }
-            
-            html += `
-                <div class="font-semibold text-xl text-gray-800 bg-gray-50 p-4 rounded">${escapeHtml(card.front)}</div>
-                <div class="border-t-2 pt-4">
-                    <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded text-green-800">${escapeHtml(card.back)}</div>
-                </div>
-            `;
-            
-            if (card.explanation) {
-                html += `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">${escapeHtml(card.explanation)}</div>`;
-            }
-            
-            if (card.mnemonic) {
-                html += `<div class="bg-purple-50 border-l-4 border-purple-400 p-4 rounded italic">${escapeHtml(card.mnemonic)}</div>`;
-            }
-            
-            if (card.tags.length > 0) {
-                html += '<div class="flex flex-wrap gap-2 mt-4">';
-                card.tags.forEach(tag => {
-                    html += `<span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm rounded-full">${escapeHtml(tag)}</span>`;
-                });
-                html += '</div>';
-            }
-            
-            html += '</div>';
-            previewDiv.innerHTML = html;
-        }
-
-        // Update cards list
-        function updateCardsList() {
-            const listDiv = document.getElementById('cardsList');
-            const countSpan = document.getElementById('cardCount');
-            
-            countSpan.textContent = cards.length;
-            
-            if (cards.length === 0) {
-                listDiv.innerHTML = '<p class="text-gray-400 text-center py-8">No cards added yet</p>';
-                return;
-            }
-            
-            listDiv.innerHTML = cards.map((card, index) => `
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
-                    <div class="flex-1">
-                        <p class="font-medium text-sm text-gray-800">${escapeHtml(card.front.substring(0, 60))}${card.front.length > 60 ? '...' : ''}</p>
-                        <p class="text-xs text-gray-500 mt-1">${card.tags.length} tags • ${card.clinical_vignette ? 'With vignette' : 'No vignette'}</p>
-                    </div>
-                    <button onclick="removeCard(${index})" class="text-red-500 hover:text-red-700 p-2 ml-4">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        // Remove card
-        function removeCard(index) {
-            cards.splice(index, 1);
-            updateCardsList();
-            if (cards.length === 0) {
-                document.getElementById('generateBtn').disabled = true;
-                document.getElementById('previewCard').innerHTML = `
-                    <div class="text-center text-gray-500 py-12 animate-pulse-slow">
-                        <i class="fas fa-clipboard-list text-5xl mb-4"></i>
-                        <p class="text-lg">Your medical flashcard preview will appear here</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Clear all cards
-        function clearAllCards() {
-            if (confirm('Are you sure you want to clear all cards?')) {
-                cards = [];
-                updateCardsList();
-                document.getElementById('generateBtn').disabled = true;
-                document.getElementById('previewCard').innerHTML = `
-                    <div class="text-center text-gray-500 py-12 animate-pulse-slow">
-                        <i class="fas fa-clipboard-list text-5xl mb-4"></i>
-                        <p class="text-lg">Your medical flashcard preview will appear here</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Generate deck
-        async function generateDeck() {
-            const btn = document.getElementById('generateBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating Enhanced Deck...';
-            
-            try {
-                const response = await fetch('/api/enhanced-medical', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ cards: cards })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('downloadLink').href = data.download_url;
-                    document.getElementById('successModal').classList.remove('hidden');
-                    
-                    // Clear cards after successful generation
-                    cards = [];
-                    updateCardsList();
-                    document.getElementById('previewCard').innerHTML = `
-                        <div class="text-center text-gray-500 py-12 animate-pulse-slow">
-                            <i class="fas fa-clipboard-list text-5xl mb-4"></i>
-                            <p class="text-lg">Your medical flashcard preview will appear here</p>
-                        </div>
-                    `;
-                } else {
-                    alert('Error generating deck. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error generating deck. Please try again.');
-            } finally {
-                btn.disabled = cards.length === 0;
-                btn.innerHTML = '<i class="fas fa-download mr-2"></i>Generate Anki Deck';
-            }
-        }
-
-        // Close modal
-        function closeModal() {
-            document.getElementById('successModal').classList.add('hidden');
-        }
-
-        // Escape HTML
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-    </script>
-</body>
-</html>'''
-
-# Routes
-@app.route('/')
-def home():
-    return render_template_string(HTML_TEMPLATE)
+def extract_cards(data):
+    """Extract cards from various data formats"""
+    if isinstance(data, list):
+        if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
+            return data[0]['cards']
+        else:
+            return data
+    elif isinstance(data, dict):
+        return data.get('cards', [])
+    return []
 
 @app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
 def api_enhanced_medical():
@@ -624,95 +421,92 @@ def api_enhanced_medical():
         return '', 200
     
     try:
+        app.logger.info("=== ENHANCED MEDICAL API CALLED ===")
+        
+        # Get JSON data
         data = request.get_json(force=True)
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        # Extract cards from various data formats
-        cards = []
-        if isinstance(data, list):
-            for item in data:
-                if isinstance(item, dict) and 'cards' in item:
-                    cards.extend(item['cards'])
-                elif isinstance(item, dict) and 'front' in item and 'back' in item:
-                    cards.append(item)
-        elif isinstance(data, dict):
-            if 'cards' in data:
-                cards = data['cards']
-            elif 'front' in data and 'back' in data:
-                cards = [data]
+        # Extract deck name and cards
+        deck_name = extract_deck_name(data)
+        cards = extract_cards(data)
         
         if not cards:
-            return jsonify({'error': 'No valid cards found'}), 400
+            return jsonify({'error': 'No cards provided'}), 400
         
-        # Generate deck
-        deck_name = f"Enhanced_Medical_Deck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        filename = anki_generator.generate_deck(deck_name, cards)
+        # Generate deck name if not provided
+        if not deck_name:
+            deck_name = f"Medical_Deck_{time.strftime('%Y%m%d_%H%M%S')}"
+        
+        app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
+        
+        # Process cards
+        processor = EnhancedFlashcardProcessor()
+        deck, media_files = processor.process_cards(cards, deck_name)
+        
+        # Create package
+        package = genanki.Package(deck)
+        package.media_files = media_files
+        
+        # Generate filename
+        safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        if not safe_name:
+            safe_name = "medical_deck"
+        filename = f"{safe_name}.apkg"
+        file_path = f"/tmp/{filename}"
+        
+        # Write package
+        package.write_to_file(file_path)
         
         # Get file info
-        file_path = os.path.join("temp", filename)
         file_size = os.path.getsize(file_path)
+        app.logger.info(f"Generated deck: {file_path} (size: {file_size} bytes)")
         
-        return jsonify({
+        # Generate response
+        download_url = f"/download/{filename}"
+        full_url = f"{request.host_url.rstrip('/')}{download_url}"
+        
+        result = {
             'success': True,
-            'filename': filename,
+            'status': 'completed',
             'deck_name': deck_name,
             'cards_processed': len(cards),
+            'media_files_downloaded': len(media_files),
             'file_size': file_size,
-            'download_url': f"/download/{filename}",
-            'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
-            'message': f'Successfully generated enhanced deck with {len(cards)} cards',
-            'version': '6.0.0'
-        }), 200
+            'filename': filename,
+            'download_url': download_url,
+            'full_download_url': full_url,
+            'message': f'Successfully generated deck with {len(cards)} cards'
+        }
+        
+        # Log processing stats if available
+        if isinstance(data, list) and len(data) > 0 and 'processing_stats' in data[0]:
+            stats = data[0]['processing_stats']
+            result['processing_stats'] = stats
+            app.logger.info(f"Processing stats: {stats}")
+        
+        return jsonify(result), 200
         
     except Exception as e:
+        app.logger.error(f"ERROR: {str(e)}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             'error': 'Processing failed',
-            'message': str(e)
+            'message': str(e),
+            'traceback': traceback.format_exc()
         }), 500
 
-@app.route('/api/webhook/n8n', methods=['POST'])
-def receive_n8n_webhook():
-    try:
-        data = request.get_json(force=True)
-        
-        # Extract cards from n8n payload
-        cards = []
-        if 'cards' in data:
-            cards = data['cards']
-        elif 'data' in data:
-            if isinstance(data['data'], list):
-                cards = data['data']
-            elif isinstance(data['data'], dict) and 'cards' in data['data']:
-                cards = data['data']['cards']
-        
-        if not cards:
-            return jsonify({'error': 'No valid flashcard data found'}), 400
-        
-        # Generate deck name
-        deck_name = f"n8n_Medical_Flashcards_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        if 'workflow_id' in data:
-            deck_name = f"n8n_{data['workflow_id']}"
-        
-        # Generate Anki file
-        filename = anki_generator.generate_deck(deck_name, cards)
-        
-        return jsonify({
-            'success': True,
-            'filename': filename,
-            'deck_name': deck_name,
-            'card_count': len(cards),
-            'download_url': f"/download/{filename}",
-            'message': 'Deck generated successfully from n8n webhook'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/simple', methods=['POST', 'OPTIONS'])
+def api_simple():
+    """Legacy compatibility endpoint"""
+    return api_enhanced_medical()
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
     try:
-        file_path = os.path.join('temp', filename)
+        file_path = os.path.join('/tmp', filename)
         if not os.path.exists(file_path):
             return f"File not found: {filename}", 404
         
@@ -723,33 +517,96 @@ def download_file(filename):
             mimetype='application/octet-stream'
         )
     except Exception as e:
+        app.logger.error(f"Download error: {e}")
         return "Download failed", 500
 
 @app.route('/api/health', methods=['GET'])
 def api_health():
     return jsonify({
         'status': 'healthy',
-        'service': 'Enhanced Medical Flashcard Generator',
-        'version': '6.0.0',
-        'framework': 'Flask + Enhanced UI',
+        'service': 'Enhanced Medical Anki Generator',
+        'version': '5.0.0',
         'features': [
-            'enhanced_medical_cards',
-            'n8n_webhook_support', 
-            'beautiful_ui',
+            'n8n_html_preservation',
             'clinical_vignettes',
-            'advanced_styling'
+            'click_to_reveal',
+            'image_download',
+            'cloze_support'
         ],
-        'timestamp': datetime.now().isoformat()
+        'timestamp': int(time.time())
     }), 200
 
-# Legacy compatibility endpoints
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    return api_enhanced_medical()
-
-@app.route('/api/generate', methods=['POST'])
-def api_generate():
-    return api_enhanced_medical()
+@app.route('/')
+def index():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Enhanced Medical Anki Generator</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                max-width: 800px;
+                margin: 50px auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                background: white;
+                border-radius: 12px;
+                padding: 40px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            h1 {
+                color: #1976d2;
+                margin-bottom: 10px;
+            }
+            .endpoint {
+                background: #e3f2fd;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-family: monospace;
+                margin: 20px 0;
+            }
+            .features {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 20px;
+            }
+            .features li {
+                margin: 8px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🩺 Enhanced Medical Anki Generator</h1>
+            <p>Convert n8n medical flashcard JSON to beautiful Anki decks</p>
+            
+            <div class="endpoint">
+                POST /api/enhanced-medical
+            </div>
+            
+            <div class="features">
+                <h3>✨ Features</h3>
+                <ul>
+                    <li>✅ Preserves HTML formatting from n8n</li>
+                    <li>✅ Clinical vignettes with click-to-reveal answers</li>
+                    <li>✅ Automatic image download and embedding</li>
+                    <li>✅ Beautiful card styling with night mode support</li>
+                    <li>✅ Support for basic and cloze card types</li>
+                    <li>✅ Mnemonic and notes sections</li>
+                </ul>
+            </div>
+            
+            <p style="margin-top: 30px; color: #666;">
+                Version 5.0.0 - Streamlined for n8n integration
+            </p>
+        </div>
+    </body>
+    </html>
+    """
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
