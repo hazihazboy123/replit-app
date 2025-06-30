@@ -900,11 +900,33 @@ def receive_n8n_webhook():
             data = request.get_json(force=True)
         except Exception as json_error:
             print(f"JSON Parse Error: {json_error}")
-            return jsonify({
-                'error': 'Invalid JSON format',
-                'details': str(json_error),
-                'raw_data_preview': raw_data[:200]
-            }), 400
+            # If JSON parsing fails, try to treat raw data as content
+            if raw_data and raw_data.strip():
+                # Treat raw data as content to be parsed
+                print(f"Treating raw data as content: {raw_data[:200]}...")
+                parsed_card = parse_raw_content(raw_data)
+                cards = [parsed_card]
+                
+                # Generate deck
+                deck_name = f"n8n_Raw_Content_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                filename = anki_generator.generate_deck(deck_name, cards)
+                
+                return jsonify({
+                    'success': True,
+                    'filename': filename,
+                    'deck_name': deck_name,
+                    'card_count': len(cards),
+                    'download_url': f"/download/{filename}",
+                    'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
+                    'message': 'Deck generated successfully from raw n8n content',
+                    'processing_type': 'n8n_raw_content'
+                })
+            else:
+                return jsonify({
+                    'error': 'Invalid JSON format and no raw content',
+                    'details': str(json_error),
+                    'raw_data_preview': raw_data[:200]
+                }), 400
         
         print(f"N8N Parsed Data: {data}")
         
