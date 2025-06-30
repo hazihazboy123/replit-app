@@ -85,18 +85,21 @@ def process_vignette_content(vignette_data):
         explanation = ''
     
     # Build the vignette HTML with clinical case and explanation
-    vignette_html = '<div class="vignette-wrapper">'
-    vignette_html += '<div class="clinical-case">' + clinical_case + '</div>'
-    
-    if explanation:
-        vignette_html += '<div class="reveal-button" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\');">'
-        vignette_html += 'Click to reveal explanation'
-        vignette_html += '</div>'
-        vignette_html += '<div class="explanation" style="display: none;">'
-        vignette_html += explanation
-        vignette_html += '</div>'
-    
-    vignette_html += '</div>'
+    vignette_html = f'''
+    <div class="vignette-wrapper">
+        <div class="clinical-case">
+            {clinical_case}
+        </div>
+        {f'''
+        <div class="reveal-button" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === 'block' ? 'none' : 'block');">
+            🔍 Click to reveal explanation ↓
+        </div>
+        <div class="explanation" style="display: none;">
+            {explanation}
+        </div>
+        ''' if explanation else ''}
+    </div>
+    '''
     
     return vignette_html
 
@@ -301,20 +304,20 @@ span[style*="color: #dc2626"] {
                 
                 {{#Vignette}}
                 <div id="vignette-section">
-                    <h3>Clinical Vignette</h3>
+                    <h3>🩺 Clinical Vignette</h3>
                     {{{Vignette}}}
                 </div>
                 {{/Vignette}}
                 
                 {{#Mnemonic}}
                 <div id="mnemonic-section">
-                    <div id="mnemonic-header">Memory Aid</div>
+                    <div id="mnemonic-header">🧠 Memory Aid</div>
                     <div class="mnemonic-content">{{{Mnemonic}}}</div>
                 </div>
                 {{/Mnemonic}}
                 
                 {{#Extra}}
-                <div id="extra">{{{Extra}}}</div>
+                <div id="extra">📝 {{{Extra}}}</div>
                 {{/Extra}}
             ''',
         }
@@ -497,11 +500,6 @@ def api_enhanced_medical():
             'message': str(e),
             'traceback': traceback.format_exc()
         }), 500
-
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
 
 @app.route('/download/<path:filename>')
 def download_file(filename):

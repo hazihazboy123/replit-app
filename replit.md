@@ -131,17 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 29, 2025: ENHANCED MEDICAL CARD SYSTEM - Updated entire codebase with comprehensive feature improvements:
-  * AUTOMATIC CLOZE DETECTION: Intelligent detection and processing of {{c1::cloze}} syntax with dedicated cloze model
-  * ENHANCED VIGNETTE PROCESSING: Advanced click-to-reveal functionality with structured answer extraction
-  * PROFESSIONAL STYLING: Complete AnKing-inspired CSS with clinical vignette and mnemonic sections
-  * IMPROVED MEDICAL HIGHLIGHTING: Enhanced pattern matching for anatomical terms and medical concepts
-  * DUAL MODEL SYSTEM: Separate models for regular cards and cloze cards with optimized templates
-  * ADVANCED ANSWER FORMATTING: Vertical answer choice formatting with interactive reveal sections
-  * COMPREHENSIVE NIGHT MODE: Full dark theme support for all styling elements
-  * PROFESSIONAL IMAGE HANDLING: Enhanced download process with AWS S3 compatibility
-  * NULL-SAFE PROCESSING: Comprehensive error handling for None values and malformed data
-  * System now provides enterprise-grade medical flashcard generation with automatic format detection
+- June 30, 2025: STREAMLINED N8N INTEGRATION - Updated codebase with optimized n8n workflow compatibility:
+  * HTML PRESERVATION: Complete preservation of n8n HTML formatting including span styles and color attributes
+  * SIMPLIFIED ARCHITECTURE: Streamlined single-model approach for enhanced performance and maintainability
+  * IMPROVED VIGNETTE PROCESSING: Enhanced click-to-reveal with support for dict and string vignette formats
+  * MODERN STYLING: Updated CSS with modern system fonts, improved gradients, and responsive design
+  * CLOZE FORMATTING CLEANUP: Advanced trailing brace removal and text cleanup for perfect card formatting
+  * ENHANCED IMAGE HANDLING: Robust image download with proper error handling and caption support
+  * FLEXIBLE DATA EXTRACTION: Intelligent parsing of various n8n data formats and structures
+  * PROCESSING STATS LOGGING: Optional processing statistics tracking for workflow optimization
+  * Version 5.0.0 now provides optimal n8n integration with preserved formatting and enhanced reliability
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
