@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 30, 2025: ENHANCED CLINICAL VIGNETTE SYSTEM - Updated to Version 6.0.0 with advanced medical card features:
-  * DIRECT FIELD MAPPING: Simplified processing using clinical_vignette and explanation fields for optimal n8n integration
-  * ENHANCED CLICK-TO-REVEAL: Interactive JavaScript buttons that toggle between "Click to reveal" and "Hide explanation"
-  * BLUE VIGNETTE STYLING: Clinical vignettes now display in blue gradient boxes with white text for medical trust
-  * MAGENTA IMAGE CAPTIONS: Image captions styled with #dc2626 red color and bold font weight for emphasis
-  * COMPLETE HTML PRESERVATION: ALL n8n HTML formatting including span styles and color attributes fully preserved
-  * SIMPLIFIED CARD STRUCTURE: Streamlined single-model approach for enhanced performance and maintainability
-  * IMPROVED ERROR HANDLING: Graceful handling of failed image downloads with detailed logging
-  * NIGHT MODE COMPATIBILITY: Full dark theme support for all styling elements including vignettes and mnemonics
-  * Version 6.0.0 provides optimal clinical vignette processing with direct n8n field compatibility
+- June 30, 2025: SIMPLIFIED FRONT/BACK CARD STRUCTURE - Updated to Version 7.0.0 with proper Anki formatting:
+  * PROPER FRONT/BACK FIELDS: Simplified to standard 2-field Anki model with Front and Back fields only
+  * RED TEXT STYLING: Both questions and answers styled with #dc2626 red color for medical emphasis
+  * COMPONENT LAYERING: Back field contains structured layers - answer, images, vignettes, mnemonics
+  * BLUE VIGNETTE BOXES: Clinical vignettes display in solid #1976d2 blue background with white text
+  * CLICK-TO-REVEAL EXPLANATIONS: Interactive JavaScript toggle for showing/hiding explanations
+  * IMAGES ARRAY SUPPORT: Handles multiple images from n8n "images" field array on back of cards
+  * MNEMONIC POSITIONING: Mnemonics positioned at bottom of back field with #ff6b6b red styling
+  * NIGHT MODE SUPPORT: Proper dark theme with #ff6b6b red text for questions and answers
+  * Version 7.0.0 provides clean front/back card structure with optimal medical formatting
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
