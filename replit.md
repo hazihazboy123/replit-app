@@ -59,25 +59,29 @@ This is an advanced Flask-based web application that transforms medical educatio
 7. Error messages are displayed for invalid inputs
 
 ### Expected JSON Structure
+
+#### Enhanced Medical Cards Format
 ```json
 {
-  "deck_name": "Medical Terminology Deck",
   "cards": [
     {
-      "question": "What is the mechanism of action of Aspirin?",
-      "answer": "Irreversibly inhibits COX-1 and COX-2 enzymes",
-      "high_yield_flag": "high-yield",
-      "notes": "Important for cardiology and pain management",
-      "tags": "Pharmacology::NSAIDs::Aspirin",
-      "image": ""
-    },
-    {
-      "cloze_text": "{{c1::Myocardial infarction}} is caused by {{c2::coronary artery occlusion}}",
-      "high_yield_flag": "high-yield",
-      "notes": "Key concept for USMLE Step 1",
-      "tags": "Cardiology::Pathophysiology"
+      "front": "What is the mechanism of action of Aspirin?",
+      "back": "Irreversibly inhibits COX-1 and COX-2 enzymes",
+      "clinical_vignette": "A 65-year-old patient presents with chest pain",
+      "explanation": "Aspirin permanently acetylates serine residues",
+      "mnemonic": "ASA = Anti-platelet Super Agent",
+      "tags": ["cardiology", "pharmacology", "emergency"]
     }
   ]
+}
+```
+
+#### Raw HTML Format (New!)
+```json
+{
+  "raw_html": "<p style='color: red;'>What is <span style='background: yellow;'>Aspirin's</span> mechanism?</p>",
+  "back": "<p style='color: green;'><strong>Irreversibly inhibits COX enzymes</strong></p>",
+  "tags": ["pharmacology", "cardiology"]
 }
 ```
 
@@ -131,16 +135,18 @@ This is an advanced Flask-based web application that transforms medical educatio
 
 ```
 Changelog:
-- June 30, 2025: ENHANCED MEDICAL FLASHCARD GENERATOR V6.0 - Complete transformation with beautiful UI and advanced features:
+- June 30, 2025: ENHANCED MEDICAL FLASHCARD GENERATOR V6.0 - Complete transformation with beautiful UI and raw HTML support:
   * GORGEOUS MODERN UI: Beautiful Tailwind CSS interface with gradient headers, professional styling, and responsive design
+  * RAW HTML PROCESSING: New /api/raw-html endpoint for direct HTML content preservation with styling and formatting
   * COMPREHENSIVE MEDICAL FORMATTING: Advanced Anki card templates with clinical vignettes, explanations, mnemonics, and enhanced styling
+  * HTML PRESERVATION: Triple-brace Mustache templates {{{field}}} preserve all HTML formatting, colors, and styles
   * ENHANCED USER EXPERIENCE: Live preview, card management, animated elements, and intuitive form-based input
   * PROFESSIONAL CARD STYLING: Gradient backgrounds, enhanced typography, night mode support, and medical-focused design
-  * ROBUST API SYSTEM: Enhanced medical endpoint (/api/enhanced-medical) with full backward compatibility for existing n8n workflows
-  * ADVANCED DATA PROCESSING: Intelligent card extraction, HTML escaping, tag handling, and flexible data format support
-  * MULTI-ENDPOINT SUPPORT: n8n webhook (/api/webhook/n8n), enhanced medical API, and legacy compatibility endpoints
-  * ENHANCED DECK GENERATION: Professional medical card model with clinical vignettes, explanations, mnemonics, and advanced CSS styling
-  * Version 6.0.0 provides a complete medical education platform with beautiful UI and professional Anki deck generation
+  * ROBUST API SYSTEM: Enhanced medical endpoint (/api/enhanced-medical) with raw HTML support and n8n compatibility
+  * ADVANCED DATA PROCESSING: Direct HTML content handling, intelligent card extraction, and flexible data format support
+  * MULTI-ENDPOINT SUPPORT: Raw HTML API, n8n webhook, enhanced medical API, and legacy compatibility endpoints
+  * ENHANCED DECK GENERATION: Professional medical card model preserving all HTML formatting and styling
+  * Version 6.0.0 provides complete HTML formatting preservation for enhanced medical education workflows
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))

@@ -52,18 +52,18 @@ class MedicalAnkiGenerator:
                     'qfmt': '''
                         <div class="card">
                             {{#Clinical_Vignette}}
-                            <div class="clinical-vignette">{{Clinical_Vignette}}</div>
+                            <div class="clinical-vignette">{{{Clinical_Vignette}}}</div>
                             {{/Clinical_Vignette}}
-                            <div class="question">{{Question}}</div>
+                            <div class="question">{{{Question}}}</div>
                             {{#Images}}<div class="image-container">{{{Images}}}</div>{{/Images}}
                         </div>
                     ''',
                     'afmt': '''
                         {{FrontSide}}
                         <hr id="answer">
-                        <div class="answer">{{Answer}}</div>
-                        {{#Explanation}}<div class="explanation">{{Explanation}}</div>{{/Explanation}}
-                        {{#Mnemonics}}<div class="mnemonic">{{Mnemonics}}</div>{{/Mnemonics}}
+                        <div class="answer">{{{Answer}}}</div>
+                        {{#Explanation}}<div class="explanation">{{{Explanation}}}</div>{{/Explanation}}
+                        {{#Mnemonics}}<div class="mnemonic">{{{Mnemonics}}}</div>{{/Mnemonics}}
                         <div class="tags">{{Tags}}</div>
                     '''
                 }
@@ -195,25 +195,34 @@ class MedicalAnkiGenerator:
         
         # Process cards
         for card_data in cards_data:
-            # Extract and clean data
-            clinical_vignette = html.unescape(str(card_data.get('clinical_vignette', ''))).strip()
-            front = html.unescape(str(card_data.get('front', ''))).strip()
-            back = html.unescape(str(card_data.get('back', ''))).strip()
-            explanation = html.unescape(str(card_data.get('explanation', ''))).strip()
-            mnemonic = html.unescape(str(card_data.get('mnemonic', ''))).strip()
+            # Handle raw HTML data - preserve HTML formatting
+            clinical_vignette = str(card_data.get('clinical_vignette', '')).strip()
+            front = str(card_data.get('front', '')).strip()
+            back = str(card_data.get('back', '')).strip()
+            explanation = str(card_data.get('explanation', '')).strip()
+            mnemonic = str(card_data.get('mnemonic', '')).strip()
+            
+            # Also handle raw_html field for complete HTML content
+            raw_html = str(card_data.get('raw_html', '')).strip()
+            if raw_html:
+                # If raw HTML is provided, use it as the primary content
+                front = raw_html if not front else front
             
             # Handle tags
             tags = card_data.get('tags', [])
             if isinstance(tags, str):
                 tags = [tag.strip() for tag in tags.split(',') if tag.strip()]
             
-            # Format images
+            # Format images - preserve existing image HTML
             images_html = ""
             images = card_data.get('images', [])
             if images:
-                images_html = "".join([f'<img src="{img}" alt="Medical Image">' for img in images])
+                if isinstance(images, str):
+                    images_html = images  # Already formatted HTML
+                else:
+                    images_html = "".join([f'<img src="{img}" alt="Medical Image">' for img in images])
             
-            # Create note
+            # Create note with preserved HTML formatting
             note = genanki.Note(
                 model=self.medical_model,
                 fields=[
@@ -225,7 +234,7 @@ class MedicalAnkiGenerator:
                     images_html,
                     mnemonic
                 ],
-                tags=[tag.replace(' ', '_') for tag in tags] if tags else []
+                tags=[tag.replace(' ', '_').replace(':', '_') for tag in tags] if tags else []
             )
             deck.add_note(note)
         
@@ -634,12 +643,12 @@ def api_enhanced_medical():
             for item in data:
                 if isinstance(item, dict) and 'cards' in item:
                     cards.extend(item['cards'])
-                elif isinstance(item, dict) and 'front' in item and 'back' in item:
+                elif isinstance(item, dict) and ('front' in item or 'raw_html' in item):
                     cards.append(item)
         elif isinstance(data, dict):
             if 'cards' in data:
                 cards = data['cards']
-            elif 'front' in data and 'back' in data:
+            elif 'front' in data or 'raw_html' in data:
                 cards = [data]
         
         if not cards:
@@ -662,12 +671,80 @@ def api_enhanced_medical():
             'download_url': f"/download/{filename}",
             'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
             'message': f'Successfully generated enhanced deck with {len(cards)} cards',
-            'version': '6.0.0'
+            'version': '6.0.0',
+            'html_support': True
         }), 200
         
     except Exception as e:
         return jsonify({
             'error': 'Processing failed',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/raw-html', methods=['POST', 'OPTIONS'])
+def api_raw_html():
+    """Dedicated endpoint for raw HTML content processing"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Handle raw HTML input
+        cards = []
+        
+        # Support multiple formats for raw HTML
+        if 'raw_html' in data:
+            # Single raw HTML content
+            cards.append({
+                'front': data['raw_html'],
+                'back': data.get('back', ''),
+                'tags': data.get('tags', [])
+            })
+        elif 'cards' in data:
+            # Multiple cards with raw HTML
+            for card in data['cards']:
+                if 'raw_html' in card:
+                    cards.append(card)
+                elif 'front' in card:
+                    cards.append(card)
+        elif 'content' in data:
+            # Alternative format for content
+            cards.append({
+                'front': data['content'],
+                'back': data.get('answer', ''),
+                'tags': data.get('tags', [])
+            })
+        
+        if not cards:
+            return jsonify({'error': 'No valid HTML content found'}), 400
+        
+        # Generate deck
+        deck_name = f"Raw_HTML_Medical_Deck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        filename = anki_generator.generate_deck(deck_name, cards)
+        
+        # Get file info
+        file_path = os.path.join("temp", filename)
+        file_size = os.path.getsize(file_path)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'deck_name': deck_name,
+            'cards_processed': len(cards),
+            'file_size': file_size,
+            'download_url': f"/download/{filename}",
+            'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
+            'message': f'Successfully processed raw HTML into {len(cards)} cards',
+            'version': '6.0.0',
+            'processing_type': 'raw_html'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'HTML processing failed',
             'message': str(e)
         }), 500
 
