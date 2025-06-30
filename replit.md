@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 30, 2025: STREAMLINED N8N INTEGRATION - Updated codebase with optimized n8n workflow compatibility:
-  * HTML PRESERVATION: Complete preservation of n8n HTML formatting including span styles and color attributes
-  * SIMPLIFIED ARCHITECTURE: Streamlined single-model approach for enhanced performance and maintainability
-  * IMPROVED VIGNETTE PROCESSING: Enhanced click-to-reveal with support for dict and string vignette formats
-  * MODERN STYLING: Updated CSS with modern system fonts, improved gradients, and responsive design
-  * CLOZE FORMATTING CLEANUP: Advanced trailing brace removal and text cleanup for perfect card formatting
-  * ENHANCED IMAGE HANDLING: Robust image download with proper error handling and caption support
-  * FLEXIBLE DATA EXTRACTION: Intelligent parsing of various n8n data formats and structures
-  * PROCESSING STATS LOGGING: Optional processing statistics tracking for workflow optimization
-  * Version 5.0.0 now provides optimal n8n integration with preserved formatting and enhanced reliability
+- June 30, 2025: ENHANCED CLINICAL VIGNETTE SYSTEM - Updated to Version 6.0.0 with advanced medical card features:
+  * DIRECT FIELD MAPPING: Simplified processing using clinical_vignette and explanation fields for optimal n8n integration
+  * ENHANCED CLICK-TO-REVEAL: Interactive JavaScript buttons that toggle between "Click to reveal" and "Hide explanation"
+  * BLUE VIGNETTE STYLING: Clinical vignettes now display in blue gradient boxes with white text for medical trust
+  * MAGENTA IMAGE CAPTIONS: Image captions styled with #dc2626 red color and bold font weight for emphasis
+  * COMPLETE HTML PRESERVATION: ALL n8n HTML formatting including span styles and color attributes fully preserved
+  * SIMPLIFIED CARD STRUCTURE: Streamlined single-model approach for enhanced performance and maintainability
+  * IMPROVED ERROR HANDLING: Graceful handling of failed image downloads with detailed logging
+  * NIGHT MODE COMPATIBILITY: Full dark theme support for all styling elements including vignettes and mnemonics
+  * Version 6.0.0 provides optimal clinical vignette processing with direct n8n field compatibility
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
