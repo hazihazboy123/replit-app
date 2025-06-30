@@ -52,18 +52,18 @@ class MedicalAnkiGenerator:
                     'qfmt': '''
                         <div class="card">
                             {{#Clinical_Vignette}}
-                            <div class="clinical-vignette">{{{Clinical_Vignette}}}</div>
+                            <div class="clinical-vignette">{{Clinical_Vignette}}</div>
                             {{/Clinical_Vignette}}
-                            <div class="question">{{{Question}}}</div>
+                            <div class="question">{{Question}}</div>
                             {{#Images}}<div class="image-container">{{{Images}}}</div>{{/Images}}
                         </div>
                     ''',
                     'afmt': '''
                         {{FrontSide}}
                         <hr id="answer">
-                        <div class="answer">{{{Answer}}}</div>
-                        {{#Explanation}}<div class="explanation">{{{Explanation}}}</div>{{/Explanation}}
-                        {{#Mnemonics}}<div class="mnemonic">{{{Mnemonics}}}</div>{{/Mnemonics}}
+                        <div class="answer">{{Answer}}</div>
+                        {{#Explanation}}<div class="explanation">{{Explanation}}</div>{{/Explanation}}
+                        {{#Mnemonics}}<div class="mnemonic">{{Mnemonics}}</div>{{/Mnemonics}}
                         <div class="tags">{{Tags}}</div>
                     '''
                 }
@@ -195,34 +195,25 @@ class MedicalAnkiGenerator:
         
         # Process cards
         for card_data in cards_data:
-            # Handle raw HTML data - preserve HTML formatting
-            clinical_vignette = str(card_data.get('clinical_vignette', '')).strip()
-            front = str(card_data.get('front', '')).strip()
-            back = str(card_data.get('back', '')).strip()
-            explanation = str(card_data.get('explanation', '')).strip()
-            mnemonic = str(card_data.get('mnemonic', '')).strip()
-            
-            # Also handle raw_html field for complete HTML content
-            raw_html = str(card_data.get('raw_html', '')).strip()
-            if raw_html:
-                # If raw HTML is provided, use it as the primary content
-                front = raw_html if not front else front
+            # Extract and clean data
+            clinical_vignette = html.unescape(str(card_data.get('clinical_vignette', ''))).strip()
+            front = html.unescape(str(card_data.get('front', ''))).strip()
+            back = html.unescape(str(card_data.get('back', ''))).strip()
+            explanation = html.unescape(str(card_data.get('explanation', ''))).strip()
+            mnemonic = html.unescape(str(card_data.get('mnemonic', ''))).strip()
             
             # Handle tags
             tags = card_data.get('tags', [])
             if isinstance(tags, str):
                 tags = [tag.strip() for tag in tags.split(',') if tag.strip()]
             
-            # Format images - preserve existing image HTML
+            # Format images
             images_html = ""
             images = card_data.get('images', [])
             if images:
-                if isinstance(images, str):
-                    images_html = images  # Already formatted HTML
-                else:
-                    images_html = "".join([f'<img src="{img}" alt="Medical Image">' for img in images])
+                images_html = "".join([f'<img src="{img}" alt="Medical Image">' for img in images])
             
-            # Create note with preserved HTML formatting
+            # Create note
             note = genanki.Note(
                 model=self.medical_model,
                 fields=[
@@ -234,7 +225,7 @@ class MedicalAnkiGenerator:
                     images_html,
                     mnemonic
                 ],
-                tags=[tag.replace(' ', '_').replace(':', '_') for tag in tags] if tags else []
+                tags=[tag.replace(' ', '_') for tag in tags] if tags else []
             )
             deck.add_note(note)
         
@@ -643,27 +634,12 @@ def api_enhanced_medical():
             for item in data:
                 if isinstance(item, dict) and 'cards' in item:
                     cards.extend(item['cards'])
-                elif isinstance(item, dict) and ('front' in item or 'raw_html' in item or 'raw_content' in item):
-                    # Parse raw content if present
-                    if 'raw_content' in item:
-                        parsed_card = parse_raw_content(item['raw_content'])
-                        cards.append(parsed_card)
-                    else:
-                        cards.append(item)
+                elif isinstance(item, dict) and 'front' in item and 'back' in item:
+                    cards.append(item)
         elif isinstance(data, dict):
             if 'cards' in data:
-                # Process each card in the array
-                for card in data['cards']:
-                    if 'raw_content' in card:
-                        parsed_card = parse_raw_content(card['raw_content'])
-                        cards.append(parsed_card)
-                    else:
-                        cards.append(card)
-            elif 'raw_content' in data:
-                # Parse single raw content
-                parsed_card = parse_raw_content(data['raw_content'])
-                cards = [parsed_card]
-            elif 'front' in data or 'raw_html' in data:
+                cards = data['cards']
+            elif 'front' in data and 'back' in data:
                 cards = [data]
         
         if not cards:
@@ -686,8 +662,7 @@ def api_enhanced_medical():
             'download_url': f"/download/{filename}",
             'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
             'message': f'Successfully generated enhanced deck with {len(cards)} cards',
-            'version': '6.0.0',
-            'html_support': True
+            'version': '6.0.0'
         }), 200
         
     except Exception as e:
@@ -696,289 +671,23 @@ def api_enhanced_medical():
             'message': str(e)
         }), 500
 
-def parse_raw_content(raw_content: str) -> Dict:
-    """Parse raw text/code content and intelligently categorize into medical card fields"""
-    
-    # Initialize card fields
-    card_fields = {
-        'front': '',
-        'back': '',
-        'clinical_vignette': '',
-        'explanation': '',
-        'mnemonic': '',
-        'tags': []
-    }
-    
-    # Split content into lines for processing
-    lines = raw_content.strip().split('\n')
-    current_field = None
-    current_content = []
-    
-    # Field mapping patterns
-    field_patterns = {
-        'front': ['front:', 'question:', 'q:', 'prompt:', 'ask:'],
-        'back': ['back:', 'answer:', 'a:', 'response:', 'solution:'],
-        'clinical_vignette': ['clinical vignette:', 'vignette:', 'case:', 'clinical case:', 'patient:', 'scenario:'],
-        'explanation': ['explanation:', 'explain:', 'rationale:', 'reasoning:', 'why:', 'details:'],
-        'mnemonic': ['mnemonic:', 'memory aid:', 'remember:', 'acronym:', 'mnemonic device:'],
-        'tags': ['tags:', 'categories:', 'topics:', 'subjects:', 'keywords:']
-    }
-    
-    def get_field_from_line(line: str):
-        """Determine which field a line belongs to based on keywords"""
-        line_lower = line.lower().strip()
-        
-        # Check for explicit field markers
-        for field, patterns in field_patterns.items():
-            for pattern in patterns:
-                if line_lower.startswith(pattern):
-                    return field
-        
-        # Check for HTML-style markers
-        if '<div class="clinical-vignette"' in line_lower or 'clinical-vignette' in line_lower:
-            return 'clinical_vignette'
-        elif '<div class="question"' in line_lower or 'question' in line_lower:
-            return 'front'
-        elif '<div class="answer"' in line_lower or 'answer' in line_lower:
-            return 'back'
-        elif '<div class="explanation"' in line_lower or 'explanation' in line_lower:
-            return 'explanation'
-        elif '<div class="mnemonic"' in line_lower or 'mnemonic' in line_lower:
-            return 'mnemonic'
-        
-        return None
-    
-    def clean_field_marker(line: str, field: str) -> str:
-        """Remove field marker from the beginning of a line"""
-        line_lower = line.lower().strip()
-        for pattern in field_patterns.get(field, []):
-            if line_lower.startswith(pattern):
-                return line[len(pattern):].strip()
-        return line.strip()
-    
-    # Process each line
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-            
-        # Check if this line indicates a new field
-        detected_field = get_field_from_line(line)
-        
-        if detected_field:
-            # Save previous field content
-            if current_field and current_content:
-                content = '\n'.join(current_content).strip()
-                if current_field == 'tags':
-                    # Parse tags from content
-                    tags = [tag.strip() for tag in content.replace(',', ' ').split() if tag.strip()]
-                    card_fields['tags'].extend(tags)
-                else:
-                    card_fields[current_field] = content
-            
-            # Start new field
-            current_field = detected_field
-            current_content = []
-            
-            # Add content after field marker (if any)
-            cleaned_line = clean_field_marker(line, detected_field)
-            if cleaned_line:
-                current_content.append(cleaned_line)
-                
-        elif current_field:
-            # Continue adding to current field
-            current_content.append(line)
-        else:
-            # No field detected yet, assume it's front content
-            if not current_field:
-                current_field = 'front'
-                current_content = []
-            current_content.append(line)
-    
-    # Save final field content
-    if current_field and current_content:
-        content = '\n'.join(current_content).strip()
-        if current_field == 'tags':
-            tags = [tag.strip() for tag in content.replace(',', ' ').split() if tag.strip()]
-            card_fields['tags'].extend(tags)
-        else:
-            card_fields[current_field] = content
-    
-    # If no front content was explicitly marked, use the first substantial content
-    if not card_fields['front'] and not card_fields['clinical_vignette']:
-        # Find the first non-empty field that could be a question
-        for field in ['clinical_vignette', 'explanation']:
-            if card_fields[field]:
-                card_fields['front'] = card_fields[field][:200] + "..." if len(card_fields[field]) > 200 else card_fields[field]
-                break
-    
-    return card_fields
-
-@app.route('/api/raw-html', methods=['POST', 'OPTIONS'])
-def api_raw_html():
-    """Dedicated endpoint for raw HTML content processing"""
-    if request.method == 'OPTIONS':
-        return '', 200
-    
-    try:
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-        
-        # Handle raw HTML input
-        cards = []
-        
-        # Support multiple formats for raw HTML
-        if 'raw_html' in data:
-            # Single raw HTML content
-            cards.append({
-                'front': data['raw_html'],
-                'back': data.get('back', ''),
-                'tags': data.get('tags', [])
-            })
-        elif 'raw_content' in data:
-            # Parse raw text content intelligently
-            parsed_card = parse_raw_content(data['raw_content'])
-            cards.append(parsed_card)
-        elif 'content' in data:
-            # Parse general content
-            parsed_card = parse_raw_content(data['content'])
-            cards.append(parsed_card)
-        elif 'cards' in data:
-            # Multiple cards with raw HTML or content
-            for card in data['cards']:
-                if 'raw_html' in card:
-                    cards.append(card)
-                elif 'raw_content' in card:
-                    parsed_card = parse_raw_content(card['raw_content'])
-                    cards.append(parsed_card)
-                elif 'content' in card:
-                    parsed_card = parse_raw_content(card['content'])
-                    cards.append(parsed_card)
-                elif 'front' in card:
-                    cards.append(card)
-        
-        if not cards:
-            return jsonify({'error': 'No valid HTML content found'}), 400
-        
-        # Generate deck
-        deck_name = f"Raw_HTML_Medical_Deck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        filename = anki_generator.generate_deck(deck_name, cards)
-        
-        # Get file info
-        file_path = os.path.join("temp", filename)
-        file_size = os.path.getsize(file_path)
-        
-        return jsonify({
-            'success': True,
-            'filename': filename,
-            'deck_name': deck_name,
-            'cards_processed': len(cards),
-            'file_size': file_size,
-            'download_url': f"/download/{filename}",
-            'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
-            'message': f'Successfully processed raw content into {len(cards)} cards',
-            'version': '6.0.0',
-            'processing_type': 'intelligent_parsing'
-        }), 200
-        
-    except Exception as e:
-        return jsonify({
-            'error': 'Content parsing failed',
-            'message': str(e)
-        }), 500
-
 @app.route('/api/webhook/n8n', methods=['POST'])
 def receive_n8n_webhook():
     try:
-        # Get raw request data for debugging
-        raw_data = request.get_data(as_text=True)
-        print(f"N8N Raw Data: {raw_data[:500]}...")
+        data = request.get_json(force=True)
         
-        # Try to parse JSON
-        try:
-            data = request.get_json(force=True)
-        except Exception as json_error:
-            print(f"JSON Parse Error: {json_error}")
-            # If JSON parsing fails, try to treat raw data as content
-            if raw_data and raw_data.strip():
-                # Treat raw data as content to be parsed
-                print(f"Treating raw data as content: {raw_data[:200]}...")
-                parsed_card = parse_raw_content(raw_data)
-                cards = [parsed_card]
-                
-                # Generate deck
-                deck_name = f"n8n_Raw_Content_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                filename = anki_generator.generate_deck(deck_name, cards)
-                
-                return jsonify({
-                    'success': True,
-                    'filename': filename,
-                    'deck_name': deck_name,
-                    'card_count': len(cards),
-                    'download_url': f"/download/{filename}",
-                    'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
-                    'message': 'Deck generated successfully from raw n8n content',
-                    'processing_type': 'n8n_raw_content'
-                })
-            else:
-                return jsonify({
-                    'error': 'Invalid JSON format and no raw content',
-                    'details': str(json_error),
-                    'raw_data_preview': raw_data[:200]
-                }), 400
-        
-        print(f"N8N Parsed Data: {data}")
-        
-        # Extract cards from n8n payload with more flexible handling
+        # Extract cards from n8n payload
         cards = []
-        
-        # Handle direct raw_content from n8n
-        if 'raw_content' in data:
-            parsed_card = parse_raw_content(data['raw_content'])
-            cards = [parsed_card]
-        elif 'content' in data:
-            parsed_card = parse_raw_content(data['content'])
-            cards = [parsed_card]
-        elif 'cards' in data:
-            for card in data['cards']:
-                if 'raw_content' in card:
-                    parsed_card = parse_raw_content(card['raw_content'])
-                    cards.append(parsed_card)
-                else:
-                    cards.append(card)
+        if 'cards' in data:
+            cards = data['cards']
         elif 'data' in data:
             if isinstance(data['data'], list):
-                for item in data['data']:
-                    if isinstance(item, dict):
-                        if 'raw_content' in item:
-                            parsed_card = parse_raw_content(item['raw_content'])
-                            cards.append(parsed_card)
-                        else:
-                            cards.append(item)
-            elif isinstance(data['data'], dict):
-                if 'cards' in data['data']:
-                    cards = data['data']['cards']
-                elif 'raw_content' in data['data']:
-                    parsed_card = parse_raw_content(data['data']['raw_content'])
-                    cards = [parsed_card]
-        elif isinstance(data, list):
-            # Handle array of cards directly
-            for item in data:
-                if 'raw_content' in item:
-                    parsed_card = parse_raw_content(item['raw_content'])
-                    cards.append(parsed_card)
-                else:
-                    cards.append(item)
-        
-        print(f"Extracted Cards: {len(cards)}")
+                cards = data['data']
+            elif isinstance(data['data'], dict) and 'cards' in data['data']:
+                cards = data['data']['cards']
         
         if not cards:
-            return jsonify({
-                'error': 'No valid flashcard data found',
-                'received_keys': list(data.keys()) if isinstance(data, dict) else 'data_is_not_dict',
-                'data_type': type(data).__name__
-            }), 400
+            return jsonify({'error': 'No valid flashcard data found'}), 400
         
         # Generate deck name
         deck_name = f"n8n_Medical_Flashcards_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -994,18 +703,11 @@ def receive_n8n_webhook():
             'deck_name': deck_name,
             'card_count': len(cards),
             'download_url': f"/download/{filename}",
-            'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
-            'message': 'Deck generated successfully from n8n webhook',
-            'processing_type': 'n8n_webhook'
+            'message': 'Deck generated successfully from n8n webhook'
         })
         
     except Exception as e:
-        print(f"N8N Webhook Error: {str(e)}")
-        return jsonify({
-            'error': 'Processing failed',
-            'message': str(e),
-            'endpoint': 'n8n_webhook'
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
@@ -1033,60 +735,12 @@ def api_health():
         'features': [
             'enhanced_medical_cards',
             'n8n_webhook_support', 
-            'intelligent_content_parsing',
-            'raw_html_processing',
             'beautiful_ui',
             'clinical_vignettes',
             'advanced_styling'
         ],
-        'endpoints': {
-            'enhanced_medical': '/api/enhanced-medical',
-            'n8n_webhook': '/api/webhook/n8n',
-            'raw_html': '/api/raw-html',
-            'simple': '/api/simple',
-            'test': '/api/test'
-        },
         'timestamp': datetime.now().isoformat()
     }), 200
-
-@app.route('/api/test', methods=['POST', 'GET'])
-def api_test():
-    """Simple test endpoint for n8n debugging"""
-    if request.method == 'GET':
-        return jsonify({
-            'message': 'Test endpoint is working',
-            'timestamp': datetime.now().isoformat(),
-            'method': 'GET'
-        })
-    
-    try:
-        # Get both raw and parsed data
-        raw_data = request.get_data(as_text=True)
-        headers = dict(request.headers)
-        
-        try:
-            json_data = request.get_json(force=True)
-        except:
-            json_data = None
-        
-        return jsonify({
-            'success': True,
-            'message': 'Test endpoint received your data successfully',
-            'raw_data_length': len(raw_data),
-            'raw_data_preview': raw_data[:200] if raw_data else None,
-            'headers': headers,
-            'json_data': json_data,
-            'content_type': request.content_type,
-            'method': request.method,
-            'timestamp': datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'error': 'Test endpoint error',
-            'message': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
 
 # Legacy compatibility endpoints
 @app.route('/api/simple', methods=['POST', 'OPTIONS'])
