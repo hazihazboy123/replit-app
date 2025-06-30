@@ -1,612 +1,435 @@
 import os
 import json
-import tempfile
-import logging
-import random
-import time
-import re
-import requests
-import hashlib
-from urllib.parse import urlparse
-from flask import Flask, request, send_file, jsonify
-from flask_cors import CORS
+import html
+import asyncio
+from datetime import datetime
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks, Path
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field, validator
+import uvicorn
 import genanki
+import random
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Create directories
+os.makedirs("temp", exist_ok=True)
+os.makedirs("static", exist_ok=True)
+os.makedirs("templates", exist_ok=True)
 
-# Create the app
-app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+app = FastAPI(title="Medical Flashcard Generator")
 
-# Configure CORS for API endpoints
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+# ASGI application for gunicorn compatibility
+asgi_app = app
 
-def download_image_from_url(url, media_files_list):
-    """Download image from URL and return local filename for Anki embedding"""
-    try:
-        parsed_url = urlparse(url)
-        filename = os.path.basename(parsed_url.path)
-        if not filename or '.' not in filename:
-            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            filename = f"image_{url_hash}.jpg"
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Pydantic models
+class FlashcardData(BaseModel):
+    front: str = Field(..., min_length=1)
+    back: str = Field(..., min_length=1)
+    explanation: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
+    category: str = "General"
+    images: List[str] = Field(default_factory=list)
+    mnemonic: Optional[str] = None
+    clinical_vignette: Optional[str] = None
+    
+    @validator('front', 'back', 'explanation', 'mnemonic', 'clinical_vignette', pre=True)
+    def clean_html(cls, v):
+        if isinstance(v, str):
+            return html.unescape(v).strip()
+        return v
+
+class N8nWebhookPayload(BaseModel):
+    workflow_id: Optional[str] = None
+    execution_id: Optional[str] = None
+    data: Dict[str, Any] = Field(default_factory=dict)
+    cards: Optional[List[FlashcardData]] = None
+    
+    @validator('cards', pre=True, always=True)
+    def extract_cards(cls, v, values):
+        if v:
+            return v
         
-        valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
-        if not any(filename.lower().endswith(ext) for ext in valid_extensions):
-            filename += '.jpg'
+        # Extract from data field
+        data = values.get('data', {})
+        cards = []
         
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        # Handle different n8n data structures
+        if isinstance(data, list):
+            for item in data:
+                try:
+                    cards.append(FlashcardData(**item))
+                except:
+                    pass
+        elif isinstance(data, dict):
+            if 'items' in data:
+                for item in data['items']:
+                    try:
+                        cards.append(FlashcardData(**item))
+                    except:
+                        pass
+            elif 'front' in data and 'back' in data:
+                try:
+                    cards.append(FlashcardData(**data))
+                except:
+                    pass
         
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        
-        temp_path = os.path.join(tempfile.gettempdir(), filename)
-        with open(temp_path, 'wb') as f:
-            f.write(response.content)
-        
-        media_files_list.append(temp_path)
-        return filename
-    except Exception as e:
-        app.logger.error(f"Error downloading image from {url}: {e}")
-        return None
+        return cards
 
-def clean_cloze_formatting(text):
-    """Remove trailing curly braces from cloze card formatting"""
-    if not text:
-        return text
-    # Remove trailing curly braces and clean up
-    text = text.rstrip('}').strip()
-    return text
-
-def process_vignette_content(vignette_data):
-    """Process vignette content with click-to-reveal functionality"""
-    if not vignette_data:
-        return ''
-    
-    # Handle both dict and string formats
-    if isinstance(vignette_data, dict):
-        clinical_case = vignette_data.get('clinical_case', '')
-        explanation = vignette_data.get('explanation', '')
-        # Clean up formatting issues
-        clinical_case = clean_cloze_formatting(clinical_case)
-        explanation = clean_cloze_formatting(explanation)
-    else:
-        # If it's a string, clean it up
-        vignette_text = clean_cloze_formatting(str(vignette_data))
-        clinical_case = vignette_text
-        explanation = ''
-    
-    # Build the vignette HTML with clinical case and explanation
-    vignette_html = '<div class="vignette-wrapper">'
-    vignette_html += '<div class="clinical-case">' + clinical_case + '</div>'
-    
-    if explanation:
-        vignette_html += '<div class="reveal-button" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display === \'block\' ? \'none\' : \'block\');">'
-        vignette_html += 'Click to reveal explanation'
-        vignette_html += '</div>'
-        vignette_html += '<div class="explanation" style="display: none;">'
-        vignette_html += explanation
-        vignette_html += '</div>'
-    
-    vignette_html += '</div>'
-    
-    return vignette_html
-
-def process_mnemonic_content(mnemonic_data):
-    """Process mnemonic content - preserve HTML formatting from n8n"""
-    if not mnemonic_data:
-        return ''
-    
-    # Handle both dict and string formats
-    if isinstance(mnemonic_data, dict):
-        mnemonic_text = mnemonic_data.get('mnemonic', str(mnemonic_data))
-    else:
-        mnemonic_text = str(mnemonic_data)
-    
-    # Clean up any formatting issues
-    mnemonic_text = clean_cloze_formatting(mnemonic_text)
-    
-    return mnemonic_text
-
-def create_enhanced_medical_model():
-    """Create enhanced medical model with modern styling"""
-    enhanced_css = """
-/* Base styles */
-html { font-size: 20px; }
-.card { 
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    text-align: center; 
-    font-size: 1rem; 
-    color: #333; 
-    background-color: #f5f5f5; 
-    min-height: 100vh;
-    padding: 20px;
-    line-height: 1.6;
-}
-
-/* Typography */
-h1, h2, h3 { margin: 0.5em 0; }
-hr { 
-    border: none;
-    border-top: 2px solid #e0e0e0;
-    margin: 2em 0;
-}
-
-/* Image styling */
-img { 
-    max-width: 90%; 
-    max-height: 500px; 
-    border-radius: 12px; 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
-    margin: 20px auto;
-    display: block;
-}
-
-.image-caption {
-    text-align: center;
-    font-style: italic;
-    color: #666;
-    font-size: 0.9em;
-    margin-top: 10px;
-}
-
-/* Vignette section */
-#vignette-section {
-    background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
-    border-radius: 16px;
-    padding: 24px;
-    margin: 24px 0;
-    text-align: left;
-    box-shadow: 0 8px 32px rgba(21, 101, 192, 0.3);
-}
-
-#vignette-section h3 {
-    color: #fff;
-    font-size: 1.3em;
-    font-weight: 600;
-    margin-bottom: 16px;
-    text-align: center;
-}
-
-.vignette-wrapper {
-    color: #fff;
-    font-size: 0.95em;
-}
-
-.clinical-case {
-    margin-bottom: 16px;
-    line-height: 1.7;
-}
-
-.reveal-button {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    padding: 12px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
-}
-
-.reveal-button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.explanation {
-    margin-top: 16px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    line-height: 1.7;
-}
-
-/* Mnemonic section */
-#mnemonic-section {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-    border-radius: 16px;
-    padding: 20px;
-    margin: 24px 0;
-    color: #fff;
-    box-shadow: 0 8px 32px rgba(238, 90, 36, 0.3);
-}
-
-#mnemonic-header {
-    font-size: 1.2em;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 12px;
-}
-
-.mnemonic-content {
-    font-size: 0.95em;
-    line-height: 1.6;
-}
-
-/* Extra notes */
-#extra {
-    background: #f0f0f0;
-    border-left: 4px solid #2196f3;
-    padding: 16px;
-    margin: 24px 0;
-    text-align: left;
-    font-size: 0.9em;
-    border-radius: 4px;
-}
-
-/* Night mode */
-.nightMode.card, .night_mode.card { 
-    color: #e0e0e0;
-    background-color: #1a1a1a;
-}
-
-.nightMode #vignette-section, .night_mode #vignette-section {
-    background: linear-gradient(135deg, #0d47a1 0%, #01579b 100%);
-}
-
-.nightMode #mnemonic-section, .night_mode #mnemonic-section {
-    background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
-}
-
-.nightMode #extra, .night_mode #extra {
-    background: #2a2a2a;
-    border-left-color: #1976d2;
-}
-
-/* Preserve n8n HTML styling */
-span[style*="color: #dc2626"] {
-    color: #dc2626 !important;
-    font-weight: bold;
-}
-
-.nightMode span[style*="color: #dc2626"], 
-.night_mode span[style*="color: #dc2626"] {
-    color: #ff6b6b !important;
-}
-"""
-
-    fields = [
-        {'name': 'Front'},
-        {'name': 'Back'},
-        {'name': 'Image'},
-        {'name': 'Vignette'},
-        {'name': 'Mnemonic'},
-        {'name': 'Extra'}
-    ]
-    
-    templates = [
-        {
-            'name': 'Enhanced Medical Card',
-            'qfmt': '''{{Front}}''',
-            'afmt': '''
-                {{FrontSide}}
-                <hr id="answer">
-                
-                {{#Back}}
-                <div class="answer-section">{{Back}}</div>
-                {{/Back}}
-                
-                {{#Image}}
-                <div class="image-container">{{{Image}}}</div>
-                {{/Image}}
-                
-                {{#Vignette}}
-                <div id="vignette-section">
-                    <h3>Clinical Vignette</h3>
-                    {{{Vignette}}}
-                </div>
-                {{/Vignette}}
-                
-                {{#Mnemonic}}
-                <div id="mnemonic-section">
-                    <div id="mnemonic-header">Memory Aid</div>
-                    <div class="mnemonic-content">{{{Mnemonic}}}</div>
-                </div>
-                {{/Mnemonic}}
-                
-                {{#Extra}}
-                <div id="extra">{{{Extra}}}</div>
-                {{/Extra}}
-            ''',
-        }
-    ]
-    
-    model = genanki.Model(
-        1607392320,
-        'Enhanced Medical Cards',
-        fields=fields,
-        templates=templates,
-        css=enhanced_css
-    )
-    return model
-
-class EnhancedFlashcardProcessor:
+# Anki generation service
+class AnkiGenerator:
     def __init__(self):
-        self.model = create_enhanced_medical_model()
+        self.medical_model = self._create_medical_model()
     
-    def process_cards(self, cards_data, deck_name="Medical Deck"):
-        deck_id = random.randrange(1 << 30, 1 << 31)
+    def _create_medical_model(self):
+        return genanki.Model(
+            1607392319,
+            'Medical Flashcard Model',
+            fields=[
+                {'name': 'Clinical_Vignette'},
+                {'name': 'Question'},
+                {'name': 'Answer'},
+                {'name': 'Explanation'},
+                {'name': 'Tags'},
+                {'name': 'Images'},
+                {'name': 'Mnemonics'}
+            ],
+            templates=[
+                {
+                    'name': 'Medical Card',
+                    'qfmt': '''
+                        <div class="card">
+                            {{#Clinical_Vignette}}
+                            <div class="clinical-vignette">{{Clinical_Vignette}}</div>
+                            {{/Clinical_Vignette}}
+                            <div class="question">{{Question}}</div>
+                            {{#Images}}<div class="image-container">{{Images}}</div>{{/Images}}
+                        </div>
+                    ''',
+                    'afmt': '''
+                        {{FrontSide}}
+                        <hr id="answer">
+                        <div class="answer">{{Answer}}</div>
+                        {{#Explanation}}<div class="explanation">{{Explanation}}</div>{{/Explanation}}
+                        {{#Mnemonics}}<div class="mnemonic">{{Mnemonics}}</div>{{/Mnemonics}}
+                        <div class="tags">{{Tags}}</div>
+                    '''
+                }
+            ],
+            css='''
+                .card {
+                    font-family: "Helvetica Neue", Arial, sans-serif;
+                    font-size: 18px;
+                    line-height: 1.6;
+                    color: #333;
+                    background-color: #fff;
+                    padding: 20px;
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                
+                .clinical-vignette {
+                    background-color: #f8f9fa;
+                    border-left: 4px solid #007bff;
+                    padding: 15px;
+                    margin-bottom: 20px;
+                    border-radius: 4px;
+                }
+                
+                .question {
+                    font-weight: bold;
+                    font-size: 20px;
+                    margin-bottom: 15px;
+                    color: #2c3e50;
+                }
+                
+                .answer {
+                    background-color: #e8f5e8;
+                    padding: 15px;
+                    border-radius: 4px;
+                    margin-bottom: 15px;
+                }
+                
+                .explanation {
+                    background-color: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    padding: 15px;
+                    border-radius: 4px;
+                    margin-bottom: 15px;
+                }
+                
+                .mnemonic {
+                    background-color: #e1f5fe;
+                    border-left: 4px solid #29b6f6;
+                    padding: 15px;
+                    font-style: italic;
+                    border-radius: 4px;
+                    margin-bottom: 15px;
+                }
+                
+                .image-container {
+                    text-align: center;
+                    margin: 15px 0;
+                }
+                
+                .image-container img {
+                    max-width: 100% !important;
+                    height: auto !important;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                
+                .tags {
+                    font-size: 14px;
+                    color: #666;
+                    margin-top: 15px;
+                }
+                
+                /* Drug and dosage styling */
+                .drug-name {
+                    font-weight: bold;
+                    color: #e74c3c;
+                    background-color: #fdf2f2;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                }
+                
+                .dosage {
+                    font-weight: bold;
+                    color: #27ae60;
+                    background-color: #f0f8f0;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                }
+                
+                /* Tables */
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 15px 0;
+                }
+                
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                
+                th {
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                }
+                
+                /* Mobile optimization */
+                .mobile .card {
+                    font-size: 16px;
+                    padding: 15px;
+                }
+                
+                .mobile img {
+                    max-width: 300px !important;
+                    max-height: 300px !important;
+                }
+                
+                /* Night mode support */
+                .nightMode .card {
+                    background-color: #2c2c2c;
+                    color: #e0e0e0;
+                }
+                
+                .nightMode .clinical-vignette {
+                    background-color: #3a3a3a;
+                    border-left-color: #5dade2;
+                }
+                
+                .nightMode .answer {
+                    background-color: #2e4a2e;
+                }
+                
+                .nightMode .explanation {
+                    background-color: #4a3d1f;
+                    border-color: #6b5821;
+                }
+            '''
+        )
+    
+    async def generate_deck(self, deck_name: str, cards: List[FlashcardData]) -> str:
+        # Create deck
+        deck_id = abs(hash(deck_name + str(datetime.now()))) % (10**9)
         deck = genanki.Deck(deck_id, deck_name)
-        media_files = []
         
-        for card_info in cards_data:
-            # Process card type
-            card_type = card_info.get('type', 'basic')
-            
-            # Get content - preserve HTML formatting from n8n
-            front_content = card_info.get('front', '')
-            back_content = card_info.get('back', '')
-            
-            # For cloze cards, clean up any formatting issues
-            if card_type == 'cloze':
-                front_content = clean_cloze_formatting(front_content)
-                back_content = clean_cloze_formatting(back_content)
-            
-            # Process other fields
-            notes_content = card_info.get('notes', '')
-            
-            # Process vignette with click-to-reveal
-            vignette_content = process_vignette_content(card_info.get('vignette', ''))
-            
-            # Process mnemonic
-            mnemonic_content = process_mnemonic_content(card_info.get('mnemonic', ''))
-            
-            # Process image
-            image_content = ''
-            image_data = card_info.get('image', '')
-            if image_data:
-                if isinstance(image_data, dict):
-                    url = image_data.get('url', '')
-                    caption = image_data.get('caption', '')
-                    if url:
-                        downloaded_filename = download_image_from_url(url, media_files)
-                        if downloaded_filename:
-                            image_content = f'<img src="{downloaded_filename}" alt="{caption}">'
-                            if caption:
-                                image_content += f'<div class="image-caption">{caption}</div>'
-                elif isinstance(image_data, str) and image_data.startswith('http'):
-                    downloaded_filename = download_image_from_url(image_data, media_files)
-                    if downloaded_filename:
-                        image_content = f'<img src="{downloaded_filename}">'
+        # Add cards
+        for card in cards:
+            # Format images
+            images_html = ""
+            if card.images:
+                images_html = "".join([f'<img src="{img}">' for img in card.images])
             
             # Create note
             note = genanki.Note(
-                model=self.model,
+                model=self.medical_model,
                 fields=[
-                    front_content,
-                    back_content,
-                    image_content,
-                    vignette_content,
-                    mnemonic_content,
-                    notes_content  # Using notes as Extra field
+                    card.clinical_vignette or "",
+                    card.front,
+                    card.back,
+                    card.explanation or "",
+                    ", ".join(card.tags) if card.tags else "",
+                    images_html,
+                    card.mnemonic or ""
                 ],
-                tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
+                tags=card.tags
             )
             deck.add_note(note)
         
-        return deck, media_files
-
-def extract_deck_name(data):
-    """Extract deck name from various data formats"""
-    if isinstance(data, list) and len(data) > 0:
-        if isinstance(data[0], dict) and 'deck_name' in data[0]:
-            return data[0].get('deck_name')
-    elif isinstance(data, dict):
-        return data.get('deck_name')
-    return None
-
-def extract_cards(data):
-    """Extract cards from various data formats"""
-    if isinstance(data, list):
-        if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
-            return data[0]['cards']
-        else:
-            return data
-    elif isinstance(data, dict):
-        return data.get('cards', [])
-    return []
-
-@app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
-def api_enhanced_medical():
-    if request.method == 'OPTIONS':
-        return '', 200
-    
-    try:
-        app.logger.info("=== ENHANCED MEDICAL API CALLED ===")
+        # Generate file
+        filename = f"{deck_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.apkg"
+        filepath = os.path.join("temp", filename)
         
-        # Get JSON data
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-        
-        # Extract deck name and cards
-        deck_name = extract_deck_name(data)
-        cards = extract_cards(data)
-        
-        if not cards:
-            return jsonify({'error': 'No cards provided'}), 400
-        
-        # Generate deck name if not provided
-        if not deck_name:
-            deck_name = f"Medical_Deck_{time.strftime('%Y%m%d_%H%M%S')}"
-        
-        app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
-        
-        # Process cards
-        processor = EnhancedFlashcardProcessor()
-        deck, media_files = processor.process_cards(cards, deck_name)
-        
-        # Create package
         package = genanki.Package(deck)
-        package.media_files = media_files
+        package.write_to_file(filepath)
         
-        # Generate filename
-        safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
-        if not safe_name:
-            safe_name = "medical_deck"
-        filename = f"{safe_name}.apkg"
-        file_path = f"/tmp/{filename}"
+        return filename
+
+# Initialize services
+anki_generator = AnkiGenerator()
+
+# API endpoints
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.post("/api/webhook/n8n")
+async def receive_n8n_webhook(payload: N8nWebhookPayload, background_tasks: BackgroundTasks):
+    try:
+        if not payload.cards:
+            raise HTTPException(status_code=400, detail="No valid flashcard data found")
         
-        # Write package
-        package.write_to_file(file_path)
+        # Generate deck name
+        deck_name = f"Medical Flashcards - {datetime.now().strftime('%Y-%m-%d')}"
+        if payload.workflow_id:
+            deck_name = f"n8n_{payload.workflow_id}"
         
-        # Get file info
-        file_size = os.path.getsize(file_path)
-        app.logger.info(f"Generated deck: {file_path} (size: {file_size} bytes)")
+        # Generate Anki file
+        filename = await anki_generator.generate_deck(deck_name, payload.cards)
         
-        # Generate response
-        download_url = f"/download/{filename}"
-        full_url = f"{request.host_url.rstrip('/')}{download_url}"
+        # Schedule cleanup after 24 hours
+        background_tasks.add_task(cleanup_file, filename, 86400)
         
-        result = {
-            'success': True,
-            'status': 'completed',
-            'deck_name': deck_name,
-            'cards_processed': len(cards),
-            'media_files_downloaded': len(media_files),
-            'file_size': file_size,
-            'filename': filename,
-            'download_url': download_url,
-            'full_download_url': full_url,
-            'message': f'Successfully generated deck with {len(cards)} cards'
+        return {
+            "success": True,
+            "filename": filename,
+            "deck_name": deck_name,
+            "card_count": len(payload.cards),
+            "download_url": f"/api/download/{filename}"
         }
         
-        # Log processing stats if available
-        if isinstance(data, list) and len(data) > 0 and 'processing_stats' in data[0]:
-            stats = data[0]['processing_stats']
-            result['processing_stats'] = stats
-            app.logger.info(f"Processing stats: {stats}")
-        
-        return jsonify(result), 200
-        
     except Exception as e:
-        app.logger.error(f"ERROR: {str(e)}")
-        import traceback
-        app.logger.error(f"Traceback: {traceback.format_exc()}")
-        return jsonify({
-            'error': 'Processing failed',
-            'message': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
+@app.get("/api/download/{filename}")
+async def download_file(filename: str = Path(..., regex=r"^[a-zA-Z0-9_\-\.]+\.apkg$")):
+    filepath = os.path.join("temp", filename)
+    
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type='application/octet-stream'
+    )
 
-@app.route('/download/<path:filename>')
-def download_file(filename):
+@app.post("/api/generate")
+async def generate_from_ui(cards_data: List[FlashcardData]):
     try:
-        file_path = os.path.join('/tmp', filename)
-        if not os.path.exists(file_path):
-            return f"File not found: {filename}", 404
+        deck_name = f"Medical Flashcards - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        filename = await anki_generator.generate_deck(deck_name, cards_data)
         
-        return send_file(
-            file_path,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/octet-stream'
-        )
+        return {
+            "success": True,
+            "filename": filename,
+            "download_url": f"/api/download/{filename}"
+        }
     except Exception as e:
-        app.logger.error(f"Download error: {e}")
-        return "Download failed", 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/api/health', methods=['GET'])
-def api_health():
-    return jsonify({
-        'status': 'healthy',
-        'service': 'Enhanced Medical Anki Generator',
-        'version': '5.0.0',
-        'features': [
-            'n8n_html_preservation',
-            'clinical_vignettes',
-            'click_to_reveal',
-            'image_download',
-            'cloze_support'
-        ],
-        'timestamp': int(time.time())
-    }), 200
+# Legacy Flask compatibility endpoints
+@app.post("/api/enhanced-medical")
+async def enhanced_medical_legacy(request: Request):
+    try:
+        data = await request.json()
+        
+        # Extract cards from various formats
+        cards = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and 'cards' in item:
+                    cards.extend(item['cards'])
+                elif isinstance(item, dict) and 'front' in item and 'back' in item:
+                    cards.append(item)
+        elif isinstance(data, dict):
+            if 'cards' in data:
+                cards = data['cards']
+            elif 'front' in data and 'back' in data:
+                cards = [data]
+        
+        # Convert to FlashcardData objects
+        flashcard_objects = []
+        for card in cards:
+            try:
+                flashcard_data = FlashcardData(
+                    front=card.get('front', ''),
+                    back=card.get('back', ''),
+                    explanation=card.get('explanation', ''),
+                    mnemonic=card.get('mnemonic', ''),
+                    clinical_vignette=card.get('vignette', ''),
+                    tags=card.get('tags', []),
+                    category=card.get('category', 'General')
+                )
+                flashcard_objects.append(flashcard_data)
+            except Exception as e:
+                continue
+        
+        if not flashcard_objects:
+            raise HTTPException(status_code=400, detail="No valid cards found")
+        
+        deck_name = f"Medical_Deck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        filename = await anki_generator.generate_deck(deck_name, flashcard_objects)
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "deck_name": deck_name,
+            "cards_processed": len(flashcard_objects),
+            "download_url": f"/api/download/{filename}",
+            "full_download_url": f"{request.base_url}api/download/{filename}",
+            "message": f"Successfully generated deck with {len(flashcard_objects)} cards"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/')
-def index():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Enhanced Medical Anki Generator</title>
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-                max-width: 800px;
-                margin: 50px auto;
-                padding: 20px;
-                background-color: #f5f5f5;
-            }
-            .container {
-                background: white;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            }
-            h1 {
-                color: #1976d2;
-                margin-bottom: 10px;
-            }
-            .endpoint {
-                background: #e3f2fd;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-family: monospace;
-                margin: 20px 0;
-            }
-            .features {
-                background: #f5f5f5;
-                padding: 20px;
-                border-radius: 8px;
-                margin-top: 20px;
-            }
-            .features li {
-                margin: 8px 0;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🩺 Enhanced Medical Anki Generator</h1>
-            <p>Convert n8n medical flashcard JSON to beautiful Anki decks</p>
-            
-            <div class="endpoint">
-                POST /api/enhanced-medical
-            </div>
-            
-            <div class="features">
-                <h3>✨ Features</h3>
-                <ul>
-                    <li>✅ Preserves HTML formatting from n8n</li>
-                    <li>✅ Clinical vignettes with click-to-reveal answers</li>
-                    <li>✅ Automatic image download and embedding</li>
-                    <li>✅ Beautiful card styling with night mode support</li>
-                    <li>✅ Support for basic and cloze card types</li>
-                    <li>✅ Mnemonic and notes sections</li>
-                </ul>
-            </div>
-            
-            <p style="margin-top: 30px; color: #666;">
-                Version 5.0.0 - Streamlined for n8n integration
-            </p>
-        </div>
-    </body>
-    </html>
-    """
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Medical Flashcard Generator",
+        "version": "6.0.0",
+        "framework": "FastAPI",
+        "features": ["n8n_webhook", "ui_interface", "async_processing"],
+        "timestamp": datetime.now().isoformat()
+    }
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+async def cleanup_file(filename: str, delay: int):
+    await asyncio.sleep(delay)
+    filepath = os.path.join("temp", filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)
