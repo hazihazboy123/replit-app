@@ -160,18 +160,20 @@ The system automatically recognizes these field markers in raw content:
 
 ```
 Changelog:
-- June 30, 2025: ENHANCED MEDICAL FLASHCARD GENERATOR V6.0 - Complete transformation with beautiful UI and raw HTML support:
+- June 30, 2025: ENHANCED MEDICAL FLASHCARD GENERATOR V6.0 - Complete transformation with intelligent content parsing:
   * GORGEOUS MODERN UI: Beautiful Tailwind CSS interface with gradient headers, professional styling, and responsive design
+  * INTELLIGENT CONTENT PARSING: Automatically reads raw text line-by-line and categorizes content using keyword recognition
+  * SMART FIELD DETECTION: Recognizes "front:", "clinical vignette:", "explanation:", "mnemonic:", "tags:" and other markers
   * RAW HTML PROCESSING: New /api/raw-html endpoint for direct HTML content preservation with styling and formatting
   * COMPREHENSIVE MEDICAL FORMATTING: Advanced Anki card templates with clinical vignettes, explanations, mnemonics, and enhanced styling
   * HTML PRESERVATION: Triple-brace Mustache templates {{{field}}} preserve all HTML formatting, colors, and styles
   * ENHANCED USER EXPERIENCE: Live preview, card management, animated elements, and intuitive form-based input
   * PROFESSIONAL CARD STYLING: Gradient backgrounds, enhanced typography, night mode support, and medical-focused design
-  * ROBUST API SYSTEM: Enhanced medical endpoint (/api/enhanced-medical) with raw HTML support and n8n compatibility
-  * ADVANCED DATA PROCESSING: Direct HTML content handling, intelligent card extraction, and flexible data format support
-  * MULTI-ENDPOINT SUPPORT: Raw HTML API, n8n webhook, enhanced medical API, and legacy compatibility endpoints
-  * ENHANCED DECK GENERATION: Professional medical card model preserving all HTML formatting and styling
-  * Version 6.0.0 provides complete HTML formatting preservation for enhanced medical education workflows
+  * ROBUST API SYSTEM: Enhanced medical endpoint with intelligent parsing, raw HTML support, and n8n compatibility
+  * ADVANCED DATA PROCESSING: Unstructured text parsing, HTML content handling, and flexible data format support
+  * MULTI-ENDPOINT SUPPORT: Raw content parsing, HTML API, n8n webhook, enhanced medical API, and legacy compatibility
+  * ENHANCED DECK GENERATION: Professional medical card model with intelligent content categorization and formatting preservation
+  * Version 6.0.0 provides complete intelligent parsing for unstructured medical education content
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
