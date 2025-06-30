@@ -417,11 +417,6 @@ def api_enhanced_medical():
             'traceback': traceback.format_exc()
         }), 500
 
-@app.route('/api/simple', methods=['POST', 'OPTIONS'])
-def api_simple():
-    """Legacy compatibility endpoint"""
-    return api_enhanced_medical()
-
 @app.route('/download/<path:filename>')
 def download_file(filename):
     try:
@@ -500,7 +495,7 @@ def index():
     </head>
     <body>
         <div class="container">
-            <h1>Enhanced Medical Anki Generator</h1>
+            <h1>🩺 Enhanced Medical Anki Generator</h1>
             <p>Convert n8n medical flashcard JSON to beautiful Anki decks</p>
             
             <div class="endpoint">
@@ -508,14 +503,14 @@ def index():
             </div>
             
             <div class="features">
-                <h3>Features</h3>
+                <h3>✨ Features</h3>
                 <ul>
-                    <li>Preserves ALL HTML formatting from n8n</li>
-                    <li>Clinical vignettes in blue box with white text</li>
-                    <li>Click-to-reveal explanations</li>
-                    <li>Images with magenta captions</li>
-                    <li>Mnemonic boxes with gradient styling</li>
-                    <li>Night mode support</li>
+                    <li>✅ Preserves ALL HTML formatting from n8n</li>
+                    <li>✅ Clinical vignettes in blue box with white text</li>
+                    <li>✅ Click-to-reveal explanations</li>
+                    <li>✅ Images with magenta captions</li>
+                    <li>✅ Mnemonic boxes with gradient styling</li>
+                    <li>✅ Night mode support</li>
                 </ul>
             </div>
             
