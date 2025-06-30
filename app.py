@@ -891,20 +891,72 @@ def api_raw_html():
 @app.route('/api/webhook/n8n', methods=['POST'])
 def receive_n8n_webhook():
     try:
-        data = request.get_json(force=True)
+        # Get raw request data for debugging
+        raw_data = request.get_data(as_text=True)
+        print(f"N8N Raw Data: {raw_data[:500]}...")
         
-        # Extract cards from n8n payload
+        # Try to parse JSON
+        try:
+            data = request.get_json(force=True)
+        except Exception as json_error:
+            print(f"JSON Parse Error: {json_error}")
+            return jsonify({
+                'error': 'Invalid JSON format',
+                'details': str(json_error),
+                'raw_data_preview': raw_data[:200]
+            }), 400
+        
+        print(f"N8N Parsed Data: {data}")
+        
+        # Extract cards from n8n payload with more flexible handling
         cards = []
-        if 'cards' in data:
-            cards = data['cards']
+        
+        # Handle direct raw_content from n8n
+        if 'raw_content' in data:
+            parsed_card = parse_raw_content(data['raw_content'])
+            cards = [parsed_card]
+        elif 'content' in data:
+            parsed_card = parse_raw_content(data['content'])
+            cards = [parsed_card]
+        elif 'cards' in data:
+            for card in data['cards']:
+                if 'raw_content' in card:
+                    parsed_card = parse_raw_content(card['raw_content'])
+                    cards.append(parsed_card)
+                else:
+                    cards.append(card)
         elif 'data' in data:
             if isinstance(data['data'], list):
-                cards = data['data']
-            elif isinstance(data['data'], dict) and 'cards' in data['data']:
-                cards = data['data']['cards']
+                for item in data['data']:
+                    if isinstance(item, dict):
+                        if 'raw_content' in item:
+                            parsed_card = parse_raw_content(item['raw_content'])
+                            cards.append(parsed_card)
+                        else:
+                            cards.append(item)
+            elif isinstance(data['data'], dict):
+                if 'cards' in data['data']:
+                    cards = data['data']['cards']
+                elif 'raw_content' in data['data']:
+                    parsed_card = parse_raw_content(data['data']['raw_content'])
+                    cards = [parsed_card]
+        elif isinstance(data, list):
+            # Handle array of cards directly
+            for item in data:
+                if 'raw_content' in item:
+                    parsed_card = parse_raw_content(item['raw_content'])
+                    cards.append(parsed_card)
+                else:
+                    cards.append(item)
+        
+        print(f"Extracted Cards: {len(cards)}")
         
         if not cards:
-            return jsonify({'error': 'No valid flashcard data found'}), 400
+            return jsonify({
+                'error': 'No valid flashcard data found',
+                'received_keys': list(data.keys()) if isinstance(data, dict) else 'data_is_not_dict',
+                'data_type': type(data).__name__
+            }), 400
         
         # Generate deck name
         deck_name = f"n8n_Medical_Flashcards_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -920,11 +972,18 @@ def receive_n8n_webhook():
             'deck_name': deck_name,
             'card_count': len(cards),
             'download_url': f"/download/{filename}",
-            'message': 'Deck generated successfully from n8n webhook'
+            'full_download_url': f"{request.host_url.rstrip('/')}/download/{filename}",
+            'message': 'Deck generated successfully from n8n webhook',
+            'processing_type': 'n8n_webhook'
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"N8N Webhook Error: {str(e)}")
+        return jsonify({
+            'error': 'Processing failed',
+            'message': str(e),
+            'endpoint': 'n8n_webhook'
+        }), 500
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
@@ -952,12 +1011,60 @@ def api_health():
         'features': [
             'enhanced_medical_cards',
             'n8n_webhook_support', 
+            'intelligent_content_parsing',
+            'raw_html_processing',
             'beautiful_ui',
             'clinical_vignettes',
             'advanced_styling'
         ],
+        'endpoints': {
+            'enhanced_medical': '/api/enhanced-medical',
+            'n8n_webhook': '/api/webhook/n8n',
+            'raw_html': '/api/raw-html',
+            'simple': '/api/simple',
+            'test': '/api/test'
+        },
         'timestamp': datetime.now().isoformat()
     }), 200
+
+@app.route('/api/test', methods=['POST', 'GET'])
+def api_test():
+    """Simple test endpoint for n8n debugging"""
+    if request.method == 'GET':
+        return jsonify({
+            'message': 'Test endpoint is working',
+            'timestamp': datetime.now().isoformat(),
+            'method': 'GET'
+        })
+    
+    try:
+        # Get both raw and parsed data
+        raw_data = request.get_data(as_text=True)
+        headers = dict(request.headers)
+        
+        try:
+            json_data = request.get_json(force=True)
+        except:
+            json_data = None
+        
+        return jsonify({
+            'success': True,
+            'message': 'Test endpoint received your data successfully',
+            'raw_data_length': len(raw_data),
+            'raw_data_preview': raw_data[:200] if raw_data else None,
+            'headers': headers,
+            'json_data': json_data,
+            'content_type': request.content_type,
+            'method': request.method,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Test endpoint error',
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 # Legacy compatibility endpoints
 @app.route('/api/simple', methods=['POST', 'OPTIONS'])
