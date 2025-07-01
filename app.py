@@ -35,22 +35,22 @@ def download_image_from_url(url, media_files_list):
         if not filename or '.' not in filename:
             url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
             filename = f"image_{url_hash}.jpg"
-        
+
         valid_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp']
         if not any(filename.lower().endswith(ext) for ext in valid_extensions):
             filename += '.jpg'
-        
+
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-        
+
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        
+
         temp_path = os.path.join(tempfile.gettempdir(), filename)
         with open(temp_path, 'wb') as f:
             f.write(response.content)
-        
+
         media_files_list.append(temp_path)
         return filename
     except Exception as e:
@@ -72,12 +72,24 @@ def create_enhanced_medical_model():
     background-color: #272828;
 }
 
-/* Ensure images display properly */
+/* Ensure images display properly - SMALLER SIZE */
 img { 
-    max-width: 100%;
+    max-width: 70%;  /* Changed from 100% to 70% */
+    max-height: 400px;  /* Added max height */
     height: auto;
     display: block;
     margin: 20px auto;
+}
+
+/* Ensure caption and notes styling is preserved */
+div[style*="color: #FF1493"] {
+    color: #FF1493 !important;
+}
+
+/* Ensure proper spacing for notes */
+div[style*="margin-top: 20px"][style*="margin-bottom: 20px"] {
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
 }
 """
 
@@ -85,7 +97,7 @@ img {
         {'name': 'Front'},
         {'name': 'Back'}
     ]
-    
+
     templates = [
         {
             'name': 'Medical Card',
@@ -95,14 +107,14 @@ img {
 {{Back}}'''
         }
     ]
-    
+
     # Handle both basic and cloze cards
     cloze_template = {
         'name': 'Cloze Card',
         'qfmt': '''{{cloze:Text}}''',
         'afmt': '''{{cloze:Text}}'''
     }
-    
+
     model = genanki.Model(
         1607392320,
         'Enhanced Medical Cards',
@@ -110,7 +122,7 @@ img {
         templates=templates,
         css=minimal_css
     )
-    
+
     # Create a separate cloze model
     cloze_model = genanki.Model(
         1607392321,
@@ -120,48 +132,48 @@ img {
         css=minimal_css,
         model_type=1  # Cloze type
     )
-    
+
     return model, cloze_model
 
 class EnhancedFlashcardProcessor:
     def __init__(self):
         self.basic_model, self.cloze_model = create_enhanced_medical_model()
-    
+
     def process_cards(self, cards_data, deck_name="Medical Deck"):
         deck_id = random.randrange(1 << 30, 1 << 31)
         deck = genanki.Deck(deck_id, deck_name)
         media_files = []
-        
+
         for card_index, card_info in enumerate(cards_data):
             app.logger.info(f"Processing card {card_index + 1}/{len(cards_data)}")
-            
+
             card_type = card_info.get('type', 'basic').lower()
-            
+
             if card_type == 'cloze':
                 # Process cloze card
                 self._process_cloze_card(deck, card_info, media_files)
             else:
                 # Process basic card
                 self._process_basic_card(deck, card_info, media_files, deck_id, card_index)
-        
+
         return deck, media_files
-    
+
     def _process_cloze_card(self, deck, card_info, media_files):
         """Process a cloze deletion card"""
         # For cloze cards, combine all content into the Text field
         content_parts = []
-        
+
         # Add the front content (which contains the cloze deletions)
         front_html = card_info.get('front', '')
         if front_html:
             content_parts.append(front_html)
-        
+
         # Add any additional components
         self._add_common_components(content_parts, card_info, media_files)
-        
+
         # Combine all parts
         full_content = '\n'.join(content_parts)
-        
+
         # Create cloze note
         note = genanki.Note(
             model=self.cloze_model,
@@ -169,26 +181,26 @@ class EnhancedFlashcardProcessor:
             tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
         )
         deck.add_note(note)
-    
+
     def _process_basic_card(self, deck, card_info, media_files, deck_id, card_index):
         """Process a basic (front/back) card"""
         # FRONT: Use exactly as provided
         front_html = card_info.get('front', '')
-        
+
         # BACK: Build from components
         back_parts = []
-        
+
         # 1. Answer text - use exactly as provided
         back_text = card_info.get('back', '')
         if back_text:
             back_parts.append(back_text)
-        
+
         # Add common components
         self._add_common_components(back_parts, card_info, media_files)
-        
+
         # Combine all back parts
         back_content = '\n'.join(back_parts)
-        
+
         # Create note with front and back
         note = genanki.Note(
             model=self.basic_model,
@@ -196,59 +208,82 @@ class EnhancedFlashcardProcessor:
             tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
         )
         deck.add_note(note)
-    
+
     def _add_common_components(self, content_parts, card_info, media_files):
         """Add common components like notes, images, vignettes, and mnemonics"""
-        # 2. Notes (if any) - use exactly as provided
+        # 1. Notes (if any) - add spacing wrapper if not already styled
         notes = card_info.get('notes', '')
         if notes:
+            # Check if notes already have margin styling
+            if 'margin-top: 20px' not in notes and 'margin-bottom: 20px' not in notes:
+                # Add spacing wrapper
+                if 'margin-top: 10px' in notes:
+                    notes = notes.replace('margin-top: 10px', 'margin-top: 20px; margin-bottom: 20px')
+                elif not notes.startswith('<div'):
+                    # Wrap plain text notes with spacing div
+                    notes = f'<div style="margin-top: 20px; margin-bottom: 20px;">{notes}</div>'
             content_parts.append(notes)
-        
-        # 3. Images handling
+
+        # 2. Images handling with captions
         # Check for 'images' array first (from n8n processing)
         images = card_info.get('images', [])
         if images:
-            for image_url in images:
-                if image_url and image_url.startswith('http'):
-                    downloaded_filename = download_image_from_url(image_url, media_files)
+            for image_item in images:
+                # Handle both string URLs and objects with URL/caption
+                if isinstance(image_item, str) and image_item.startswith('http'):
+                    # Simple URL string
+                    downloaded_filename = download_image_from_url(image_item, media_files)
                     if downloaded_filename:
                         content_parts.append(f'<img src="{downloaded_filename}">')
-        
+                elif isinstance(image_item, dict):
+                    # Object with url and caption
+                    image_url = image_item.get('url', '')
+                    image_caption = image_item.get('caption', '')
+
+                    if image_url and image_url.startswith('http'):
+                        downloaded_filename = download_image_from_url(image_url, media_files)
+                        if downloaded_filename:
+                            content_parts.append(f'<img src="{downloaded_filename}">')
+                            # Add caption immediately after image if it exists
+                            if image_caption:
+                                content_parts.append(image_caption)
+
         # Also check for 'image' object (legacy support)
         image_data = card_info.get('image', {})
         if image_data:
             image_url = image_data.get('url', '')
             image_caption = image_data.get('caption', '')
-            
+
             if image_url and image_url.startswith('http'):
                 downloaded_filename = download_image_from_url(image_url, media_files)
                 if downloaded_filename:
                     content_parts.append(f'<img src="{downloaded_filename}">')
+                    # Add caption immediately after image
                     if image_caption:
                         content_parts.append(image_caption)
-        
-        # 4. Clinical vignette - use exactly as provided
+
+        # 3. Clinical vignette - comes AFTER images and captions
         clinical_vignette = card_info.get('clinical_vignette', '')
         if clinical_vignette:
             content_parts.append(clinical_vignette)
-        
-        # 5. Explanation - use exactly as provided
+
+        # 4. Explanation - use exactly as provided
         explanation = card_info.get('explanation', '')
         if explanation:
             content_parts.append(explanation)
-        
-        # 6. Legacy vignette support (if using nested structure)
+
+        # 5. Legacy vignette support (if using nested structure)
         vignette_data = card_info.get('vignette', {})
         if vignette_data:
             clinical_case = vignette_data.get('clinical_case', '')
             if clinical_case:
                 content_parts.append(clinical_case)
-            
+
             vignette_explanation = vignette_data.get('explanation', '')
             if vignette_explanation:
                 content_parts.append(vignette_explanation)
-        
-        # 7. Mnemonic - use exactly as provided
+
+        # 6. Mnemonic - use exactly as provided
         mnemonic = card_info.get('mnemonic', '')
         if mnemonic:
             content_parts.append(mnemonic)
@@ -278,66 +313,66 @@ def extract_cards(data):
 def api_enhanced_medical():
     if request.method == 'OPTIONS':
         return '', 200
-    
+
     try:
         app.logger.info("=== ENHANCED MEDICAL API CALLED ===")
-        
+
         # Get JSON data
         data = request.get_json(force=True)
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
-        
+
         # Log the structure we received
         app.logger.debug(f"Received data structure: {type(data)}")
         if isinstance(data, dict):
             app.logger.debug(f"Dict keys: {list(data.keys())}")
-        
+
         # Extract deck name and cards
         deck_name = extract_deck_name(data)
         cards = extract_cards(data)
-        
+
         if not cards:
             return jsonify({'error': 'No cards provided'}), 400
-        
+
         # Generate deck name if not provided
         if not deck_name:
             deck_name = f"Medical_Deck_{time.strftime('%Y%m%d_%H%M%S')}"
-        
+
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
-        
+
         # Process cards
         processor = EnhancedFlashcardProcessor()
         deck, media_files = processor.process_cards(cards, deck_name)
-        
+
         # Create package
         package = genanki.Package(deck)
         package.media_files = media_files
-        
+
         # Generate filename
         safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
         if not safe_name:
             safe_name = "medical_deck"
         filename = f"{safe_name}.apkg"
         file_path = f"/tmp/{filename}"
-        
+
         # Write package
         package.write_to_file(file_path)
-        
+
         # Get file info
         file_size = os.path.getsize(file_path)
         app.logger.info(f"Generated deck: {file_path} (size: {file_size} bytes)")
-        
+
         # Clean up media files
         for media_file in media_files:
             try:
                 os.remove(media_file)
             except:
                 pass
-        
+
         # Generate response
         download_url = f"/download/{filename}"
         full_url = f"{request.host_url.rstrip('/')}{download_url}"
-        
+
         result = {
             'success': True,
             'status': 'completed',
@@ -350,9 +385,9 @@ def api_enhanced_medical():
             'full_download_url': full_url,
             'message': f'Successfully generated deck with {len(cards)} cards'
         }
-        
+
         return jsonify(result), 200
-        
+
     except Exception as e:
         app.logger.error(f"ERROR: {str(e)}")
         import traceback
@@ -374,7 +409,7 @@ def download_file(filename):
         file_path = os.path.join('/tmp', filename)
         if not os.path.exists(file_path):
             return f"File not found: {filename}", 404
-        
+
         return send_file(
             file_path,
             as_attachment=True,
@@ -390,14 +425,17 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '9.0.0',
+        'version': '9.2.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
             'images_array_support',
             'no_style_modification',
             'clinical_vignettes_preserved',
-            'mnemonics_preserved'
+            'mnemonics_preserved',
+            'smaller_images_70_percent',
+            'magenta_captions_support',
+            'enhanced_notes_spacing'
         ],
         'timestamp': int(time.time())
     }), 200
@@ -416,11 +454,37 @@ def index():
                 margin: 50px auto;
                 padding: 20px;
             }
+            .features {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 20px;
+            }
+            .features h3 {
+                margin-top: 0;
+            }
+            .features ul {
+                margin: 10px 0;
+            }
         </style>
     </head>
     <body>
         <h1>Medical Anki Generator</h1>
-        <p>Version 9.0.0 - Pure HTML preservation with cloze support</p>
+        <p>Version 9.2.0 - Enhanced spacing and formatting support</p>
+
+        <div class="features">
+            <h3>Features:</h3>
+            <ul>
+                <li>Pure HTML preservation - no style stripping</li>
+                <li>Full cloze card support</li>
+                <li>Images displayed at 70% width (max 400px height)</li>
+                <li>Magenta (#FF1493) caption and notes support</li>
+                <li>Enhanced spacing for notes (20px margins)</li>
+                <li>Captions positioned between images and clinical vignettes</li>
+                <li>Support for both image arrays and legacy image objects</li>
+                <li>Clinical vignettes and mnemonics preserved exactly as provided</li>
+            </ul>
+        </div>
     </body>
     </html>
     """
