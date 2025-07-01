@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 1, 2025: OPTIMIZED FONT SIZING AND PROFESSIONAL STYLING - Updated to Version 8.0.0 with enhanced visual hierarchy:
-  * PROPER FRONT/BACK SIZE DIFFERENCE: Front cards use smaller 1.4em font, back cards use larger 1.6em font for optimal reading
-  * BLUE VIGNETTE BOXES: Clinical vignettes styled with #4a90e2 blue background and professional white text
-  * CREAM MNEMONIC BOXES: Memory aids use #fff8dc cream/yellow background with brown headers for warmth
-  * UNIQUE ID CLICK-TO-REVEAL: Each card gets unique JavaScript IDs for proper explanation toggling
-  * IMAGES WITH CAPTIONS: Proper image handling with rounded corners and caption support
-  * NOTES SECTION SUPPORT: Italic gray notes positioning for additional context information
-  * ENHANCED VISUAL HIERARCHY: Proper font sizing, spacing, and component organization for medical education
-  * NIGHT MODE COMPATIBILITY: Complete dark theme support for all new styling elements
-  * Version 8.0.0 provides optimal visual design with proper font sizing and professional medical card aesthetics
+- July 1, 2025: PURE HTML PRESERVATION SYSTEM - Updated to Version 9.0.0 with minimal CSS and complete format preservation:
+  * PURE HTML PRESERVATION: Complete preservation of all HTML styling from n8n without modification or wrapping
+  * MINIMAL CSS APPROACH: Removed complex styling in favor of letting n8n HTML handle all formatting decisions
+  * CLOZE CARD SUPPORT: Full support for cloze deletion cards with separate model and proper {{c1::text}} formatting
+  * IMAGES ARRAY SUPPORT: Enhanced handling of multiple images from n8n 'images' field arrays
+  * NO STYLE MODIFICATION: System preserves exactly what n8n sends without adding divs, classes, or CSS overrides
+  * CLINICAL VIGNETTES PRESERVED: Vignettes maintain their original HTML formatting and styling from n8n
+  * MNEMONICS PRESERVED: Memory aids keep their exact formatting as provided by the AI processing
+  * MEDIA CLEANUP: Automatic cleanup of temporary image files after deck generation for better resource management
+  * Version 9.0.0 provides perfect HTML preservation allowing n8n to control all styling and formatting decisions
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
