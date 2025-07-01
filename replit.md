@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- June 30, 2025: SIMPLIFIED FRONT/BACK CARD STRUCTURE - Updated to Version 7.0.0 with proper Anki formatting:
-  * PROPER FRONT/BACK FIELDS: Simplified to standard 2-field Anki model with Front and Back fields only
-  * RED TEXT STYLING: Both questions and answers styled with #dc2626 red color for medical emphasis
-  * COMPONENT LAYERING: Back field contains structured layers - answer, images, vignettes, mnemonics
-  * BLUE VIGNETTE BOXES: Clinical vignettes display in solid #1976d2 blue background with white text
-  * CLICK-TO-REVEAL EXPLANATIONS: Interactive JavaScript toggle for showing/hiding explanations
-  * IMAGES ARRAY SUPPORT: Handles multiple images from n8n "images" field array on back of cards
-  * MNEMONIC POSITIONING: Mnemonics positioned at bottom of back field with #ff6b6b red styling
-  * NIGHT MODE SUPPORT: Proper dark theme with #ff6b6b red text for questions and answers
-  * Version 7.0.0 provides clean front/back card structure with optimal medical formatting
+- July 1, 2025: OPTIMIZED FONT SIZING AND PROFESSIONAL STYLING - Updated to Version 8.0.0 with enhanced visual hierarchy:
+  * PROPER FRONT/BACK SIZE DIFFERENCE: Front cards use smaller 1.4em font, back cards use larger 1.6em font for optimal reading
+  * BLUE VIGNETTE BOXES: Clinical vignettes styled with #4a90e2 blue background and professional white text
+  * CREAM MNEMONIC BOXES: Memory aids use #fff8dc cream/yellow background with brown headers for warmth
+  * UNIQUE ID CLICK-TO-REVEAL: Each card gets unique JavaScript IDs for proper explanation toggling
+  * IMAGES WITH CAPTIONS: Proper image handling with rounded corners and caption support
+  * NOTES SECTION SUPPORT: Italic gray notes positioning for additional context information
+  * ENHANCED VISUAL HIERARCHY: Proper font sizing, spacing, and component organization for medical education
+  * NIGHT MODE COMPATIBILITY: Complete dark theme support for all new styling elements
+  * Version 8.0.0 provides optimal visual design with proper font sizing and professional medical card aesthetics
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
