@@ -420,140 +420,6 @@ def api_simple():
     """Legacy compatibility endpoint"""
     return api_enhanced_medical()
 
-@app.route('/api/text-recovery', methods=['POST', 'OPTIONS'])
-def api_text_recovery():
-    """Enhanced endpoint for processing failed OCR content with manual text recovery"""
-    if request.method == 'OPTIONS':
-        return '', 200
-    
-    try:
-        app.logger.info("=== TEXT RECOVERY API CALLED ===")
-        
-        # Get JSON data
-        data = request.get_json(force=True)
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-        
-        # Check if this is a failed OCR case (empty content arrays)
-        content = data.get('content', {})
-        if not any([content.get('critical'), content.get('highYield'), content.get('testable')]):
-            app.logger.info("Detected failed OCR - generating cards from manual text recovery")
-            
-            # Manual text recovery for the spinal cord content
-            recovered_cards = [
-                {
-                    "type": "basic",
-                    "front": "What are the <b style='color: red;'>spinal cord enlargements</b> and their functions?",
-                    "back": """<div style='margin-bottom: 15px;'><b style='color: red;'>Spinal cord enlargements</b> provide innervation to the upper and lower extremities</div>
-                    
-<div style='margin-bottom: 10px;'><b style='color: red;'>Cervical enlargement: C4-T1</b></div>
-<div style='margin-bottom: 15px;'>- Contains spinal nerves of the brachial plexus</div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>Lumbosacral enlargement: L2-S3</b></div>
-<div style='margin-bottom: 15px;'>- Contains spinal nerves of the lumbosacral plexus</div>
-
-<div><b style='color: red;'>Spinal cord ends around L1-L2 vertebrae</b></div>""",
-                    "notes": "<div style='text-align: center; color: #FF1493; font-style: italic;'>High-yield anatomy for medical exams</div>",
-                    "tags": ["Medicine", "Anatomy", "SpinalCord", "HighYield"]
-                },
-                {
-                    "type": "basic", 
-                    "front": "Describe the <b style='color: red;'>spinal cord development</b> and its clinical significance",
-                    "back": """<div style='margin-bottom: 15px;'><b style='color: red;'>Spinal cord development timeline:</b></div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>3rd month embryonic:</b></div>
-<div style='margin-bottom: 15px;'>- Spinal cord segments (neuromeres) correspond with vertebral segments (scleromeres)</div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>At birth:</b></div>
-<div style='margin-bottom: 15px;'>- Caudal end of spinal cord is at L2-L3</div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>By adulthood:</b></div>
-<div style='margin-bottom: 15px;'>- Caudal end of spinal cord is at L1-L2</div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>Clinical significance:</b></div>
-<div>- Subarachnoid space caudal to spinal cord end = <b style='color: red;'>Lumbar Cistern</b></div>
-<div>- Contains cauda equina (lumbar and sacral nerve roots) and CSF</div>""",
-                    "notes": "<div style='text-align: center; color: #FF1493; font-style: italic;'>Critical for lumbar puncture procedures</div>",
-                    "tags": ["Medicine", "Anatomy", "SpinalCord", "Development", "HighYield"]
-                },
-                {
-                    "type": "basic",
-                    "front": "What is the <b style='color: red;'>lumbar puncture</b> and why is spinal cord development important for this procedure?",
-                    "back": """<div style='margin-bottom: 15px;'><b style='color: red;'>Lumbar puncture</b> is a procedure to:</div>
-
-<div style='margin-bottom: 10px;'>• <b style='color: red;'>Sample CSF</b></div>
-<div style='margin-bottom: 10px;'>• <b style='color: red;'>Make intrathecal injections</b></div>
-<div style='margin-bottom: 15px;'>• <b style='color: red;'>Make epidural injections</b></div>
-
-<div style='margin-bottom: 10px;'><b style='color: red;'>Clinical anatomy importance:</b></div>
-<div style='margin-bottom: 10px;'>- Spinal cord ends at L1-L2 in adults</div>
-<div style='margin-bottom: 10px;'>- Lumbar cistern contains only nerve roots and CSF</div>
-<div>- Safe puncture site below L2 to avoid spinal cord injury</div>""",
-                    "notes": "<div style='text-align: center; color: #FF1493; font-style: italic;'>Essential clinical procedure knowledge</div>",
-                    "tags": ["Medicine", "Procedures", "LumbarPuncture", "ClinicalAnatomy", "HighYield"]
-                }
-            ]
-            
-            # Process the recovered cards
-            deck_name = "Spinal_Cord_Anatomy_Recovered"
-            processor = EnhancedFlashcardProcessor()
-            deck, media_files = processor.process_cards(recovered_cards, deck_name)
-            
-            # Create package
-            package = genanki.Package(deck)
-            package.media_files = media_files
-            
-            # Generate filename
-            filename = f"{deck_name}.apkg"
-            file_path = f"/tmp/{filename}"
-            
-            # Write package
-            package.write_to_file(file_path)
-            
-            # Get file info
-            file_size = os.path.getsize(file_path)
-            app.logger.info(f"Generated recovered deck: {file_path} (size: {file_size} bytes)")
-            
-            # Clean up media files
-            for media_file in media_files:
-                try:
-                    os.remove(media_file)
-                except:
-                    pass
-            
-            # Generate response
-            download_url = f"/download/{filename}"
-            full_url = f"{request.host_url.rstrip('/')}{download_url}"
-            
-            result = {
-                'success': True,
-                'status': 'completed',
-                'deck_name': deck_name,
-                'cards_processed': len(recovered_cards),
-                'recovery_method': 'manual_text_extraction',
-                'media_files_downloaded': len(media_files),
-                'file_size': file_size,
-                'filename': filename,
-                'download_url': download_url,
-                'full_download_url': full_url,
-                'message': f'Successfully recovered and generated deck with {len(recovered_cards)} cards from failed OCR'
-            }
-            
-            return jsonify(result), 200
-        else:
-            # Process normally if content exists
-            return api_enhanced_medical()
-        
-    except Exception as e:
-        app.logger.error(f"ERROR in text recovery: {str(e)}")
-        import traceback
-        app.logger.error(f"Traceback: {traceback.format_exc()}")
-        return jsonify({
-            'error': 'Text recovery failed',
-            'message': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
-
 @app.route('/download/<path:filename>')
 def download_file(filename):
     try:
@@ -576,7 +442,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.1.0',
+        'version': '10.0.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -584,8 +450,6 @@ def api_health():
             'optimized_image_sizing_70_percent',
             'notes_positioned_last',
             'enhanced_notes_styling',
-            'text_recovery_for_failed_ocr',
-            'high_yield_content_identification',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
