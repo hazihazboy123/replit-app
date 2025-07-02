@@ -210,19 +210,32 @@ class EnhancedFlashcardProcessor:
         deck.add_note(note)
 
     def _add_common_components(self, content_parts, card_info, media_files):
-        """Add common components like notes, images, vignettes, and mnemonics"""
-        # 1. Notes (if any) - add spacing wrapper if not already styled
+        """Add common components - NOTES NOW ADDED LAST"""
+        # Store notes to add at the end
+        notes_content = None
+        
+        # 1. Check for notes but don't add yet
         notes = card_info.get('notes', '')
         if notes:
-            # Check if notes already have margin styling
-            if 'margin-top: 20px' not in notes and 'margin-bottom: 20px' not in notes:
-                # Add spacing wrapper
-                if 'margin-top: 10px' in notes:
-                    notes = notes.replace('margin-top: 10px', 'margin-top: 20px; margin-bottom: 20px')
-                elif not notes.startswith('<div'):
-                    # Wrap plain text notes with spacing div
-                    notes = f'<div style="margin-top: 20px; margin-bottom: 20px;">{notes}</div>'
-            content_parts.append(notes)
+            # Update the notes styling to center-aligned and larger font
+            if 'font-size: 0.9em' in notes:
+                notes = notes.replace('font-size: 0.9em', 'font-size: 1.2em')
+            if 'text-align: center' not in notes:
+                # If notes don't have center alignment, add it
+                if 'style="' in notes:
+                    notes = notes.replace('style="', 'style="text-align: center; ')
+                elif '<div' in notes:
+                    notes = notes.replace('<div', '<div style="text-align: center;"')
+            
+            # Ensure proper spacing
+            if 'margin-top: 10px' in notes:
+                notes = notes.replace('margin-top: 10px', 'margin-top: 20px')
+            elif 'margin-top: 20px' not in notes and 'margin-bottom: 20px' not in notes:
+                # Add spacing wrapper if not present
+                if not notes.startswith('<div'):
+                    notes = f'<div style="text-align: center; font-style: italic; margin-top: 20px; color: #FF1493; font-size: 1.2em;">{notes}</div>'
+            
+            notes_content = notes
 
         # 2. Images handling with captions
         # Check for 'images' array first (from n8n processing)
@@ -287,6 +300,10 @@ class EnhancedFlashcardProcessor:
         mnemonic = card_info.get('mnemonic', '')
         if mnemonic:
             content_parts.append(mnemonic)
+        
+        # 7. FINALLY add notes at the end (after all other content)
+        if notes_content:
+            content_parts.append(notes_content)
 
 def extract_deck_name(data):
     """Extract deck name from various data formats"""
@@ -425,11 +442,14 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '9.2.0',
+        'version': '10.0.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
             'images_array_support',
+            'optimized_image_sizing_70_percent',
+            'notes_positioned_last',
+            'enhanced_notes_styling',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
