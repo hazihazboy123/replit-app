@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 1, 2025: PURE HTML PRESERVATION SYSTEM - Updated to Version 9.0.0 with minimal CSS and complete format preservation:
+- July 2, 2025: OPTIMIZED VISUAL LAYOUT SYSTEM - Updated to Version 10.0.0 with enhanced image sizing and notes positioning:
+  * OPTIMIZED IMAGE SIZING: Images now display at 70% width instead of 100% with 400px max height for better card layout
+  * NOTES POSITIONED LAST: Notes now appear at the bottom of cards after all other content for improved visual hierarchy
+  * ENHANCED NOTES STYLING: Notes automatically center-aligned with larger 1.2em font and magenta color (#FF1493)
+  * IMPROVED SPACING: Enhanced margin and padding controls for better visual separation between components
+  * CAPTION PRESERVATION: Image captions maintain their exact styling and positioning as provided by n8n
   * PURE HTML PRESERVATION: Complete preservation of all HTML styling from n8n without modification or wrapping
   * MINIMAL CSS APPROACH: Removed complex styling in favor of letting n8n HTML handle all formatting decisions
   * CLOZE CARD SUPPORT: Full support for cloze deletion cards with separate model and proper {{c1::text}} formatting
-  * IMAGES ARRAY SUPPORT: Enhanced handling of multiple images from n8n 'images' field arrays
-  * NO STYLE MODIFICATION: System preserves exactly what n8n sends without adding divs, classes, or CSS overrides
-  * CLINICAL VIGNETTES PRESERVED: Vignettes maintain their original HTML formatting and styling from n8n
-  * MNEMONICS PRESERVED: Memory aids keep their exact formatting as provided by the AI processing
-  * MEDIA CLEANUP: Automatic cleanup of temporary image files after deck generation for better resource management
-  * Version 9.0.0 provides perfect HTML preservation allowing n8n to control all styling and formatting decisions
+  * Version 10.0.0 provides optimal visual layout with enhanced image sizing and perfect content positioning
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
