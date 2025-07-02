@@ -131,16 +131,16 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 2, 2025: OPTIMIZED VISUAL LAYOUT SYSTEM - Updated to Version 10.0.0 with enhanced image sizing and notes positioning:
-  * OPTIMIZED IMAGE SIZING: Images now display at 70% width instead of 100% with 400px max height for better card layout
-  * NOTES POSITIONED LAST: Notes now appear at the bottom of cards after all other content for improved visual hierarchy
-  * ENHANCED NOTES STYLING: Notes automatically center-aligned with larger 1.2em font and magenta color (#FF1493)
-  * IMPROVED SPACING: Enhanced margin and padding controls for better visual separation between components
-  * CAPTION PRESERVATION: Image captions maintain their exact styling and positioning as provided by n8n
-  * PURE HTML PRESERVATION: Complete preservation of all HTML styling from n8n without modification or wrapping
-  * MINIMAL CSS APPROACH: Removed complex styling in favor of letting n8n HTML handle all formatting decisions
-  * CLOZE CARD SUPPORT: Full support for cloze deletion cards with separate model and proper {{c1::text}} formatting
-  * Version 10.0.0 provides optimal visual layout with enhanced image sizing and perfect content positioning
+- July 2, 2025: TEXT RECOVERY AND HIGH-YIELD SYSTEM - Updated to Version 10.1.0 with failed OCR recovery and content highlighting:
+  * TEXT RECOVERY FOR FAILED OCR: New /api/text-recovery endpoint detects empty content arrays and generates cards from manual text extraction
+  * HIGH-YIELD CONTENT IDENTIFICATION: Automatic red bold highlighting for critical medical concepts and terminology
+  * SMART CONTENT DETECTION: System identifies failed OCR scenarios and applies manual content recovery with proper medical formatting
+  * ANATOMICAL CONTENT PROCESSING: Specialized handling for anatomical structures, developmental timelines, and clinical procedures
+  * RED BOLD HIGHLIGHTING: High-yield medical terms automatically formatted with <b style='color: red;'> for emphasis
+  * OPTIMIZED IMAGE SIZING: Images display at 70% width with 400px max height for better card layout
+  * NOTES POSITIONED LAST: Notes appear at bottom of cards after all content for improved visual hierarchy
+  * ENHANCED NOTES STYLING: Notes center-aligned with larger 1.2em font and magenta color (#FF1493)
+  * Version 10.1.0 provides intelligent text recovery with high-yield content identification for medical education
 - June 28, 2025: COMPLETE RESOLUTION - Fixed all extra } character issues through comprehensive troubleshooting:
   * CRITICAL FIX 1: Removed standalone extra } brace in anking_engine.py CSS at line 535 
   * CRITICAL FIX 2: Fixed aggressive brace removal in app.py (changed .replace('}', '') to .rstrip('} '))
