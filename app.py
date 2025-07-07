@@ -183,7 +183,7 @@ class EnhancedFlashcardProcessor:
         note = genanki.Note(
             model=self.cloze_model,
             fields=[full_content],
-            tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
+            tags=self._process_tags(card_info.get('tags', []))
         )
         deck.add_note(note)
 
@@ -210,12 +210,42 @@ class EnhancedFlashcardProcessor:
         note = genanki.Note(
             model=self.basic_model,
             fields=[front_html, back_content],
-            tags=[tag.replace(' ', '_') for tag in card_info.get('tags', [])]
+            tags=self._process_tags(card_info.get('tags', []))
         )
         deck.add_note(note)
 
+    def _process_tags(self, tags):
+        """Process tags safely, handling both strings and lists"""
+        if not tags:
+            return []
+        
+        # If it's a string, split by common delimiters
+        if isinstance(tags, str):
+            # Split by comma, semicolon, or double colon
+            if '::' in tags:
+                tag_list = tags.split('::')
+            elif ',' in tags:
+                tag_list = tags.split(',')
+            elif ';' in tags:
+                tag_list = tags.split(';')
+            else:
+                tag_list = [tags]
+        elif isinstance(tags, list):
+            tag_list = tags
+        else:
+            app.logger.warning(f"Unknown tags format: {type(tags)}, value: {tags}")
+            return []
+        
+        # Clean up tags and replace spaces with underscores
+        return [tag.strip().replace(' ', '_') for tag in tag_list if tag.strip()]
+
     def _add_common_components(self, content_parts, card_info, media_files):
         """Add common components - NOTES NOW ADDED LAST"""
+        # Defensive check: ensure card_info is a dictionary
+        if not isinstance(card_info, dict):
+            app.logger.warning(f"card_info is not a dictionary in _add_common_components: {type(card_info)}")
+            return
+        
         # Store notes to add at the end
         notes_content = None
         
@@ -465,7 +495,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.1.0',
+        'version': '10.2.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -475,6 +505,7 @@ def api_health():
             'enhanced_notes_styling',
             'robust_error_handling',
             'invalid_card_filtering',
+            'safe_tags_processing',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
