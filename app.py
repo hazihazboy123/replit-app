@@ -296,16 +296,24 @@ class EnhancedFlashcardProcessor:
                             if image_caption:
                                 content_parts.append(image_caption)
 
-        # Also check for 'image' object (legacy support)
-        image_data = card_info.get('image', {})
+        # Also check for 'image' field (legacy support) - can be string URL or object
+        image_data = card_info.get('image', '')
         if image_data:
-            image_url = image_data.get('url', '')
-            image_caption = image_data.get('caption', '')
+            image_url = ''
+            image_caption = ''
+            
+            # Handle both string URLs and objects
+            if isinstance(image_data, str):
+                image_url = image_data
+            elif isinstance(image_data, dict):
+                image_url = image_data.get('url', '')
+                image_caption = image_data.get('caption', '')
 
             if image_url and image_url.startswith('http'):
                 downloaded_filename = download_image_from_url(image_url, media_files)
                 if downloaded_filename:
-                    content_parts.append(f'<img src="{downloaded_filename}">')
+                    # Apply optimized styling: 70% width, max 400px height
+                    content_parts.append(f'<img src="{downloaded_filename}" style="width: 70%; max-height: 400px; height: auto; object-fit: contain; margin: 10px 0;">')
                     # Add caption immediately after image
                     if image_caption:
                         content_parts.append(image_caption)
@@ -357,8 +365,16 @@ def extract_cards(data):
     if isinstance(data, dict) and 'cards' in data:
         cards = data['cards']
     elif isinstance(data, list):
+        # Check if it's an array with objects containing 'cards'
         if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
-            cards = data[0]['cards']
+            # Flatten all cards from all objects in the array
+            all_cards = []
+            for item in data:
+                if isinstance(item, dict) and 'cards' in item:
+                    item_cards = item['cards']
+                    if isinstance(item_cards, list):
+                        all_cards.extend(item_cards)
+            cards = all_cards
         else:
             cards = data
     
@@ -495,7 +511,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.2.0',
+        'version': '10.3.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -506,6 +522,8 @@ def api_health():
             'robust_error_handling',
             'invalid_card_filtering',
             'safe_tags_processing',
+            'flexible_image_handling',
+            'nested_array_support',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
