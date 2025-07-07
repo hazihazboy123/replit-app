@@ -147,6 +147,11 @@ class EnhancedFlashcardProcessor:
         for card_index, card_info in enumerate(cards_data):
             app.logger.info(f"Processing card {card_index + 1}/{len(cards_data)}")
 
+            # Defensive check: ensure card_info is a dictionary
+            if not isinstance(card_info, dict):
+                app.logger.error(f"Card {card_index + 1} is not a dictionary, got: {type(card_info)}, value: {card_info}")
+                continue
+
             card_type = card_info.get('type', 'basic').lower()
 
             if card_type == 'cloze':
@@ -316,14 +321,27 @@ def extract_deck_name(data):
 
 def extract_cards(data):
     """Extract cards from various data formats"""
+    cards = []
+    
     # Handle the structure from your n8n output
     if isinstance(data, dict) and 'cards' in data:
-        return data['cards']
+        cards = data['cards']
     elif isinstance(data, list):
         if len(data) > 0 and isinstance(data[0], dict) and 'cards' in data[0]:
-            return data[0]['cards']
+            cards = data[0]['cards']
         else:
-            return data
+            cards = data
+    
+    # Ensure all cards are dictionaries
+    if isinstance(cards, list):
+        valid_cards = []
+        for i, card in enumerate(cards):
+            if isinstance(card, dict):
+                valid_cards.append(card)
+            else:
+                app.logger.warning(f"Skipping invalid card at index {i}: {type(card)} - {card}")
+        return valid_cards
+    
     return []
 
 @app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
@@ -348,8 +366,13 @@ def api_enhanced_medical():
         deck_name = extract_deck_name(data)
         cards = extract_cards(data)
 
+        app.logger.debug(f"Extracted {len(cards) if cards else 0} cards")
+        if cards:
+            app.logger.debug(f"First card type: {type(cards[0]) if len(cards) > 0 else 'N/A'}")
+            app.logger.debug(f"First card content: {cards[0] if len(cards) > 0 else 'N/A'}")
+
         if not cards:
-            return jsonify({'error': 'No cards provided'}), 400
+            return jsonify({'error': 'No valid cards provided'}), 400
 
         # Generate deck name if not provided
         if not deck_name:
@@ -442,7 +465,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.0.0',
+        'version': '10.1.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -450,6 +473,8 @@ def api_health():
             'optimized_image_sizing_70_percent',
             'notes_positioned_last',
             'enhanced_notes_styling',
+            'robust_error_handling',
+            'invalid_card_filtering',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
