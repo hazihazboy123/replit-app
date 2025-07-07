@@ -282,7 +282,7 @@ class EnhancedFlashcardProcessor:
                     # Simple URL string
                     downloaded_filename = download_image_from_url(image_item, media_files)
                     if downloaded_filename:
-                        content_parts.append(f'<img src="{downloaded_filename}">')
+                        content_parts.append(f'<div style="text-align: center;"><img src="{downloaded_filename}" style="width: 70%; max-height: 400px; height: auto; object-fit: contain; margin: 10px auto; display: block;"></div>')
                 elif isinstance(image_item, dict):
                     # Object with url and caption
                     image_url = image_item.get('url', '')
@@ -291,7 +291,7 @@ class EnhancedFlashcardProcessor:
                     if image_url and image_url.startswith('http'):
                         downloaded_filename = download_image_from_url(image_url, media_files)
                         if downloaded_filename:
-                            content_parts.append(f'<img src="{downloaded_filename}">')
+                            content_parts.append(f'<div style="text-align: center;"><img src="{downloaded_filename}" style="width: 70%; max-height: 400px; height: auto; object-fit: contain; margin: 10px auto; display: block;"></div>')
                             # Add caption immediately after image if it exists
                             if image_caption:
                                 content_parts.append(image_caption)
@@ -312,8 +312,7 @@ class EnhancedFlashcardProcessor:
             if image_url and image_url.startswith('http'):
                 downloaded_filename = download_image_from_url(image_url, media_files)
                 if downloaded_filename:
-                    # Apply optimized styling: 70% width, max 400px height
-                    content_parts.append(f'<img src="{downloaded_filename}" style="width: 70%; max-height: 400px; height: auto; object-fit: contain; margin: 10px 0;">')
+                    content_parts.append(f'<div style="text-align: center;"><img src="{downloaded_filename}" style="width: 70%; max-height: 400px; height: auto; object-fit: contain; margin: 10px auto; display: block;"></div>')
                     # Add caption immediately after image
                     if image_caption:
                         content_parts.append(image_caption)
@@ -511,7 +510,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.3.0',
+        'version': '10.3.1',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -524,6 +523,7 @@ def api_health():
             'safe_tags_processing',
             'flexible_image_handling',
             'nested_array_support',
+            'centered_image_layout',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
