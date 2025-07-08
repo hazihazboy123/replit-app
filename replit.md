@@ -131,7 +131,7 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 7, 2025: COMPLETE NESTED ARRAY SUPPORT SYSTEM - Updated to Version 10.3.0 with comprehensive n8n data handling:
+- July 7, 2025: ENHANCED NESTED STRUCTURE HANDLING - Updated to Version 10.3.2 with complete nested card wrapper support:
   * CRITICAL FIX: Resolved "'str' object has no attribute 'get'" error that occurred when processing invalid card data
   * DEFENSIVE VALIDATION: Added type checking to ensure all cards are dictionaries before processing
   * INVALID CARD FILTERING: System now skips non-dictionary cards and logs warnings for debugging
@@ -142,9 +142,12 @@ Changelog:
   * BULLETPROOF CARD PROCESSING: All card processing methods now include defensive checks for data types
   * FLEXIBLE IMAGE HANDLING: Enhanced image processing to handle both string URLs and object formats
   * NESTED ARRAY SUPPORT: Added support for complex nested array structures from advanced n8n workflows
+  * NESTED CARD WRAPPER FIX: Resolved inconsistent structure where some cards have "card" wrapper while others don't
+  * ADVANCED DATA EXTRACTION: Enhanced extract_cards function to handle mixed format structures automatically
   * PRODUCTION STABILITY: System now handles malformed n8n data gracefully without crashing
   * COMPLEX DATA SUCCESS: Successfully processed 12-card medical deck with nested vignettes and images
-  * Version 10.3.0 provides complete bulletproof support for any n8n data structure
+  * CENTERED IMAGE LAYOUT: Enhanced image styling with proper centering and responsive design
+  * Version 10.3.2 provides complete bulletproof support for any n8n data structure including mixed formats
 - July 2, 2025: OPTIMIZED VISUAL LAYOUT SYSTEM - Updated to Version 10.0.0 with enhanced image sizing and notes positioning:
   * OPTIMIZED IMAGE SIZING: Images now display at 70% width instead of 100% with 400px max height for better card layout
   * NOTES POSITIONED LAST: Notes now appear at the bottom of cards after all other content for improved visual hierarchy

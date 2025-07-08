@@ -357,7 +357,7 @@ def extract_deck_name(data):
     return None
 
 def extract_cards(data):
-    """Extract cards from various data formats"""
+    """Extract cards from various data formats including nested card wrappers"""
     cards = []
     
     # Handle the structure from your n8n output
@@ -377,14 +377,21 @@ def extract_cards(data):
         else:
             cards = data
     
-    # Ensure all cards are dictionaries
+    # Process cards and handle nested "card" wrappers
     if isinstance(cards, list):
         valid_cards = []
-        for i, card in enumerate(cards):
-            if isinstance(card, dict):
-                valid_cards.append(card)
+        for i, card_item in enumerate(cards):
+            if isinstance(card_item, dict):
+                # Check if this item has a nested "card" wrapper
+                if 'card' in card_item and isinstance(card_item['card'], dict):
+                    # Extract the nested card
+                    valid_cards.append(card_item['card'])
+                    app.logger.debug(f"Extracted nested card with ID: {card_item['card'].get('card_id', 'unknown')}")
+                else:
+                    # Direct card format
+                    valid_cards.append(card_item)
             else:
-                app.logger.warning(f"Skipping invalid card at index {i}: {type(card)} - {card}")
+                app.logger.warning(f"Skipping invalid card at index {i}: {type(card_item)} - {card_item}")
         return valid_cards
     
     return []
@@ -510,7 +517,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.3.1',
+        'version': '10.3.2',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -524,6 +531,7 @@ def api_health():
             'flexible_image_handling',
             'nested_array_support',
             'centered_image_layout',
+            'nested_card_wrapper_support',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
