@@ -57,6 +57,19 @@ def download_image_from_url(url, media_files_list):
         app.logger.error(f"Error downloading image from {url}: {e}")
         return None
 
+def cleanup_old_files(directory, days=7):
+    """Clean up files older than specified days to prevent directory bloat"""
+    try:
+        cutoff_time = time.time() - (days * 24 * 60 * 60)
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            if os.path.isfile(file_path):
+                if os.path.getmtime(file_path) < cutoff_time:
+                    os.remove(file_path)
+                    app.logger.debug(f"Cleaned up old file: {filename}")
+    except Exception as e:
+        app.logger.warning(f"Error during cleanup: {e}")
+
 def create_enhanced_medical_model():
     """Create enhanced medical model with minimal CSS - let HTML handle styling"""
     minimal_css = """
@@ -440,12 +453,23 @@ def api_enhanced_medical():
         package = genanki.Package(deck)
         package.media_files = media_files
 
-        # Generate filename
+        # Generate filename and use persistent downloads directory
         safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
         if not safe_name:
             safe_name = "medical_deck"
-        filename = f"{safe_name}.apkg"
-        file_path = f"/tmp/{filename}"
+        
+        # Add timestamp to make filename unique
+        timestamp = int(time.time())
+        filename = f"{safe_name}_{timestamp}.apkg"
+        
+        # Create downloads directory if it doesn't exist
+        downloads_dir = os.path.join(os.getcwd(), 'downloads')
+        os.makedirs(downloads_dir, exist_ok=True)
+        
+        # Clean up old files (older than 7 days) to prevent directory bloat
+        cleanup_old_files(downloads_dir, days=7)
+        
+        file_path = os.path.join(downloads_dir, filename)
 
         # Write package
         package.write_to_file(file_path)
@@ -498,8 +522,12 @@ def api_simple():
 @app.route('/download/<path:filename>')
 def download_file(filename):
     try:
-        file_path = os.path.join('/tmp', filename)
+        # Look for file in persistent downloads directory
+        downloads_dir = os.path.join(os.getcwd(), 'downloads')
+        file_path = os.path.join(downloads_dir, filename)
+        
         if not os.path.exists(file_path):
+            app.logger.warning(f"File not found: {file_path}")
             return f"File not found: {filename}", 404
 
         return send_file(
@@ -517,7 +545,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.3.2',
+        'version': '10.4.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -532,6 +560,7 @@ def api_health():
             'nested_array_support',
             'centered_image_layout',
             'nested_card_wrapper_support',
+            'persistent_download_links',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',

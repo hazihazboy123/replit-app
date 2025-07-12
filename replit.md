@@ -131,6 +131,15 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- July 12, 2025: PERSISTENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.4.0 with permanent file storage:
+  * CRITICAL FIX: Resolved download link expiration by moving from /tmp to persistent downloads directory
+  * PERSISTENT STORAGE: Files now saved in /downloads directory that survives server restarts and deployments
+  * AUTOMATIC CLEANUP: Added cleanup_old_files function to remove files older than 7 days to prevent storage bloat
+  * UNIQUE TIMESTAMPS: Added timestamp to filenames to ensure uniqueness and prevent conflicts
+  * ENHANCED DOWNLOAD ENDPOINT: Updated download handler to look in persistent downloads directory
+  * PRODUCTION READY: Download links now remain valid for 7 days instead of expiring immediately
+  * STORAGE MANAGEMENT: Automatic cleanup prevents unlimited storage growth while maintaining accessibility
+  * Version 10.4.0 provides reliable, long-lasting download links for medical education workflows
 - July 7, 2025: ENHANCED NESTED STRUCTURE HANDLING - Updated to Version 10.3.2 with complete nested card wrapper support:
   * CRITICAL FIX: Resolved "'str' object has no attribute 'get'" error that occurred when processing invalid card data
   * DEFENSIVE VALIDATION: Added type checking to ensure all cards are dictionaries before processing
