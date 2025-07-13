@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a Flask-based web application that converts JSON-formatted medical flashcard data into advanced Anki deck files (.apkg). Designed specifically for medical students, it supports high-yield card highlighting, cloze deletions, hierarchical tags, image embedding, and notes sections. Users can either upload a JSON file or paste JSON data directly into a web form to generate downloadable Anki flashcard decks optimized for medical education.
+This is a Flask-based web application that converts JSON-formatted medical flashcard data from n8n workflows into Anki deck files (.apkg) with automatic image processing. The system handles ONLY image extraction and downloading from Supabase storage while preserving ALL CSS/HTML formatting controlled by n8n workflows. All styling, highlighting, gradients, and visual formatting comes from n8n - the system simply finds images in HTML content, downloads them, and replaces URLs with local filenames for offline Anki compatibility.
 
 ## System Architecture
 
@@ -131,18 +131,18 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 13, 2025: SIMPLIFIED HTML PARSING SYSTEM - Updated to Version 11.0.0 with BeautifulSoup4 integration:
-  * MAJOR SIMPLIFICATION: Complete code rewrite using BeautifulSoup4 for HTML parsing and image extraction
-  * AUTOMATIC IMAGE DETECTION: System now scans HTML content for <img> tags and extracts URLs automatically  
-  * SMART IMAGE REPLACEMENT: Downloads images and replaces URLs with local filenames in HTML content
-  * CLEANER ARCHITECTURE: Removed complex component handling - now uses exact front/back HTML as provided
-  * SINGLE API ENDPOINT: Unified /api/generate endpoint replacing multiple complex endpoints
-  * BEAUTIFULSOUP4 INTEGRATION: Added bs4 dependency for robust HTML parsing and manipulation
-  * SIMPLIFIED CARD MODELS: Streamlined basic and cloze models with minimal CSS for better performance
-  * NOTES SECTION SUPPORT: Added optional notes that appear at bottom of card back with pink styling
-  * PRESERVED FEATURES: Maintained persistent download links, cleanup functionality, and defensive programming
-  * HTML PRESERVATION: Complete preservation of user's HTML styling while adding automatic image processing
-  * Version 11.0.0 provides simplified, more reliable image handling with automatic HTML processing
+- July 13, 2025: N8N-CONTROLLED STYLING SYSTEM - Updated to Version 11.1.0 with pure image processing:
+  * CLEAR ROLE DEFINITION: n8n controls ALL CSS/HTML styling - system ONLY handles image processing
+  * AUTOMATIC IMAGE DETECTION: System scans HTML for <img> tags and extracts Supabase URLs automatically  
+  * SMART IMAGE REPLACEMENT: Downloads images and replaces URLs with local filenames for offline Anki use
+  * ZERO STYLE MODIFICATION: Complete preservation of n8n's exact HTML/CSS without any changes
+  * SUPABASE INTEGRATION: Optimized for Supabase storage URLs from n8n medical workflows
+  * BEAUTIFULSOUP4 PARSING: Robust HTML parsing for image extraction without style interference
+  * SIMPLIFIED ENDPOINTS: All endpoints (/api/simple, /api/enhanced-medical, /api/generate) work identically
+  * DEFENSIVE PROGRAMMING: Enhanced error handling for empty n8n requests with helpful debugging
+  * PERSISTENT DOWNLOADS: 7-day download link persistence for reliable n8n workflow integration
+  * HTML PRESERVATION: 100% preservation of n8n styling while adding automatic image processing
+  * Version 11.1.0 provides pure image processing service for n8n-styled medical flashcards
 - July 12, 2025: PERSISTENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.4.0 with permanent file storage:
   * CRITICAL FIX: Resolved download link expiration by moving from /tmp to persistent downloads directory
   * PERSISTENT STORAGE: Files now saved in /downloads directory that survives server restarts and deployments
