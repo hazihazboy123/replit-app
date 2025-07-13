@@ -131,6 +131,18 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- July 13, 2025: SIMPLIFIED HTML PARSING SYSTEM - Updated to Version 11.0.0 with BeautifulSoup4 integration:
+  * MAJOR SIMPLIFICATION: Complete code rewrite using BeautifulSoup4 for HTML parsing and image extraction
+  * AUTOMATIC IMAGE DETECTION: System now scans HTML content for <img> tags and extracts URLs automatically  
+  * SMART IMAGE REPLACEMENT: Downloads images and replaces URLs with local filenames in HTML content
+  * CLEANER ARCHITECTURE: Removed complex component handling - now uses exact front/back HTML as provided
+  * SINGLE API ENDPOINT: Unified /api/generate endpoint replacing multiple complex endpoints
+  * BEAUTIFULSOUP4 INTEGRATION: Added bs4 dependency for robust HTML parsing and manipulation
+  * SIMPLIFIED CARD MODELS: Streamlined basic and cloze models with minimal CSS for better performance
+  * NOTES SECTION SUPPORT: Added optional notes that appear at bottom of card back with pink styling
+  * PRESERVED FEATURES: Maintained persistent download links, cleanup functionality, and defensive programming
+  * HTML PRESERVATION: Complete preservation of user's HTML styling while adding automatic image processing
+  * Version 11.0.0 provides simplified, more reliable image handling with automatic HTML processing
 - July 12, 2025: PERSISTENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.4.0 with permanent file storage:
   * CRITICAL FIX: Resolved download link expiration by moving from /tmp to persistent downloads directory
   * PERSISTENT STORAGE: Files now saved in /downloads directory that survives server restarts and deployments
