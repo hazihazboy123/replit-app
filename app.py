@@ -364,6 +364,17 @@ def download_file(filename):
         app.logger.error(f"Download error: {e}")
         return "Download failed", 500
 
+@app.route('/api/enhanced-medical', methods=['POST', 'OPTIONS'])
+def api_enhanced_medical():
+    """Legacy compatibility endpoint - redirects to new /api/generate"""
+    return api_generate()
+
+@app.route('/api/simple', methods=['POST', 'OPTIONS'])
+def api_simple():
+    """Legacy compatibility endpoint - redirects to new /api/generate"""
+    return api_generate()
+
+@app.route('/health', methods=['GET'])
 @app.route('/api/health', methods=['GET'])
 def api_health():
     return jsonify({
@@ -376,7 +387,8 @@ def api_health():
             'basic_and_cloze_support',
             'notes_section_support',
             'simplified_structure',
-            'persistent_download_links'
+            'persistent_download_links',
+            'legacy_endpoint_compatibility'
         ]
     }), 200
 
