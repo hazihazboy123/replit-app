@@ -99,18 +99,48 @@ def create_simple_model():
     font-family: Arial, sans-serif;
     background-color: white;
     padding: 20px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .night_mode { 
     background-color: #272828;
 }
 
+/* Control overall font sizes */
+.card div {
+    font-size: 1.2em !important;
+    line-height: 1.4 !important;
+}
+
+/* Limit clinical vignette box sizes */
+.card div[style*="padding"] {
+    padding: 12px !important;
+    margin: 10px 0 !important;
+    max-width: 90% !important;
+    box-sizing: border-box !important;
+}
+
+/* Control gradient background boxes */
+.card div[style*="background"] {
+    padding: 12px !important;
+    margin: 10px 0 !important;
+    max-width: 90% !important;
+    font-size: 1.0em !important;
+}
+
 img { 
     max-width: 70%;
-    max-height: 400px;
+    max-height: 300px;
     height: auto;
     display: block;
-    margin: 20px auto;
+    margin: 15px auto;
+}
+
+/* Ensure content doesn't overflow */
+* {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 """
 
