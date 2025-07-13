@@ -248,16 +248,25 @@ def extract_cards(data):
     
     # Handle array with objects containing 'output'
     if isinstance(data, list) and len(data) > 0:
-        if 'output' in data[0]:
-            # This matches your data structure
+        if isinstance(data[0], dict) and 'output' in data[0]:
             cards = data[0]['output']
-    # Handle direct card array
-    elif isinstance(data, list):
-        cards = data
+        # Handle direct card array
+        elif isinstance(data[0], dict) and ('front' in data[0] or 'type' in data[0]):
+            cards = data
     # Handle object with 'cards' key
     elif isinstance(data, dict) and 'cards' in data:
         cards = data['cards']
+    # Handle object with 'output' key
+    elif isinstance(data, dict) and 'output' in data:
+        cards = data['output']
+    # Handle single card object
+    elif isinstance(data, dict) and ('front' in data or 'type' in data):
+        cards = [data]
+    # Handle direct card array
+    elif isinstance(data, list):
+        cards = data
     
+    app.logger.info(f"Data type: {type(data)}, Extracted cards: {len(cards)}")
     return cards
 
 @app.route('/api/generate', methods=['POST', 'OPTIONS'])
@@ -271,7 +280,20 @@ def api_generate():
         # Get JSON data
         data = request.get_json(force=True)
         if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
+            return jsonify({
+                'error': 'No JSON data provided',
+                'help': 'Send POST request with JSON body containing card data',
+                'example': [{
+                    "output": [{
+                        "type": "basic",
+                        "front": "<div>Question</div>",
+                        "back": "<div>Answer</div>",
+                        "tags": ["tag1"]
+                    }]
+                }]
+            }), 400
+
+        app.logger.info(f"Received data: {data}")
 
         # Extract cards
         cards = extract_cards(data)
@@ -279,7 +301,11 @@ def api_generate():
         app.logger.info(f"Extracted {len(cards)} cards")
 
         if not cards:
-            return jsonify({'error': 'No valid cards provided'}), 400
+            return jsonify({
+                'error': 'No valid cards provided', 
+                'received_data': data,
+                'help': 'Check that your JSON contains cards in one of these formats: [{"output":[cards]}], {"cards":[cards]}, or [cards]'
+            }), 400
 
         # Generate deck name
         deck_name = f"Medical_Deck_{time.strftime('%Y%m%d_%H%M%S')}"
