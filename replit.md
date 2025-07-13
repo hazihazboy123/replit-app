@@ -131,15 +131,6 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
-- July 13, 2025: CLINICAL VIGNETTE SIZING FIX - Updated to Version 11.1.0 with improved CSS control:
-  * FIXED ISSUE: Clinical vignette boxes displaying too large in Anki cards due to excessive HTML font sizes
-  * CSS IMPROVEMENTS: Added !important rules to override inline styles and control content sizing
-  * CONTROLLED PADDING: Limited padding to 12px instead of large inline padding values
-  * RESPONSIVE SIZING: Clinical vignette boxes now max-width 90% with controlled margins
-  * FONT SIZE CONTROL: Overrode large 1.7em inline fonts with more reasonable 1.2em/1.0em sizes
-  * IMPROVED LAYOUT: Better box-sizing and overflow control for professional card appearance
-  * PRESERVED STYLING: Maintained all visual elements (gradients, colors, borders) while fixing sizing
-  * Version 11.1.0 provides optimal clinical vignette sizing for better Anki card readability
 - July 13, 2025: SIMPLIFIED HTML PARSING SYSTEM - Updated to Version 11.0.0 with BeautifulSoup4 integration:
   * MAJOR SIMPLIFICATION: Complete code rewrite using BeautifulSoup4 for HTML parsing and image extraction
   * AUTOMATIC IMAGE DETECTION: System now scans HTML content for <img> tags and extracts URLs automatically  
