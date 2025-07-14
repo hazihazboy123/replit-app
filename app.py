@@ -59,16 +59,21 @@ def download_image_from_url(url, media_files_list):
         app.logger.error(f"Error downloading image from {url}: {e}")
         return None
 
-def cleanup_old_files(directory, days=7):
+def cleanup_old_files(directory, days=14):
     """Clean up files older than specified days to prevent directory bloat"""
     try:
         cutoff_time = time.time() - (days * 24 * 60 * 60)
+        files_cleaned = 0
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
-            if os.path.isfile(file_path):
+            if os.path.isfile(file_path) and filename.endswith('.apkg'):
+                file_age_days = (time.time() - os.path.getmtime(file_path)) / (24 * 60 * 60)
                 if os.path.getmtime(file_path) < cutoff_time:
                     os.remove(file_path)
-                    app.logger.debug(f"Cleaned up old file: {filename}")
+                    files_cleaned += 1
+                    app.logger.info(f"Cleaned up old file: {filename} (age: {file_age_days:.1f} days)")
+        if files_cleaned > 0:
+            app.logger.info(f"Cleanup completed: removed {files_cleaned} files older than {days} days")
     except Exception as e:
         app.logger.warning(f"Error during cleanup: {e}")
 
@@ -326,8 +331,9 @@ def api_generate():
         downloads_dir = os.path.join(os.getcwd(), 'downloads')
         os.makedirs(downloads_dir, exist_ok=True)
         
-        # Clean up old files before creating new ones
-        cleanup_old_files(downloads_dir)
+        # Clean up old files before creating new ones (only occasionally to reduce overhead)
+        if random.random() < 0.1:  # 10% chance to run cleanup
+            cleanup_old_files(downloads_dir)
         
         file_path = os.path.join(downloads_dir, filename)
 
@@ -378,8 +384,13 @@ def download_file(filename):
         file_path = os.path.join(downloads_dir, filename)
         
         if not os.path.exists(file_path):
-            return f"File not found: {filename}", 404
+            app.logger.error(f"File not found: {filename} in {downloads_dir}")
+            # List available files for debugging
+            available_files = os.listdir(downloads_dir) if os.path.exists(downloads_dir) else []
+            app.logger.error(f"Available files: {available_files}")
+            return f"File not found: {filename}. Please generate a new deck.", 404
 
+        app.logger.info(f"Serving download: {filename}")
         return send_file(
             file_path,
             as_attachment=True,
@@ -403,17 +414,23 @@ def api_simple():
 @app.route('/health', methods=['GET'])
 @app.route('/api/health', methods=['GET'])
 def api_health():
+    downloads_dir = os.path.join(os.getcwd(), 'downloads')
+    file_count = len([f for f in os.listdir(downloads_dir) if f.endswith('.apkg')]) if os.path.exists(downloads_dir) else 0
     return jsonify({
         'status': 'healthy',
         'service': 'Simple Anki Generator',
-        'version': '11.0.0',
+        'version': '11.1.0',
+        'downloads_available': file_count,
+        'downloads_directory': downloads_dir,
         'features': [
             'html_image_extraction',
             'automatic_image_download',
+            'supabase_storage_support',
             'basic_and_cloze_support',
             'notes_section_support',
             'simplified_structure',
-            'persistent_download_links',
+            'persistent_download_links_14_days',
+            'n8n_workflow_integration',
             'legacy_endpoint_compatibility'
         ]
     }), 200
