@@ -131,6 +131,14 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- July 14, 2025: PERMANENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.5.0 with truly permanent file storage:
+  * CRITICAL FIX: Removed automatic cleanup entirely - files now persist indefinitely
+  * PERMANENT STORAGE: Download links stay active forever without any expiration
+  * MANUAL CLEANUP: Added /api/cleanup endpoint for administrative file management only
+  * UNLIMITED PERSISTENCE: Files remain accessible indefinitely across server restarts and deployments
+  * ENHANCED RELIABILITY: Complete elimination of automatic file deletion ensures permanent access
+  * PRODUCTION GRADE: Medical education workflows can depend on links staying active permanently
+  * Version 10.5.0 provides truly permanent download links with no automatic expiration
 - July 12, 2025: PERSISTENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.4.0 with permanent file storage:
   * CRITICAL FIX: Resolved download link expiration by moving from /tmp to persistent downloads directory
   * PERSISTENT STORAGE: Files now saved in /downloads directory that survives server restarts and deployments

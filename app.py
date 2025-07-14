@@ -466,8 +466,8 @@ def api_enhanced_medical():
         downloads_dir = os.path.join(os.getcwd(), 'downloads')
         os.makedirs(downloads_dir, exist_ok=True)
         
-        # Clean up old files (older than 7 days) to prevent directory bloat
-        cleanup_old_files(downloads_dir, days=7)
+        # Files persist permanently - no automatic cleanup
+        # Use /api/cleanup endpoint if manual cleanup is needed
         
         file_path = os.path.join(downloads_dir, filename)
 
@@ -545,7 +545,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.4.0',
+        'version': '10.5.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -560,7 +560,7 @@ def api_health():
             'nested_array_support',
             'centered_image_layout',
             'nested_card_wrapper_support',
-            'persistent_download_links',
+            'permanent_download_links',
             'no_style_modification',
             'clinical_vignettes_preserved',
             'mnemonics_preserved',
@@ -570,6 +570,32 @@ def api_health():
         ],
         'timestamp': int(time.time())
     }), 200
+
+@app.route('/api/cleanup', methods=['POST'])
+def api_cleanup():
+    """Manual cleanup endpoint for administrative use"""
+    try:
+        days = request.json.get('days', 30) if request.json else 30
+        downloads_dir = os.path.join(os.getcwd(), 'downloads')
+        
+        cleaned_files = []
+        cutoff_time = time.time() - (days * 24 * 60 * 60)
+        
+        for filename in os.listdir(downloads_dir):
+            file_path = os.path.join(downloads_dir, filename)
+            if os.path.isfile(file_path):
+                if os.path.getmtime(file_path) < cutoff_time:
+                    os.remove(file_path)
+                    cleaned_files.append(filename)
+        
+        return jsonify({
+            'status': 'completed',
+            'cleaned_files': cleaned_files,
+            'days_threshold': days,
+            'message': f'Cleaned {len(cleaned_files)} files older than {days} days'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def index():
