@@ -131,6 +131,12 @@ This is a Flask-based web application that converts JSON-formatted medical flash
 
 ```
 Changelog:
+- July 20, 2025: NOTES FONT SIZE PRESERVATION - Updated to Version 10.5.1 with preserved original font sizes:
+  * USER REQUEST: Removed font size modifications from notes section to preserve original styling
+  * FONT SIZE PRESERVATION: Notes now keep their original font-size values (0.9em, 1em, etc.)
+  * STYLING MAINTAINED: Center alignment, color, and spacing preserved while keeping original font sizes
+  * PURE HTML COMPLIANCE: Complete preservation of all original HTML styling without font size overrides
+  * Version 10.5.1 ensures notes display exactly as provided in the original data
 - July 14, 2025: PERMANENT DOWNLOAD LINKS SYSTEM - Updated to Version 10.5.0 with truly permanent file storage:
   * CRITICAL FIX: Removed automatic cleanup entirely - files now persist indefinitely
   * PERMANENT STORAGE: Download links stay active forever without any expiration

@@ -262,12 +262,10 @@ class EnhancedFlashcardProcessor:
         # Store notes to add at the end
         notes_content = None
         
-        # 1. Check for notes but don't add yet
+        # 1. Check for notes but don't add yet - preserve original font size
         notes = card_info.get('notes', '')
         if notes:
-            # Update the notes styling to center-aligned and larger font
-            if 'font-size: 0.9em' in notes:
-                notes = notes.replace('font-size: 0.9em', 'font-size: 1.2em')
+            # Only add centering if not present, preserve original font size
             if 'text-align: center' not in notes:
                 # If notes don't have center alignment, add it
                 if 'style="' in notes:
@@ -275,13 +273,13 @@ class EnhancedFlashcardProcessor:
                 elif '<div' in notes:
                     notes = notes.replace('<div', '<div style="text-align: center;"')
             
-            # Ensure proper spacing
+            # Ensure proper spacing but preserve font size
             if 'margin-top: 10px' in notes:
                 notes = notes.replace('margin-top: 10px', 'margin-top: 20px')
             elif 'margin-top: 20px' not in notes and 'margin-bottom: 20px' not in notes:
-                # Add spacing wrapper if not present
+                # Add spacing wrapper if not present - no font size change
                 if not notes.startswith('<div'):
-                    notes = f'<div style="text-align: center; font-style: italic; margin-top: 20px; color: #FF1493; font-size: 1.2em;">{notes}</div>'
+                    notes = f'<div style="text-align: center; font-style: italic; margin-top: 20px; color: #FF1493;">{notes}</div>'
             
             notes_content = notes
 
@@ -545,14 +543,14 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.5.0',
+        'version': '10.5.1',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
             'images_array_support',
             'optimized_image_sizing_70_percent',
             'notes_positioned_last',
-            'enhanced_notes_styling',
+            'preserved_notes_font_size',
             'robust_error_handling',
             'invalid_card_filtering',
             'safe_tags_processing',
