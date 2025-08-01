@@ -517,10 +517,15 @@ def api_enhanced_medical():
             full_url = download_url
             app.logger.info(f"✅ Using Supabase URL: {download_url}")
         else:
-            # Fallback to local storage
+            # Fallback to local storage with proper URL generation
             download_url = f"/download/{filename}"
-            full_url = f"{request.host_url.rstrip('/')}{download_url}"
-            app.logger.info("📁 Using local storage (Supabase unavailable)")
+            # Get the proper host URL from request headers or environment
+            host = request.headers.get('Host', request.host)
+            # Use https for non-localhost hosts
+            protocol = 'https' if 'localhost' not in host and '127.0.0.1' not in host else 'http'
+            base_url = os.environ.get('BASE_URL', f"{protocol}://{host}")
+            full_url = f"{base_url.rstrip('/')}{download_url}"
+            app.logger.info(f"📁 Using local storage: {full_url}")
 
         result = {
             'success': True,
@@ -670,10 +675,15 @@ def api_flexible_convert():
             full_url = download_url
             app.logger.info(f"✅ Using Supabase URL: {download_url}")
         else:
-            # Fallback to local storage
+            # Fallback to local storage with proper URL generation
             download_url = f"/download/{filename}"
-            full_url = f"{request.host_url.rstrip('/')}{download_url}"
-            app.logger.info("📁 Using local storage (Supabase unavailable)")
+            # Get the proper host URL from request headers or environment
+            host = request.headers.get('Host', request.host)
+            # Use https for non-localhost hosts
+            protocol = 'https' if 'localhost' not in host and '127.0.0.1' not in host else 'http'
+            base_url = os.environ.get('BASE_URL', f"{protocol}://{host}")
+            full_url = f"{base_url.rstrip('/')}{download_url}"
+            app.logger.info(f"📁 Using local storage: {full_url}")
         
         result = {
             'success': True,
