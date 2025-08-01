@@ -11,8 +11,19 @@ from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import genanki
 
+# Import the new flexible parser
+from flexible_parser import FlexibleJSONParser, N8nFlashcardParser
+
+# Import Supabase utilities
+from supabase_utils import (
+    upload_deck_to_supabase, 
+    generate_smart_deck_name,
+    check_supabase_health,
+    SUPABASE_ENABLED
+)
+
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Create the app
 app = Flask(__name__)
@@ -359,12 +370,17 @@ class EnhancedFlashcardProcessor:
             content_parts.append(notes_content)
 
 def extract_deck_name(data):
-    """Extract deck name from various data formats"""
+    """Extract deck name from various data formats or use smart naming"""
+    # First try traditional deck_name field
     if isinstance(data, list) and len(data) > 0:
         if isinstance(data[0], dict) and 'deck_name' in data[0]:
             return data[0].get('deck_name')
     elif isinstance(data, dict):
-        return data.get('deck_name')
+        deck_name = data.get('deck_name')
+        if deck_name:
+            return deck_name
+    
+    # If no deck_name provided, we'll use smart naming from tags later
     return None
 
 def extract_cards(data):
@@ -437,10 +453,11 @@ def api_enhanced_medical():
         if not cards:
             return jsonify({'error': 'No valid cards provided'}), 400
 
-        # Generate deck name if not provided
+        # Generate smart deck name based on lecture tags if not provided
         if not deck_name:
-            deck_name = f"Medical_Deck_{time.strftime('%Y%m%d_%H%M%S')}"
-
+            deck_name = generate_smart_deck_name(cards)
+            app.logger.info(f"Generated smart deck name from tags: '{deck_name}'")
+        
         app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
 
         # Process cards
@@ -483,9 +500,27 @@ def api_enhanced_medical():
             except:
                 pass
 
-        # Generate response
-        download_url = f"/download/{filename}"
-        full_url = f"{request.host_url.rstrip('/')}{download_url}"
+        # Try to upload to Supabase
+        session_id = request.headers.get('X-Session-ID')
+        user_id = request.headers.get('X-User-ID')
+        
+        supabase_result = upload_deck_to_supabase(
+            file_path,
+            deck_name,
+            session_id=session_id,
+            user_id=user_id
+        )
+        
+        if supabase_result and supabase_result.get('success'):
+            # Use Supabase URL
+            download_url = supabase_result['download_url']
+            full_url = download_url
+            app.logger.info(f"✅ Using Supabase URL: {download_url}")
+        else:
+            # Fallback to local storage
+            download_url = f"/download/{filename}"
+            full_url = f"{request.host_url.rstrip('/')}{download_url}"
+            app.logger.info("📁 Using local storage (Supabase unavailable)")
 
         result = {
             'success': True,
@@ -497,7 +532,9 @@ def api_enhanced_medical():
             'filename': filename,
             'download_url': download_url,
             'full_download_url': full_url,
-            'message': f'Successfully generated deck with {len(cards)} cards'
+            'storage_type': 'supabase' if supabase_result else 'local',
+            'permanent_link': supabase_result is not None,
+            'message': f'Successfully generated deck "{deck_name}" with {len(cards)} cards'
         }
 
         return jsonify(result), 200
@@ -516,6 +553,155 @@ def api_enhanced_medical():
 def api_simple():
     """Legacy compatibility endpoint"""
     return api_enhanced_medical()
+
+@app.route('/api/flexible-convert', methods=['POST', 'OPTIONS'])
+def api_flexible_convert():
+    """
+    New flexible endpoint that handles n8n output format and other wrapped JSON structures.
+    Supports triple-layer JSON parsing and various malformed inputs.
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        app.logger.info("=== FLEXIBLE CONVERT API CALLED ===")
+        
+        # Initialize parsers
+        n8n_parser = N8nFlashcardParser()
+        
+        # Get raw data - don't force JSON parsing
+        raw_data = request.get_data(as_text=True)
+        
+        if not raw_data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Log raw data size and preview
+        app.logger.info(f"Received {len(raw_data)} bytes of data")
+        app.logger.debug(f"Data preview: {raw_data[:200]}..." if len(raw_data) > 200 else f"Data: {raw_data}")
+        
+        # Parse the data using flexible parser
+        try:
+            parsed_result = n8n_parser.parse_flashcard_data(raw_data)
+        except ValueError as e:
+            # Provide helpful error response
+            return jsonify({
+                'error': 'Failed to parse input data',
+                'message': str(e),
+                'hints': [
+                    'Ensure data is valid JSON or wrapped in supported format',
+                    'For n8n: Check that output contains markdown-wrapped JSON',
+                    'Remove any trailing commas in JSON',
+                    'Ensure all strings are properly quoted'
+                ],
+                'data_preview': raw_data[:500] + '...' if len(raw_data) > 500 else raw_data
+            }), 400
+        
+        # Extract cards and deck name
+        cards = parsed_result.get('cards', [])
+        deck_name = parsed_result.get('deck_name')
+        
+        # Validate we have cards
+        if not cards:
+            return jsonify({
+                'error': 'No cards found in parsed data',
+                'parsed_structure': list(parsed_result.keys()) if isinstance(parsed_result, dict) else 'not a dict',
+                'hint': 'Ensure your data contains a "cards" array or is an array of card objects'
+            }), 400
+        
+        app.logger.info(f"Parsed {len(cards)} cards successfully")
+        
+        # Generate smart deck name based on lecture tags if not provided
+        if not deck_name:
+            deck_name = generate_smart_deck_name(cards)
+            app.logger.info(f"Generated smart deck name from tags: '{deck_name}'")
+        
+        app.logger.info(f"Processing {len(cards)} cards for deck '{deck_name}'")
+        
+        # Process cards using existing processor
+        processor = EnhancedFlashcardProcessor()
+        deck, media_files = processor.process_cards(cards, deck_name)
+        
+        # Create package
+        package = genanki.Package(deck)
+        package.media_files = media_files
+        
+        # Generate filename
+        safe_name = "".join(c for c in deck_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        if not safe_name:
+            safe_name = "medical_deck"
+        
+        timestamp = int(time.time())
+        filename = f"{safe_name}_{timestamp}.apkg"
+        
+        # Create downloads directory
+        downloads_dir = os.path.join(os.getcwd(), 'downloads')
+        os.makedirs(downloads_dir, exist_ok=True)
+        
+        file_path = os.path.join(downloads_dir, filename)
+        
+        # Write package
+        package.write_to_file(file_path)
+        
+        # Get file info
+        file_size = os.path.getsize(file_path)
+        app.logger.info(f"Generated deck: {file_path} (size: {file_size} bytes)")
+        
+        # Clean up media files
+        for media_file in media_files:
+            try:
+                os.remove(media_file)
+            except:
+                pass
+        
+        # Try to upload to Supabase
+        session_id = request.headers.get('X-Session-ID')
+        user_id = request.headers.get('X-User-ID')
+        
+        supabase_result = upload_deck_to_supabase(
+            file_path,
+            deck_name,
+            session_id=session_id,
+            user_id=user_id
+        )
+        
+        if supabase_result and supabase_result.get('success'):
+            # Use Supabase URL
+            download_url = supabase_result['download_url']
+            full_url = download_url
+            app.logger.info(f"✅ Using Supabase URL: {download_url}")
+        else:
+            # Fallback to local storage
+            download_url = f"/download/{filename}"
+            full_url = f"{request.host_url.rstrip('/')}{download_url}"
+            app.logger.info("📁 Using local storage (Supabase unavailable)")
+        
+        result = {
+            'success': True,
+            'status': 'completed',
+            'deck_name': deck_name,
+            'cards_processed': len(cards),
+            'media_files_downloaded': len(media_files),
+            'file_size': file_size,
+            'filename': filename,
+            'download_url': download_url,
+            'full_download_url': full_url,
+            'parsing_strategy': n8n_parser.flexible_parser.last_strategy_used,
+            'storage_type': 'supabase' if supabase_result else 'local',
+            'permanent_link': supabase_result is not None,
+            'message': f'Successfully generated deck "{deck_name}" with {len(cards)} cards'
+        }
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        app.logger.error(f"ERROR in flexible-convert: {str(e)}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'error': 'Processing failed',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.route('/download/<path:filename>')
 def download_file(filename):
@@ -543,7 +729,7 @@ def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '10.5.1',
+        'version': '11.0.0',
         'features': [
             'pure_html_preservation',
             'cloze_card_support',
@@ -564,10 +750,35 @@ def api_health():
             'mnemonics_preserved',
             'smaller_images_70_percent',
             'magenta_captions_support',
-            'enhanced_notes_spacing'
+            'enhanced_notes_spacing',
+            'flexible_json_parsing',
+            'n8n_triple_layer_support',
+            'malformed_json_recovery',
+            'markdown_code_block_extraction',
+            'llm_output_cleanup',
+            'smart_deck_naming_from_tags',
+            'supabase_permanent_storage',
+            'intelligent_lecture_detection'
         ],
+        'storage': {
+            'supabase_enabled': SUPABASE_ENABLED,
+            'bucket': 'synapticrecall-links' if SUPABASE_ENABLED else None,
+            'fallback': 'local_storage'
+        },
+        'endpoints': {
+            '/api/enhanced-medical': 'Original endpoint with basic JSON parsing',
+            '/api/flexible-convert': 'New endpoint with flexible parsing for n8n and LLM outputs',
+            '/api/simple': 'Legacy compatibility endpoint'
+        },
         'timestamp': int(time.time())
     }), 200
+
+@app.route('/api/health/supabase', methods=['GET'])
+def api_health_supabase():
+    """Check Supabase storage health"""
+    health_status = check_supabase_health()
+    status_code = 200 if health_status.get('status') in ['healthy', 'disabled'] else 503
+    return jsonify(health_status), status_code
 
 @app.route('/api/cleanup', methods=['POST'])
 def api_cleanup():
@@ -621,11 +832,26 @@ def index():
             .features ul {
                 margin: 10px 0;
             }
+            .endpoints {
+                background: #e8f4f8;
+                padding: 20px;
+                border-radius: 8px;
+                margin-top: 20px;
+            }
+            .endpoints h3 {
+                margin-top: 0;
+            }
+            code {
+                background: #f0f0f0;
+                padding: 2px 4px;
+                border-radius: 3px;
+                font-family: monospace;
+            }
         </style>
     </head>
     <body>
         <h1>Medical Anki Generator</h1>
-        <p>Version 9.2.0 - Enhanced spacing and formatting support</p>
+        <p>Version 11.0.0 - Flexible JSON parsing with n8n support</p>
 
         <div class="features">
             <h3>Features:</h3>
@@ -638,6 +864,20 @@ def index():
                 <li>Captions positioned between images and clinical vignettes</li>
                 <li>Support for both image arrays and legacy image objects</li>
                 <li>Clinical vignettes and mnemonics preserved exactly as provided</li>
+                <li><strong>NEW:</strong> Flexible JSON parsing for n8n and LLM outputs</li>
+                <li><strong>NEW:</strong> Triple-layer JSON structure support</li>
+                <li><strong>NEW:</strong> Markdown code block extraction</li>
+                <li><strong>NEW:</strong> Malformed JSON recovery</li>
+            </ul>
+        </div>
+
+        <div class="endpoints">
+            <h3>API Endpoints:</h3>
+            <ul>
+                <li><code>POST /api/flexible-convert</code> - NEW endpoint with flexible parsing for n8n/LLM outputs</li>
+                <li><code>POST /api/enhanced-medical</code> - Original endpoint with standard JSON parsing</li>
+                <li><code>POST /api/simple</code> - Legacy compatibility endpoint</li>
+                <li><code>GET /api/health</code> - Health check and feature list</li>
             </ul>
         </div>
     </body>

@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# Flask
+instance/
+.webassets-cache
+
+# Anki files
+downloads/*.apkg
+*.apkg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archives
+*.tar.gz
+*.zip
+
+# UV/pip
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Local testing
+test_*.py
+demo_*.py
+test_data/
+tests/
+
+# Media files
+media/*
+!media/__init__.py
