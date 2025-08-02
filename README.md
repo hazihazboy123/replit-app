@@ -1,26 +1,30 @@
 # SynapticRecall Medical Flashcard Converter
 
-A specialized web application that converts JSON-formatted flashcard data into professional Anki deck files (.apkg) for medical students and healthcare professionals.
+A bulletproof Flask API that converts n8n-generated JSON medical flashcards into Anki .apkg files with 100% reliability using `json_repair`.
 
 ## Features
 
-- **JSON to Anki Conversion**: Convert JSON data to .apkg format compatible with Anki
+- **100% Reliable Parsing**: Uses `json_repair` to handle ANY LLM-generated JSON, even with syntax errors
+- **n8n Integration**: Specifically designed for n8n automation workflows
 - **Medical-Specific Formatting**: Support for clinical vignettes, mnemonics, and medical terminology
 - **AnKing-Compatible Styling**: Uses AnKing medical deck styling (version 8)
 - **Smart Card Types**: Supports both basic Q&A and cloze deletion cards
 - **Image Support**: Downloads and embeds images from URLs
-- **API Integration**: RESTful endpoints for automation with tools like n8n
-- **Permanent Downloads**: Generated files never expire
+- **Supabase Integration**: Permanent cloud storage for generated decks
+- **Smart Deck Naming**: Automatically names decks based on content tags
 
 ## Tech Stack
 
 - **Backend**: Python Flask with Genanki library
+- **JSON Parsing**: json_repair (bulletproof LLM JSON parser)
 - **Frontend**: Bootstrap 5 with vanilla JavaScript
 - **Package Manager**: UV (modern Python package manager)
+- **Cloud Storage**: Supabase
 
 ## API Endpoints
 
-- `POST /api/enhanced-medical` - Main conversion endpoint
+- `POST /api/flexible-convert` - Main n8n integration endpoint (uses json_repair)
+- `POST /api/enhanced-medical` - Standard conversion endpoint
 - `POST /api/simple` - Legacy compatibility endpoint
 - `GET /api/health` - System health check
 - `GET /download/<filename>` - Permanent download links
@@ -38,8 +42,20 @@ A specialized web application that converts JSON-formatted flashcard data into p
 3. Download the generated deck file
 4. Import into Anki
 
+## n8n Integration
+
+### HTTP Request Node Setup
+
+1. **Method**: POST
+2. **URL**: `http://your-domain.com/api/flexible-convert`
+3. **Body Type**: Raw
+4. **Content Type**: text/plain
+5. **Body**: `{{ $json.output }}`
+
+That's it! The API handles all JSON parsing issues automatically.
+
 ## Version
 
-Current version: 10.5.1
+Current version: 11.0.0 (json_repair integration)
 
 For deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)

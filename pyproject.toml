@@ -15,4 +15,5 @@ dependencies = [
     "pillow>=11.2.1",
     "beautifulsoup4>=4.13.4",
     "supabase>=2.4.0",
+    "json-repair>=0.1.4",
 ]
