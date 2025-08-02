@@ -44,68 +44,81 @@ class FlexibleJSONParser:
         # Log the raw input for debugging (first 500 chars)
         logger.debug(f"Raw input preview: {raw_input[:500]}...")
         
-        # Strategy 1: Handle n8n triple-layer structure FIRST if hint provided
-        if source_hint == 'n8n' or self._looks_like_n8n(raw_input):
-            logger.info("Attempting n8n triple-layer parsing strategy")
-            try:
-                result = self._parse_n8n_format(raw_input)
-                if result is not None:
-                    self.last_strategy_used = "n8n_triple_layer"
-                    logger.info(f"Successfully parsed with n8n strategy, found {len(result.get('cards', []))} cards")
-                    return result
-            except Exception as e:
-                logger.warning(f"n8n parsing failed: {str(e)}")
-                errors.append(f"n8n parsing: {str(e)}")
+        # STRATEGY 1: N8N TRIPLE-LAYER FORMAT (ALWAYS FIRST PRIORITY)
+        # This handles: [{"output":"```json\n{\"cards\":[...]}\n```"}]
+        # ALWAYS try this first regardless of hint - this is the user's primary format
+        logger.info("🎯 Attempting n8n triple-layer parsing strategy (PRIORITY #1)")
+        try:
+            result = self._parse_n8n_format(raw_input)
+            if result is not None:
+                self.last_strategy_used = "n8n_triple_layer"
+                cards_count = len(result.get('cards', []))
+                logger.info(f"✅ SUCCESS with n8n strategy! Found {cards_count} cards")
+                return result
+        except Exception as e:
+            logger.warning(f"N8n parsing failed: {str(e)}")
+            errors.append(f"n8n parsing: {str(e)}")
         
-        # Strategy 2: Direct JSON parsing
+        # STRATEGY 2: Standard JSON parsing (for direct JSON input)
+        logger.info("⚡ Attempting standard JSON parsing (fallback #1)")
         try:
             result = self._parse_standard(raw_input)
             if result is not None:
                 self.last_strategy_used = "standard"
+                logger.info("✅ SUCCESS with standard JSON parsing")
                 return result
         except Exception as e:
             errors.append(f"Standard parsing: {str(e)}")
         
-        # Strategy 3: Deep unescape strategy for heavily escaped JSON
+        # STRATEGY 3: Deep unescape strategy for heavily escaped JSON
+        logger.info("🔧 Attempting deep unescape parsing (fallback #2)")
         try:
             result = self._parse_with_deep_unescape(raw_input)
             if result is not None:
                 self.last_strategy_used = "deep_unescape"
+                logger.info("✅ SUCCESS with deep unescape parsing")
                 return result
         except Exception as e:
             errors.append(f"Deep unescape parsing: {str(e)}")
             
-        # Strategy 4: Clean and parse
+        # STRATEGY 4: Clean and parse
+        logger.info("🧹 Attempting cleanup parsing (fallback #3)")
         try:
             result = self._parse_with_cleanup(raw_input)
             if result is not None:
                 self.last_strategy_used = "cleanup"
+                logger.info("✅ SUCCESS with cleanup parsing")
                 return result
         except Exception as e:
             errors.append(f"Cleanup parsing: {str(e)}")
             
-        # Strategy 5: Extract JSON from text
+        # STRATEGY 5: Extract JSON from text
+        logger.info("🔍 Attempting extraction parsing (fallback #4)")
         try:
             result = self._parse_with_extraction(raw_input)
             if result is not None:
                 self.last_strategy_used = "extraction"
+                logger.info("✅ SUCCESS with extraction parsing")
                 return result
         except Exception as e:
             errors.append(f"Extraction parsing: {str(e)}")
             
-        # Strategy 6: Try to repair JSON
+        # STRATEGY 6: Try to repair JSON
+        logger.info("🔧 Attempting repair parsing (fallback #5)")
         try:
             result = self._parse_with_repair(raw_input)
             if result is not None:
                 self.last_strategy_used = "repair"
+                logger.info("✅ SUCCESS with repair parsing")
                 return result
         except Exception as e:
             errors.append(f"Repair parsing: {str(e)}")
         
         # All strategies failed
         error_summary = "; ".join(errors)
-        logger.error(f"All parsing strategies failed: {error_summary}")
-        raise ValueError(f"Failed to parse JSON. Errors: {error_summary}")
+        logger.error(f"❌ ALL PARSING STRATEGIES FAILED: {error_summary}")
+        logger.error(f"Data preview (first 200 chars): {raw_input[:200]}")
+        raise ValueError(f"Failed to parse JSON with all 6 strategies. Errors: {error_summary}")
     
     def _parse_standard(self, raw_input: str) -> Any:
         """Standard JSON parsing"""
@@ -182,16 +195,39 @@ class FlexibleJSONParser:
             
             return None
     
+    def _is_valid_json(self, json_str: str) -> bool:
+        """Check if a string is valid JSON"""
+        try:
+            json.loads(json_str)
+            return True
+        except json.JSONDecodeError:
+            return False
+    
     def _looks_like_n8n(self, raw_input: str) -> bool:
-        """Check if input looks like n8n format"""
-        # n8n typically has array with objects containing "output" field
-        # Check for either the output field OR if it's an array starting with [{"output"
-        if '"output"' in raw_input:
-            return True
-        # Also check if it starts like an n8n array
+        """
+        Check if input looks like n8n format.
+        N8n format: [{"output":"```json\\n{\"cards\":[...]}\\n```"}]
+        """
         stripped = raw_input.strip()
-        if stripped.startswith('[{') and '"output"' in stripped[:100]:
+        
+        # Primary check: Does it have the exact n8n structure?
+        if (stripped.startswith('[{') and 
+            '"output"' in stripped and 
+            '```json' in stripped):
+            logger.debug("✅ Detected n8n format: Array with output field containing markdown JSON")
             return True
+        
+        # Secondary check: Basic n8n structure without markdown
+        if stripped.startswith('[{') and '"output"' in stripped[:100]:
+            logger.debug("✅ Detected n8n-like format: Array with output field")
+            return True
+            
+        # Tertiary check: Just has output field somewhere
+        if '"output"' in raw_input:
+            logger.debug("⚠️ Possible n8n format: Contains output field")
+            return True
+            
+        logger.debug("❌ Not n8n format")
         return False
     
     def _parse_n8n_format(self, raw_input: str) -> List[Dict]:
