@@ -2,7 +2,7 @@ Flask==3.1.1
 Flask-CORS==6.0.1
 genanki==0.13.1
 requests==2.32.4
-json-repair==0.1.4
+json_repair
 beautifulsoup4==4.13.4
 supabase==2.4.0
 gunicorn==23.0.0

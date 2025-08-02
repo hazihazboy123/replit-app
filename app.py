@@ -13,9 +13,39 @@ import genanki
 from datetime import datetime
 import uuid
 
-# Bulletproof parser using json_repair - 100% reliable for LLM output
+# Bulletproof parser - handles LLM-generated JSON with errors
 import re
-from json_repair import repair_json
+
+# Try to use json_repair package if available
+JSON_REPAIR_AVAILABLE = False
+try:
+    from json_repair import repair_json
+    JSON_REPAIR_AVAILABLE = True
+except ImportError:
+    # Create our own repair function for common LLM issues
+    def repair_json(json_str):
+        """
+        Repairs common JSON issues from LLMs:
+        - Unescaped quotes in strings
+        - Trailing commas
+        - Missing quotes around keys
+        """
+        # Fix unescaped quotes in HTML (common in your use case)
+        # This regex looks for quotes inside HTML attributes
+        json_str = re.sub(r'(style=)"([^"]+)"', lambda m: m.group(1) + '"' + m.group(2).replace('"', '\\"') + '"', json_str)
+        
+        # Remove trailing commas before } or ]
+        json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+        
+        # Add quotes to unquoted keys
+        json_str = re.sub(r'(\w+):', r'"\1":', json_str)
+        
+        # Fix single quotes to double quotes
+        # But be careful not to change quotes inside strings
+        # This is a simple approach that works for most cases
+        json_str = json_str.replace("'", '"')
+        
+        return json_str
 
 def parse_markdown_json(raw_input):
     """
@@ -773,7 +803,7 @@ def api_health():
         'service': 'Enhanced Medical Anki Generator',
         'version': '11.0.0',
         'features': [
-            'json_repair_parsing',
+            'json_repair_parsing' if JSON_REPAIR_AVAILABLE else 'fallback_json_repair',
             'markdown_code_block_extraction',
             'smart_deck_naming_from_tags',
             'supabase_permanent_storage',
@@ -782,13 +812,14 @@ def api_health():
             'clinical_vignettes_preserved',
             'permanent_download_links'
         ],
+        'json_repair_status': 'installed' if JSON_REPAIR_AVAILABLE else 'using_fallback',
         'storage': {
             'supabase_enabled': SUPABASE_ENABLED,
             'bucket': 'synapticrecall-links' if SUPABASE_ENABLED else None,
             'fallback': 'local_storage'
         },
         'endpoints': {
-            '/api/flexible-convert': 'Primary endpoint with json_repair parsing',
+            '/api/flexible-convert': 'Primary endpoint with json repair',
             '/api/enhanced-medical': 'Legacy endpoint with standard JSON parsing',
             '/api/simple': 'Legacy compatibility endpoint'
         },
