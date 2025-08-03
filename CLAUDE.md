@@ -45,23 +45,51 @@ Convert complex, LLM-generated JSON medical flashcard data (with potential forma
 ### File Structure
 ```
 /
-├── app.py                    # Main Flask application
-├── flexible_parser.py        # Robust JSON parsing system
+├── app.py                    # Main Flask application with integrated JSON repair
+├── supabase_utils.py        # Supabase storage integration
 ├── main.py                   # Entry point
 ├── templates/               
 │   ├── base.html            # Base template
 │   └── index.html           # UI interface
 ├── static/js/main.js        # Frontend JavaScript
 ├── pyproject.toml           # Dependencies (UV)
-└── downloads/               # Generated .apkg storage
+├── .env                     # Environment variables
+└── downloads/               # Generated .apkg storage (fallback)
 ```
 
 ## 🌐 API Endpoints
 
 ### Primary Endpoints
 
-#### 1. `/api/flexible-convert` (NEW - Recommended)
-**Purpose**: Handle n8n automation output with maximum flexibility
+#### 1. `/api/repair-json` (JSON Repair Only)
+**Purpose**: Repair LLM-generated JSON without APKG conversion
+
+**Request Format**: Plain text with markdown wrapper
+```
+```json
+{
+  "cards": [...]
+}
+```
+```
+
+**Response Format**: Plain text with markdown wrapper (same format, repaired JSON)
+```
+```json
+{
+  "cards": [...]
+}
+```
+```
+
+**Features**:
+- Maintains markdown wrapper format
+- Repairs JSON syntax errors
+- Returns text/plain content type
+- Perfect for Agent 1 → Supabase flow
+
+#### 2. `/api/flexible-convert` (Recommended for APKG)
+**Purpose**: Handle n8n automation output with JSON repair + APKG conversion
 
 **Request Format**:
 ```json
@@ -102,8 +130,9 @@ Convert complex, LLM-generated JSON medical flashcard data (with potential forma
 **Purpose**: Backward compatibility endpoint
 
 ### Health & Utility Endpoints
-- `GET /api/health` - System health check
-- `GET /download/<filename>` - Permanent download links
+- `GET /api/health` - System health check with endpoint list
+- `GET /api/health/supabase` - Supabase storage health check
+- `GET /download/<filename>` - Local fallback download links
 - `POST /api/cleanup` - Administrative cleanup (protected)
 
 ## 🔄 n8n Integration Details

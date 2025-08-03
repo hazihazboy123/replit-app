@@ -16,41 +16,13 @@ import uuid
 # Bulletproof parser - handles LLM-generated JSON with errors
 import re
 
-# Try to use json_repair package if available
-JSON_REPAIR_AVAILABLE = False
-try:
-    from json_repair import repair_json
-    JSON_REPAIR_AVAILABLE = True
-except ImportError:
-    # Create our own repair function for common LLM issues
-    def repair_json(json_str):
-        """
-        Repairs common JSON issues from LLMs:
-        - Unescaped quotes in strings
-        - Trailing commas
-        - Missing quotes around keys
-        """
-        # Fix unescaped quotes in HTML (common in your use case)
-        # This regex looks for quotes inside HTML attributes
-        json_str = re.sub(r'(style=)"([^"]+)"', lambda m: m.group(1) + '"' + m.group(2).replace('"', '\\"') + '"', json_str)
-        
-        # Remove trailing commas before } or ]
-        json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-        
-        # Add quotes to unquoted keys
-        json_str = re.sub(r'(\w+):', r'"\1":', json_str)
-        
-        # Fix single quotes to double quotes
-        # But be careful not to change quotes inside strings
-        # This is a simple approach that works for most cases
-        json_str = json_str.replace("'", '"')
-        
-        return json_str
+# json_repair is REQUIRED - no fallback
+from json_repair import repair_json
 
 def parse_markdown_json(raw_input):
     """
-    Master-engineered parser for n8n markdown-wrapped JSON.
-    Uses json_repair library for 100% reliability with LLM-generated content.
+    Simple parser for n8n markdown-wrapped JSON.
+    Uses json_repair library for fixing LLM-generated content.
     Expected format: ```json {...} ```
     """
     # Step 1: Extract JSON from markdown wrapper
@@ -64,53 +36,17 @@ def parse_markdown_json(raw_input):
         app.logger.debug("No markdown wrapper found, treating as pure JSON")
     
     # Step 2: Use json_repair to fix any LLM mistakes
-    # This handles ALL common issues:
-    # - Unescaped quotes in HTML
-    # - Trailing commas
-    # - Missing brackets
-    # - Mixed quote types
-    # - Unicode issues
     try:
         # json_repair returns a string, so we parse it after repair
         repaired_json = repair_json(json_str)
         data = json.loads(repaired_json)
         
         app.logger.info(f"Successfully parsed JSON with json_repair")
-        
-        # Validate we have cards
-        if not isinstance(data, dict):
-            # If it's a list, wrap it
-            if isinstance(data, list):
-                data = {"cards": data}
-            else:
-                raise ValueError("Parsed data is not a dict or list")
-        
-        if 'cards' not in data:
-            raise ValueError("JSON must contain a 'cards' array")
-        
         return data
         
     except Exception as e:
-        app.logger.error(f"json_repair failed: {str(e)}")
-        
-        # Fallback: Try to extract cards array directly
-        # This is our last resort if even json_repair fails
-        try:
-            # Look for cards array pattern
-            cards_match = re.search(r'"cards"\s*:\s*\[(.*?)\]', json_str, re.DOTALL)
-            if cards_match:
-                cards_content = "[" + cards_match.group(1) + "]"
-                # Try to repair just the cards array
-                repaired_cards = repair_json(cards_content)
-                cards = json.loads(repaired_cards)
-                app.logger.warning(f"Fallback extraction found {len(cards)} cards")
-                return {"cards": cards}
-        except:
-            pass
-        
-        # If all else fails, return empty cards
-        app.logger.error("All parsing strategies failed, returning empty cards")
-        return {"cards": []}
+        app.logger.error(f"Failed to parse JSON: {str(e)}")
+        raise ValueError(f"JSON parsing failed: {str(e)}")
 
 # Import Supabase utilities
 from supabase_utils import (
@@ -668,7 +604,16 @@ def api_flexible_convert():
         # Parse using our simple parser
         try:
             data = parse_markdown_json(raw_data)
-            cards = data['cards']
+            
+            # Extract cards from the parsed data
+            if isinstance(data, dict) and 'cards' in data:
+                cards = data['cards']
+            elif isinstance(data, list):
+                # If it's a list, assume it's a list of cards
+                cards = data
+            else:
+                raise ValueError("JSON must contain a 'cards' array or be an array of cards")
+                
         except Exception as e:
             return jsonify({
                 'error': 'Failed to parse JSON',
@@ -796,30 +741,85 @@ def download_file(filename):
         app.logger.error(f"Download error: {e}")
         return "Download failed", 500
 
+@app.route('/api/repair-json', methods=['POST', 'OPTIONS'])
+def api_repair_json():
+    """
+    JSON repair-only endpoint for cleaning LLM-generated JSON.
+    
+    Input: ```json { ... } ``` or raw JSON
+    Output: ```json\n{...}\n``` (markdown-wrapped JSON as plain text)
+    Content-Type: text/plain
+    
+    This endpoint is designed for n8n workflows that need to clean malformed JSON
+    and receive it back in the same markdown format for further processing.
+    """
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        app.logger.info("=== JSON REPAIR API CALLED ===")
+        
+        # Get raw data
+        raw_data = request.get_data(as_text=True)
+        
+        if not raw_data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        app.logger.info(f"Received {len(raw_data)} bytes for repair")
+        app.logger.debug(f"Preview: {raw_data[:200]}...")
+        
+        # Parse and repair JSON
+        try:
+            repaired_data = parse_markdown_json(raw_data)
+            
+            # Format the repaired JSON with proper indentation
+            formatted_json = json.dumps(repaired_data, indent=2, ensure_ascii=False)
+            
+            # Wrap in markdown code block
+            markdown_response = f"```json\n{formatted_json}\n```"
+            
+            # Return as plain text with markdown wrapper
+            return markdown_response, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+            
+        except Exception as e:
+            # Even errors should be returned as plain text for consistency
+            error_message = f"Failed to repair JSON: {str(e)}"
+            app.logger.error(error_message)
+            return error_message, 400, {'Content-Type': 'text/plain; charset=utf-8'}
+            
+    except Exception as e:
+        app.logger.error(f"ERROR in repair-json: {str(e)}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        error_message = f"Processing failed: {str(e)}"
+        return error_message, 500, {'Content-Type': 'text/plain; charset=utf-8'}
+
 @app.route('/api/health', methods=['GET'])
 def api_health():
     return jsonify({
         'status': 'healthy',
         'service': 'Enhanced Medical Anki Generator',
-        'version': '11.0.0',
+        'version': '11.1.0',
         'features': [
-            'json_repair_parsing' if JSON_REPAIR_AVAILABLE else 'fallback_json_repair',
+            'json_repair_parsing',
             'markdown_code_block_extraction',
             'smart_deck_naming_from_tags',
             'supabase_permanent_storage',
             'cloze_card_support',
             'images_array_support',
             'clinical_vignettes_preserved',
-            'permanent_download_links'
+            'permanent_download_links',
+            'json_repair_only_endpoint'
         ],
-        'json_repair_status': 'installed' if JSON_REPAIR_AVAILABLE else 'using_fallback',
+        'json_repair_status': 'required',
         'storage': {
             'supabase_enabled': SUPABASE_ENABLED,
             'bucket': 'synapticrecall-links' if SUPABASE_ENABLED else None,
             'fallback': 'local_storage'
         },
         'endpoints': {
-            '/api/flexible-convert': 'Primary endpoint with json repair',
+            '/api/repair-json': 'JSON repair only - returns markdown-wrapped JSON (text/plain)',
+            '/api/flexible-convert': 'Primary endpoint with json repair + APKG',
             '/api/enhanced-medical': 'Legacy endpoint with standard JSON parsing',
             '/api/simple': 'Legacy compatibility endpoint'
         },
@@ -922,7 +922,8 @@ def index():
         <div class="endpoints">
             <h3>API Endpoints:</h3>
             <ul>
-                <li><code>POST /api/flexible-convert</code> - Primary endpoint with json_repair</li>
+                <li><code>POST /api/repair-json</code> - JSON repair only, returns markdown-wrapped JSON as text/plain</li>
+                <li><code>POST /api/flexible-convert</code> - JSON repair + APKG conversion</li>
                 <li><code>POST /api/enhanced-medical</code> - Legacy endpoint</li>
                 <li><code>POST /api/simple</code> - Legacy compatibility</li>
                 <li><code>GET /api/health</code> - Health check</li>
