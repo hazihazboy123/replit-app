@@ -18,6 +18,7 @@ import re
 
 # json_repair is REQUIRED - no fallback
 from json_repair import repair_json
+JSON_REPAIR_AVAILABLE = True
 
 def parse_markdown_json(raw_input):
     """
